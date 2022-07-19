@@ -16,6 +16,8 @@ path = "src/lib.rs"
 aes = "0.7"
 aes-gcm = "0.9"
 curve25519-dalek = "3.2"
+# specify the js feature for the WASM target
+getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4"
 hkdf = "0.12"
 num-bigint = { version = "0.4", features = ["rand", "serde"] }
@@ -25,7 +27,7 @@ rand_hc = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 sha2 = "0.10"
 thiserror = "1.0"
-zeroize = "1.5.6"
+zeroize = "1.5"
 
 [target.'cfg(all(not(target_arch = "wasm32"), not(windows)))'.dependencies]
 cupid = "0.6"
