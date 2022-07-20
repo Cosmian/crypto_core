@@ -2,8 +2,8 @@ use crate::CryptoBaseError;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 
-// Attempt getting the length of this slice as an u32 in 4 endian bytes and
-// return an error if it overflows
+/// Attempt getting the length of this slice as an u32 in 4 endian bytes and
+/// return an error if it overflows
 fn get_u32_len(slice: &[u8]) -> Result<[u8; 4], CryptoBaseError> {
     u32::try_from(slice.len())
         .map_err(|_| {
@@ -95,7 +95,8 @@ impl Metadata {
         if self.is_empty() {
             return Ok(vec![]);
         }
-        let mut bytes = get_u32_len(&self.uid)?.to_vec();
+        let mut bytes = Vec::with_capacity(4 + self.len());
+        bytes.append(&mut get_u32_len(&self.uid)?.to_vec());
         bytes.extend(&self.uid);
         if let Some(ad) = &self.additional_data {
             bytes.extend(ad);
@@ -117,5 +118,22 @@ impl Metadata {
             uid,
             additional_data,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_metadata_serialization() {
+        let metadata = Metadata {
+            uid: vec![1],
+            additional_data: Some(vec![1, 2, 3, 4, 5]),
+        };
+
+        let bytes = metadata.try_to_bytes().unwrap();
+        let res = Metadata::try_from_bytes(&bytes).unwrap();
+        assert_eq!(metadata, res);
     }
 }

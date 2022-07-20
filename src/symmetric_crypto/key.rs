@@ -6,6 +6,7 @@ use std::{
     fmt::Display,
     vec::Vec,
 };
+use zeroize::Zeroize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "Vec<u8>")]
@@ -83,5 +84,18 @@ impl<const KEY_LENGTH: usize> From<Key<KEY_LENGTH>> for [u8; KEY_LENGTH] {
 impl<const KEY_LENGTH: usize> Display for Key<KEY_LENGTH> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl<const KEY_LENGTH: usize> Zeroize for Key<KEY_LENGTH> {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
+    }
+}
+
+// Implement `Drop` trait to follow R23.
+impl<const KEY_LENGTH: usize> Drop for Key<KEY_LENGTH> {
+    fn drop(&mut self) {
+        self.zeroize();
     }
 }

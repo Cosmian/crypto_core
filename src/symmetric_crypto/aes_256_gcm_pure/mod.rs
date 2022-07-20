@@ -4,17 +4,23 @@ use crate::{symmetric_crypto::SymmetricCrypto, CryptoBaseError};
 use aes_gcm::{
     aead::{generic_array::GenericArray, Aead, NewAead, Payload},
     AeadInPlace, Aes256Gcm,
-}; // Or `Aes128Gcm`
+};
 use std::{fmt::Display, vec::Vec};
 
 // This implements AES 256 GCM, using a pure rust interface
 // It will use the AES native interface on the CPU if available
 
+/// Use a 256-bit AES key
 pub const KEY_LENGTH: usize = 32;
+
+/// Use a 96-bit nonce
 pub const NONCE_LENGTH: usize = 12;
+
+/// Use a 128-bit MAC tag
 pub const MAC_LENGTH: usize = 16;
 
 pub type Key = crate::symmetric_crypto::key::Key<KEY_LENGTH>;
+
 pub type Nonce = crate::symmetric_crypto::nonce::Nonce<NONCE_LENGTH>;
 
 pub struct Aes256GcmCrypto;
@@ -87,7 +93,7 @@ pub fn encrypt_combined(
 }
 
 /// Encrypts a message in place using a secret key and a public nonce in
-/// detached mode: The a tag authenticating both the confidential
+/// detached mode: the a tag authenticating both the confidential
 /// message and non-confidential data, are returned separately
 ///
 /// The tag length is `MAC_LENGTH`

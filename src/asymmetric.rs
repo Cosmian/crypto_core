@@ -58,9 +58,8 @@ impl TryFrom<&[u8]> for X25519PrivateKey {
     type Error = CryptoBaseError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let len = bytes.len();
         let bytes: [u8; <Self>::LENGTH] = bytes.try_into().map_err(|_| Self::Error::SizeError {
-            given: len,
+            given: bytes.len(),
             expected: <Self>::LENGTH,
         })?;
         let scalar = Scalar::from_canonical_bytes(bytes).ok_or_else(|| {
@@ -181,6 +180,7 @@ impl Zeroize for X25519PrivateKey {
     }
 }
 
+// Implement `Drop` trait to follow R23.
 impl Drop for X25519PrivateKey {
     fn drop(&mut self) {
         self.zeroize();
@@ -229,19 +229,19 @@ impl TryFrom<&[u8]> for X25519PublicKey {
     type Error = CryptoBaseError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let len = value.len();
-        if len != <Self>::LENGTH {
+        if value.len() != <Self>::LENGTH {
             return Err(Self::Error::SizeError {
-                given: len,
+                given: value.len(),
                 expected: <Self>::LENGTH,
             });
         };
-        let compressed = CompressedRistretto::from_slice(value);
-        let point = compressed.decompress().ok_or_else(|| {
-            Self::Error::ConversionError(
-                "Cannot decompress given bytes into a valid curve point!".to_string(),
-            )
-        })?;
+        let point = CompressedRistretto::from_slice(value)
+            .decompress()
+            .ok_or_else(|| {
+                Self::Error::ConversionError(
+                    "Cannot decompress given bytes into a valid curve point!".to_string(),
+                )
+            })?;
         Ok(Self(point))
     }
 }
