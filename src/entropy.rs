@@ -1,5 +1,4 @@
-use rand::{RngCore as _, SeedableRng};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, RngCore, SeedableRng};
 use rand_hc::Hc128Rng;
 
 /// An implementation of a cryptographically secure

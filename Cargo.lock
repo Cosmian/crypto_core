@@ -186,7 +186,7 @@ dependencies = [
  "hkdf",
  "num-bigint",
  "rand",
- "rand_core 0.5.1",
+ "rand_core 0.6.3",
  "rand_hc",
  "serde",
  "sha2",

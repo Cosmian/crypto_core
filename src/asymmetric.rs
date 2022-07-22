@@ -20,7 +20,9 @@ pub struct X25519PrivateKey(Scalar);
 impl X25519PrivateKey {
     #[must_use]
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
-        Self(Scalar::random(rng))
+        let mut bytes = [0; 64];
+        rng.fill_bytes(&mut bytes);
+        Self(Scalar::from_bytes_mod_order_wide(&bytes))
     }
 
     #[must_use]
