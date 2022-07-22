@@ -31,14 +31,6 @@ impl Display for Aes256GcmCrypto {
     }
 }
 
-impl PartialEq for Aes256GcmCrypto {
-    // `rng` is a random generator so you obviously can't
-    // compare with other `rng` instance
-    fn eq(&self, _other: &Self) -> bool {
-        true
-    }
-}
-
 impl SymmetricCrypto for Aes256GcmCrypto {
     type Key = Key;
     type Nonce = Nonce;

@@ -99,16 +99,26 @@ where
     ) -> Result<Vec<u8>, CryptoBaseError> {
         // refresh the nonce
         let nonce = S::Nonce::new(rng);
-        let mut ad = uid.to_vec();
+
+        // get the associated data ready
+        let mut ad = Vec::with_capacity(uid.len() + 8);
+        ad.extend(uid);
         // Warning: `usize` can be interpreted as `u32` on 32-bits CPU-architecture.
         // The `u64`-cast prevents build on those 32-bits machine or on
         // `wasm32-unknown-unknown` builds.
         ad.extend(&(block_number as u64).to_le_bytes());
+
+        // allocate correct number of bytes
+        let mut bytes = Vec::with_capacity(
+            S::Nonce::LENGTH + S::MAC_LENGTH + self.clear_text().len() + ad.len(),
+        );
         // write the header
-        let mut bytes = BlockHeader::<S> {
-            nonce: nonce.clone(),
-        }
-        .to_bytes();
+        bytes.append(
+            &mut BlockHeader::<S> {
+                nonce: nonce.clone(),
+            }
+            .to_bytes(),
+        );
         // write encrypted data
         bytes.extend(S::encrypt(
             symmetric_key,
@@ -131,11 +141,10 @@ where
         self.clear_text
     }
 
-    /// Write the given clear text data in the block.
-    /// Pad the block with zeroes if the offset is beyond the current end of the
-    /// block.
+    /// Write the given clear text data in the block. Pad the block with
+    /// zeroes if the offset is beyond the current end of the block.
     ///
-    /// Returns the length of the data written
+    /// Return the length of the data written
     pub fn write(&mut self, start_offset: usize, data: &[u8]) -> Result<usize, CryptoBaseError> {
         if start_offset >= MAX_CLEAR_TEXT_LENGTH {
             return Err(CryptoBaseError::InvalidSize(format!(
@@ -146,7 +155,7 @@ where
         // pad if need be
         let num_to_pad = start_offset - self.clear_text.len();
         if num_to_pad > 0 {
-            self.clear_text.extend(vec![0; num_to_pad]);
+            self.clear_text.append(&mut vec![0; num_to_pad]);
         }
         // see what space is available
         let space_left = MAX_CLEAR_TEXT_LENGTH - start_offset;
@@ -200,7 +209,7 @@ where
     }
 
     pub fn as_bytes(&self) -> &[u8] {
-        self.nonce.to_bytes()
+        self.nonce.as_bytes()
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

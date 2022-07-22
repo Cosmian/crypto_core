@@ -28,7 +28,7 @@ pub trait NonceTrait: Sized + Clone {
     fn xor(&self, b2: &[u8]) -> Self;
 
     /// Serialize the nonce.
-    fn to_bytes(&self) -> &[u8];
+    fn as_bytes(&self) -> &[u8];
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -44,9 +44,8 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
     }
 
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoBaseError> {
-        let len = bytes.len();
         let b: [u8; NONCE_LENGTH] = bytes.try_into().map_err(|_| CryptoBaseError::SizeError {
-            given: len,
+            given: bytes.len(),
             expected: NONCE_LENGTH,
         })?;
         Ok(Self(b))
@@ -68,7 +67,7 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
         Self(n)
     }
 
-    fn to_bytes(&self) -> &[u8] {
+    fn as_bytes(&self) -> &[u8] {
         &self.0
     }
 }

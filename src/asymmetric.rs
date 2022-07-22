@@ -18,6 +18,7 @@ use zeroize::Zeroize;
 pub struct X25519PrivateKey(Scalar);
 
 impl X25519PrivateKey {
+    /// Generate a new private key.
     #[must_use]
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut bytes = [0; 64];
@@ -25,11 +26,15 @@ impl X25519PrivateKey {
         Self(Scalar::from_bytes_mod_order_wide(&bytes))
     }
 
+    /// Convert to bytes without copy.
+    #[inline]
     #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
 
+    /// Invert the given key for the multiplicative law
+    #[inline]
     #[must_use]
     pub fn invert(&self) -> Self {
         Self(self.0.invert())
@@ -39,6 +44,8 @@ impl X25519PrivateKey {
 impl KeyTrait for X25519PrivateKey {
     const LENGTH: usize = 32;
 
+    /// Convert the given private key into a vector of bytes (with copy).
+    #[inline]
     #[must_use]
     fn to_bytes(&self) -> Vec<u8> {
         self.as_bytes().to_vec()
@@ -201,6 +208,7 @@ impl X25519PublicKey {
     }
 
     /// Get the array of bytes reprensenting the publiv key without copy.
+    #[inline]
     #[must_use]
     pub fn to_array(&self) -> [u8; Self::LENGTH] {
         self.0.compress().to_bytes()
@@ -210,6 +218,8 @@ impl X25519PublicKey {
 impl KeyTrait for X25519PublicKey {
     const LENGTH: usize = 32;
 
+    /// Convert the given public key into a vector of bytes (with copy).
+    #[inline]
     #[must_use]
     fn to_bytes(&self) -> Vec<u8> {
         self.0.compress().as_bytes().to_vec()
