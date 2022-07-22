@@ -26,10 +26,11 @@ impl X25519PrivateKey {
     }
 
     #[must_use]
-    fn as_bytes(&self) -> &[u8] {
+    pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
 
+    #[must_use]
     pub fn invert(&self) -> Self {
         Self(self.0.invert())
     }
@@ -194,9 +195,15 @@ impl Drop for X25519PrivateKey {
 pub struct X25519PublicKey(RistrettoPoint);
 
 impl X25519PublicKey {
-    //compressed
+    #[must_use]
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         Self::from(&X25519PrivateKey::new(rng))
+    }
+
+    /// Get the array of bytes reprensenting the publiv key without copy.
+    #[must_use]
+    pub fn to_array(&self) -> [u8; Self::LENGTH] {
+        self.0.compress().to_bytes()
     }
 }
 
