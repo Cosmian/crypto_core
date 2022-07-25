@@ -6,51 +6,54 @@
 [Latest Version]: https://img.shields.io/crates/v/cosmian_crypto_core.svg
 [crates.io]: https://crates.io/crates/cosmian_crypto_core
 
-This crate implements crypto primitives which are used in many other Cosmian crypto resources
+This crate implements crypto primitives which are used in many other
+Cosmian cryptographic resources:
 
-- symmetric crypto: AES 256 GCM
-- elliptic curves: Ristretto Curve 25519
-- KDF: HKDF 256
-- entropy: Cryptographically secure pseudo random generators
+- symmetric cryptography primitives can be found in the `symmetric_crypto` module;
+- asymmetric cryptography primitives can be found in the `asymmetric_crypto` module;
+- a Key Derivation Function (KDF) can be found in the `kdf` module;
+- a Random Number Generator (RNG) can be found in the `entropy` module.
 
-It also exposes a few traits, `SymmetricCrypto` and `AsymmetricCrypto` (aka Public Key Crypto), `DEM`,... which are used as building blocks for other constructions.
+We also define `CryptoCoreError`, our error type, and a few traits.
 
+## Symmetric Crypto
+
+We implement a Data Encapsulation Mechanism (DEM) based on the AES 256 GCM
+algorithm, as described in the [ISO 2004](https://www.shoup.net/iso/std6.pdf).
+This implementation is 128-bits secure.
+
+We use the [`aes_gcm`](https://docs.rs/aes-gcm/latest/aes_gcm/index.html)
+implementation of the AES GCM algorithm. This implementation make use of the
+AES instruction when available, which allows a high encryption speed.
+
+## Asymmetric Crypto
+
+We implement a public and a private key objects based on Curve25519. This is
+the fastest elliptic curve known when implementing these objects. Its security
+level is also 128 bits.
+
+We use the [Dalek](https://github.com/dalek-cryptography/curve25519-dalek)
+implementation, which also offers an implementation of the Ristretto technique
+to construct a prime order group on the curve. We use this group to implement
+our public key.
+
+## Key Derivation Function (KDF)
+
+We use the [`hkdf`](https://docs.rs/hkdf/latest/hkdf/) implementation of the
+HKDF algorithm, along with the Sha256 implementation of the Rust standard
+library in order to implement our KDF.
+
+Since Sha256 is 128-bits secure, this makes our KDF 128-bits secure too.
+
+## Random Number Generator (RNG)
+
+We use the implementation of the HC128 algorithm from the
+[Rust standard library](https://docs.rs/rand/0.5.0/rand/prng/hc128/struct.Hc128Rng.html)
+to construct our RNG. It is therefore 128-bits secure.
 
 ## Building
 
 The default feature schemes can all be built to a WASM target.
 
 ### Benchmarks
-
-Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz - 6400 bogomips . Single Threaded.
-
-```
-Bench of leaves generation from a node with varying depth (2500 rounds per depth)
-Average: 76 nano per leave for depth: 4 (16 leaves)
-Average: 79 nano per leave for depth: 5 (32 leaves)
-Average: 79 nano per leave for depth: 6 (64 leaves)
-Average: 81 nano per leave for depth: 7 (128 leaves)
-Average: 80 nano per leave for depth: 8 (256 leaves)
-Average: 79 nano per leave for depth: 9 (512 leaves)
-Average: 78 nano per leave for depth: 10 (1024 leaves)
-Average: 78 nano per leave for depth: 11 (2048 leaves)
-Average: 77 nano per leave for depth: 12 (4096 leaves)
-Average: 77 nano per leave for depth: 13 (8192 leaves)
-Average: 76 nano per leave for depth: 14 (16384 leaves)
-Average: 77 nano per leave for depth: 15 (32768 leaves)
-Average: 77 nano per leave for depth: 16 (65536 leaves)
-```
-
-```
-Bench of a trapdoor serialization/de-serialization averaged over 50000 rounds
-   - 1 nodes: serialization/de-serialization 49/38 nanos)
-   - 2 nodes: serialization/de-serialization 54/39 nanos)
-   - 3 nodes: serialization/de-serialization 55/40 nanos)
-   - 4 nodes: serialization/de-serialization 69/49 nanos)
-   - 5 nodes: serialization/de-serialization 69/47 nanos)
-   - 6 nodes: serialization/de-serialization 73/49 nanos)
-   - 7 nodes: serialization/de-serialization 68/47 nanos)
-   - 8 nodes: serialization/de-serialization 73/50 nanos)
-   - 9 nodes: serialization/de-serialization 83/55 nanos)
-   - 10 nodes: serialization/de-serialization 82/56 nanos)
-```
+TODO

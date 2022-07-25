@@ -173,7 +173,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cosmian_crypto_base_anssi"
+name = "cosmian_crypto_core"
 version = "1.0.0"
 dependencies = [
  "aes",
