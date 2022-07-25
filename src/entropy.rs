@@ -52,3 +52,20 @@ impl RngCore for CsRng {
 }
 
 impl CryptoRng for CsRng {}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn test_random_bytes() {
+        let mut cs_rng = CsRng::default();
+        let size: usize = 1024;
+        let random_bytes_1 = cs_rng.generate_random_bytes(size);
+        assert_eq!(size, random_bytes_1.len());
+        let random_bytes_2 = cs_rng.generate_random_bytes(size);
+        assert_eq!(size, random_bytes_1.len());
+        assert_ne!(random_bytes_1, random_bytes_2);
+    }
+}

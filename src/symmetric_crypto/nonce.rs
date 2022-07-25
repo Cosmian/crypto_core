@@ -116,8 +116,22 @@ impl<const NONCE_LENGTH: usize> Display for Nonce<NONCE_LENGTH> {
 
 #[cfg(test)]
 mod tests {
-    use super::Nonce;
-    use crate::symmetric_crypto::nonce::NonceTrait;
+    use crate::{
+        entropy::CsRng,
+        symmetric_crypto::nonce::{Nonce, NonceTrait},
+    };
+
+    const NONCE_LENGTH: usize = 128;
+
+    #[test]
+    fn test_nonce() {
+        let mut cs_rng = CsRng::new();
+        let nonce_1 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
+        assert_eq!(NONCE_LENGTH, nonce_1.as_slice().len());
+        let nonce_2 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
+        assert_eq!(NONCE_LENGTH, nonce_2.as_slice().len());
+        assert_ne!(nonce_1, nonce_2);
+    }
 
     #[test]
     fn test_increment_nonce() {

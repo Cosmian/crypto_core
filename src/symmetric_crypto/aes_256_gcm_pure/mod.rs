@@ -166,43 +166,12 @@ mod tests {
         symmetric_crypto::{
             aes_256_gcm_pure::{
                 decrypt_combined, decrypt_in_place_detached, encrypt_combined,
-                encrypt_in_place_detached, Key, Nonce, KEY_LENGTH, MAC_LENGTH, NONCE_LENGTH,
+                encrypt_in_place_detached, Key, Nonce, MAC_LENGTH,
             },
             nonce::NonceTrait,
         },
         CryptoCoreError,
     };
-
-    #[test]
-    fn test_key() {
-        let mut cs_rng = CsRng::new();
-        let key_1 = Key::new(&mut cs_rng);
-        assert_eq!(KEY_LENGTH, key_1.as_slice().len());
-        let key_2 = Key::new(&mut cs_rng);
-        assert_eq!(KEY_LENGTH, key_2.as_slice().len());
-        assert_ne!(key_1, key_2);
-    }
-
-    #[test]
-    fn test_nonce() {
-        let mut cs_rng = CsRng::new();
-        let nonce_1 = Nonce::new(&mut cs_rng);
-        assert_eq!(NONCE_LENGTH, nonce_1.as_slice().len());
-        let nonce_2 = Nonce::new(&mut cs_rng);
-        assert_eq!(NONCE_LENGTH, nonce_2.as_slice().len());
-        assert_ne!(nonce_1, nonce_2);
-    }
-
-    #[test]
-    fn test_random_bytes() {
-        let mut cs_rng = CsRng::default();
-        let size: usize = 1024;
-        let random_bytes_1 = cs_rng.generate_random_bytes(size);
-        assert_eq!(size, random_bytes_1.len());
-        let random_bytes_2 = cs_rng.generate_random_bytes(size);
-        assert_eq!(size, random_bytes_1.len());
-        assert_ne!(random_bytes_1, random_bytes_2);
-    }
 
     #[test]
     fn test_encryption_decryption_combined() -> Result<(), CryptoCoreError> {
@@ -214,15 +183,23 @@ mod tests {
         let encrypted_result = encrypt_combined(&key, &bytes, &iv, None)?;
         assert_ne!(encrypted_result, bytes);
         assert_eq!(bytes.len() + MAC_LENGTH, encrypted_result.len());
-        let recovered = decrypt_combined(&key, encrypted_result.as_slice(), &iv, None)?;
+        let recovered = decrypt_combined(&key, &encrypted_result, &iv, None)?;
         assert_eq!(bytes, recovered);
         // additional data
-        let ad = cs_rng.generate_random_bytes(42);
-        let encrypted_result = encrypt_combined(&key, &bytes, &iv, Some(&ad))?;
+        let aad = cs_rng.generate_random_bytes(42);
+        let encrypted_result = encrypt_combined(&key, &bytes, &iv, Some(&aad))?;
         assert_ne!(encrypted_result, bytes);
         assert_eq!(bytes.len() + MAC_LENGTH, encrypted_result.len());
-        let recovered = decrypt_combined(&key, encrypted_result.as_slice(), &iv, Some(&ad))?;
+        let recovered = decrypt_combined(&key, &encrypted_result, &iv, Some(&aad))?;
         assert_eq!(bytes, recovered);
+        // data should not be recovered if we modify the AAD.
+        let aad = cs_rng.generate_random_bytes(42);
+        let recovered = decrypt_combined(&key, &encrypted_result, &iv, Some(&aad));
+        assert_ne!(Ok(bytes.clone()), recovered);
+        // data should not be recovered if we modify the key
+        let new_key = Key::new(&mut cs_rng);
+        let recovered = decrypt_combined(&new_key, &encrypted_result, &iv, Some(&aad));
+        assert_ne!(Ok(bytes), recovered);
         Ok(())
     }
 

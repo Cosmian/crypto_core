@@ -346,27 +346,27 @@ impl<'a> Mul<&'a X25519PrivateKey> for X25519PublicKey {
 
 #[cfg(test)]
 mod test {
-    use crate::{asymmetric_crypto::X25519PrivateKey, entropy::CsRng};
-
-    use super::X25519PublicKey;
+    use crate::{
+        asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
+        entropy::CsRng,
+        KeyTrait,
+    };
 
     #[test]
-    fn test_parse_private_key() {
+    fn test_private_key_serialization() {
         let mut rng = CsRng::new();
         let sk = X25519PrivateKey::new(&mut rng);
-        let hex = format!("{}", sk);
-        let recovered =
-            super::X25519PrivateKey::try_from(hex::decode(hex).unwrap().as_slice()).unwrap();
+        let bytes = sk.to_bytes();
+        let recovered = X25519PrivateKey::try_from(bytes).unwrap();
         assert_eq!(sk, recovered);
     }
 
     #[test]
-    fn test_parse_public_key() {
+    fn test_public_key_serialization() {
         let mut rng = CsRng::new();
         let pk = X25519PublicKey::new(&mut rng);
-        let hex = format!("{}", pk);
-        let recovered =
-            super::X25519PublicKey::try_from(hex::decode(hex).unwrap().as_slice()).unwrap();
+        let bytes = pk.to_bytes();
+        let recovered = super::X25519PublicKey::try_from(bytes).unwrap();
         assert_eq!(pk, recovered);
     }
 }

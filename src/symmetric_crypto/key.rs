@@ -107,3 +107,30 @@ impl<const KEY_LENGTH: usize> Drop for Key<KEY_LENGTH> {
         self.zeroize();
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use crate::{entropy::CsRng, symmetric_crypto::key::Key, KeyTrait};
+
+    const KEY_LENGTH: usize = 128;
+
+    #[test]
+    fn test_key() {
+        let mut cs_rng = CsRng::new();
+        let key_1 = Key::<KEY_LENGTH>::new(&mut cs_rng);
+        assert_eq!(KEY_LENGTH, key_1.as_slice().len());
+        let key_2 = Key::new(&mut cs_rng);
+        assert_eq!(KEY_LENGTH, key_2.as_slice().len());
+        assert_ne!(key_1, key_2);
+    }
+
+    #[test]
+    fn test_key_serialization() {
+        let mut cs_rng = CsRng::new();
+        let key = Key::<KEY_LENGTH>::new(&mut cs_rng);
+        let bytes = key.to_bytes();
+        let res = Key::try_from(bytes).unwrap();
+        assert_eq!(key, res);
+    }
+}

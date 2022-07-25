@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 /// Error type for this module.
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum CryptoCoreError {
     #[error("Wrong size: {given} given should be {expected}")]
     SizeError { given: usize, expected: usize },
@@ -11,8 +11,8 @@ pub enum CryptoCoreError {
     HexParseError(#[from] hex::FromHexError),
     #[error("Failed to convert: {0}")]
     ConversionError(String),
-    #[error("{0}")]
-    KdfError(hkdf::InvalidLength),
+    #[error("Cannot derive key of size {0}")]
+    KdfError(usize),
     #[error("Key generation error")]
     KeyGenError,
     #[error("{0}")]
@@ -21,6 +21,4 @@ pub enum CryptoCoreError {
     DecryptionError(String),
     #[error("{0}")]
     HardwareCapability(String),
-    #[error("Invalid size: {0}")]
-    TryFromSliceError(#[from] std::array::TryFromSliceError),
 }

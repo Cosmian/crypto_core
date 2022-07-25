@@ -16,6 +16,6 @@ pub fn hkdf_256(master: &[u8], key_len: usize, info: &[u8]) -> Result<Vec<u8>, C
     let h = Hkdf::<Sha256>::new(None, master);
     let mut out = vec![0_u8; key_len];
     h.expand(info, &mut out)
-        .map_err(CryptoCoreError::KdfError)?;
+        .map_err(|_| CryptoCoreError::KdfError(key_len))?;
     Ok(out)
 }
