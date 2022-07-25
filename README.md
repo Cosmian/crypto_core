@@ -54,6 +54,3 @@ to construct our RNG. It is therefore 128-bits secure.
 ## Building
 
 The default feature schemes can all be built to a WASM target.
-
-### Benchmarks
-TODO
