@@ -1,10 +1,10 @@
-# cosmian_crypto_base_anssi &emsp; [![Build Status]][actions] [![Latest Version]][crates.io]
+# cosmian_crypto_core &emsp; [![Build Status]][actions] [![Latest Version]][crates.io]
 
 
-[Build Status]: https://img.shields.io/github/workflow/status/Cosmian/crypto_base/CI%20checks/main
-[actions]: https://github.com/Cosmian/crypto_base/actions?query=branch%3Amain
-[Latest Version]: https://img.shields.io/crates/v/cosmian_crypto_base.svg
-[crates.io]: https://crates.io/crates/cosmian_crypto_base
+[Build Status]: https://img.shields.io/github/workflow/status/Cosmian/crypto_core/CI%20checks/main
+[actions]: https://github.com/Cosmian/crypto_core/actions?query=branch%3Amain
+[Latest Version]: https://img.shields.io/crates/v/cosmian_crypto_core.svg
+[crates.io]: https://crates.io/crates/cosmian_crypto_core
 
 This crate implements crypto primitives which are used in many other Cosmian crypto resources
 

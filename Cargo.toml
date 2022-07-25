@@ -3,12 +3,12 @@ authors = ["Bruno Grieder <bruno.grieder@cosmian.com>", "Théophile BRÉZOT <the
 description = "Crypto lib for pure crypto primitives"
 edition = "2021"
 license = "MIT/Apache-2.0"
-name = "cosmian_crypto_base_anssi"
+name = "cosmian_crypto_core"
 version = "1.0.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-name = "cosmian_crypto_base_anssi"
+name = "cosmian_crypto_core"
 path = "src/lib.rs"
 
 [dependencies]
