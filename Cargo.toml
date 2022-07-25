@@ -1,6 +1,5 @@
 [package]
 authors = ["Bruno Grieder <bruno.grieder@cosmian.com>", "Théophile BRÉZOT <theophile.brezot@cosmian.com>"]
-build = "build.rs"
 description = "Crypto lib for pure crypto primitives"
 edition = "2021"
 license = "MIT/Apache-2.0"
