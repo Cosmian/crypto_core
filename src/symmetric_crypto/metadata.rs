@@ -1,13 +1,13 @@
-use crate::CryptoBaseError;
+use crate::CryptoCoreError;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 
 /// Attempt getting the length of this slice as an u32 in 4 endian bytes and
 /// return an error if it overflows
-fn get_u32_len(slice: &[u8]) -> Result<[u8; 4], CryptoBaseError> {
+fn get_u32_len(slice: &[u8]) -> Result<[u8; 4], CryptoCoreError> {
     u32::try_from(slice.len())
         .map_err(|_| {
-            CryptoBaseError::InvalidSize(
+            CryptoCoreError::InvalidSize(
                 "Slice of bytes is too big to fit in 2^32 bytes".to_string(),
             )
         })
@@ -21,6 +21,7 @@ pub struct BytesScanner<'a> {
 }
 
 impl<'a> BytesScanner<'a> {
+    /// Return a new byte scanner object.
     #[must_use]
     pub const fn new(bytes: &'a [u8]) -> Self {
         BytesScanner { bytes, start: 0 }
@@ -28,10 +29,10 @@ impl<'a> BytesScanner<'a> {
 
     /// Returns a slice of the next `size` bytes or an error if less is
     /// available
-    pub fn next(&mut self, size: usize) -> Result<&'a [u8], CryptoBaseError> {
+    pub fn next(&mut self, size: usize) -> Result<&'a [u8], CryptoCoreError> {
         let end = self.start + size;
         if self.bytes.len() < end {
-            return Err(CryptoBaseError::InvalidSize(format!(
+            return Err(CryptoCoreError::InvalidSize(format!(
                 "{size}, only {} bytes available",
                 self.bytes.len() - self.start
             )));
@@ -42,9 +43,9 @@ impl<'a> BytesScanner<'a> {
     }
 
     /// Read the next 4 big endian bytes to return an u32
-    pub fn read_u32(&mut self) -> Result<u32, CryptoBaseError> {
+    pub fn read_u32(&mut self) -> Result<u32, CryptoCoreError> {
         Ok(u32::from_be_bytes(self.next(4)?.try_into().map_err(
-            |_e| CryptoBaseError::ConversionError("invalid u32".to_string()),
+            |_e| CryptoCoreError::ConversionError("invalid u32".to_string()),
         )?))
     }
 
@@ -83,6 +84,7 @@ impl Metadata {
         self.uid.len() + self.additional_data.as_ref().unwrap_or(&vec![]).len()
     }
 
+    /// Return `true` if the given metadata is empty.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
@@ -91,7 +93,7 @@ impl Metadata {
     /// Encode the metadata as a byte array
     ///
     /// The first 4 bytes is the u32 length of the UID as big endian bytes
-    pub fn try_to_bytes(&self) -> Result<Vec<u8>, CryptoBaseError> {
+    pub fn try_to_bytes(&self) -> Result<Vec<u8>, CryptoCoreError> {
         if self.is_empty() {
             return Ok(vec![]);
         }
@@ -105,7 +107,7 @@ impl Metadata {
     }
 
     /// Decode the metadata from a byte array
-    pub fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoBaseError> {
+    pub fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         if bytes.is_empty() {
             return Ok(Self::default());
         }

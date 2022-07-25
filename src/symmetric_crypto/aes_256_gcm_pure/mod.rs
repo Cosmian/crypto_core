@@ -1,14 +1,17 @@
-pub mod dem;
-
-use crate::{symmetric_crypto::SymmetricCrypto, CryptoBaseError};
+//! Implement the `SymmetricCrypto` and `DEM` traits based on the AES 256 GCM
+//! algorithm.
+///
+/// It will use the AES native interface on the CPU if available.
+use crate::{symmetric_crypto::SymmetricCrypto, CryptoCoreError};
 use aes_gcm::{
     aead::{generic_array::GenericArray, Aead, NewAead, Payload},
     AeadInPlace, Aes256Gcm,
 };
 use std::{fmt::Display, vec::Vec};
 
-// This implements AES 256 GCM, using a pure rust interface
-// It will use the AES native interface on the CPU if available
+use super::nonce::NonceTrait;
+
+pub mod dem;
 
 /// Use a 256-bit AES key
 pub const KEY_LENGTH: usize = 32;
@@ -23,6 +26,8 @@ pub type Key = crate::symmetric_crypto::key::Key<KEY_LENGTH>;
 
 pub type Nonce = crate::symmetric_crypto::nonce::Nonce<NONCE_LENGTH>;
 
+/// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
+/// AES 256 GCM.
 pub struct Aes256GcmCrypto;
 
 impl Display for Aes256GcmCrypto {
@@ -51,7 +56,7 @@ impl SymmetricCrypto for Aes256GcmCrypto {
         bytes: &[u8],
         nonce: &Self::Nonce,
         additional_data: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoBaseError> {
+    ) -> Result<Vec<u8>, CryptoCoreError> {
         encrypt_combined(key, bytes, nonce, additional_data)
     }
 
@@ -60,7 +65,7 @@ impl SymmetricCrypto for Aes256GcmCrypto {
         bytes: &[u8],
         nonce: &Self::Nonce,
         additional_data: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoBaseError> {
+    ) -> Result<Vec<u8>, CryptoCoreError> {
         decrypt_combined(key, bytes, nonce, additional_data)
     }
 }
@@ -75,13 +80,13 @@ pub fn encrypt_combined(
     bytes: &[u8],
     nonce: &Nonce,
     additional_data: Option<&[u8]>,
-) -> Result<Vec<u8>, CryptoBaseError> {
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(&key.0));
+) -> Result<Vec<u8>, CryptoCoreError> {
+    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_slice()));
     let payload =
         additional_data.map_or_else(|| Payload::from(bytes), |aad| Payload { msg: bytes, aad });
     cipher
-        .encrypt(GenericArray::from_slice(&nonce.0), payload)
-        .map_err(|e| CryptoBaseError::EncryptionError(e.to_string()))
+        .encrypt(GenericArray::from_slice(nonce.as_slice()), payload)
+        .map_err(|e| CryptoCoreError::EncryptionError(e.to_string()))
 }
 
 /// Encrypts a message in place using a secret key and a public nonce in
@@ -94,12 +99,16 @@ pub fn encrypt_in_place_detached(
     bytes: &mut [u8],
     nonce: &Nonce,
     additional_data: Option<&[u8]>,
-) -> Result<Vec<u8>, CryptoBaseError> {
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(&key.0));
+) -> Result<Vec<u8>, CryptoCoreError> {
+    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_slice()));
     let additional_data = additional_data.unwrap_or_default();
     cipher
-        .encrypt_in_place_detached(GenericArray::from_slice(&nonce.0), additional_data, bytes)
-        .map_err(|e| CryptoBaseError::DecryptionError(e.to_string()))
+        .encrypt_in_place_detached(
+            GenericArray::from_slice(nonce.as_slice()),
+            additional_data,
+            bytes,
+        )
+        .map_err(|e| CryptoCoreError::DecryptionError(e.to_string()))
         .map(|t| t.to_vec())
 }
 
@@ -114,13 +123,13 @@ pub fn decrypt_combined(
     bytes: &[u8],
     nonce: &Nonce,
     additional_data: Option<&[u8]>,
-) -> Result<Vec<u8>, CryptoBaseError> {
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(&key.0));
+) -> Result<Vec<u8>, CryptoCoreError> {
+    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_slice()));
     let payload =
         additional_data.map_or_else(|| Payload::from(bytes), |aad| Payload { msg: bytes, aad });
     cipher
-        .decrypt(GenericArray::from_slice(&nonce.0), payload)
-        .map_err(|e| CryptoBaseError::DecryptionError(e.to_string()))
+        .decrypt(GenericArray::from_slice(nonce.as_slice()), payload)
+        .map_err(|e| CryptoCoreError::DecryptionError(e.to_string()))
 }
 
 /// Decrypts a message in pace in detached mode.
@@ -136,17 +145,17 @@ pub fn decrypt_in_place_detached(
     tag: &[u8],
     nonce: &Nonce,
     additional_data: Option<&[u8]>,
-) -> Result<(), CryptoBaseError> {
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(&key.0));
+) -> Result<(), CryptoCoreError> {
+    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_slice()));
     let additional_data = additional_data.unwrap_or_default();
     cipher
         .decrypt_in_place_detached(
-            GenericArray::from_slice(&nonce.0),
+            GenericArray::from_slice(nonce.as_slice()),
             additional_data,
             bytes,
             GenericArray::from_slice(tag),
         )
-        .map_err(|e| CryptoBaseError::DecryptionError(e.to_string()))
+        .map_err(|e| CryptoCoreError::DecryptionError(e.to_string()))
 }
 
 #[cfg(test)]
@@ -161,16 +170,16 @@ mod tests {
             },
             nonce::NonceTrait,
         },
-        CryptoBaseError,
+        CryptoCoreError,
     };
 
     #[test]
     fn test_key() {
         let mut cs_rng = CsRng::new();
         let key_1 = Key::new(&mut cs_rng);
-        assert_eq!(KEY_LENGTH, key_1.0.len());
+        assert_eq!(KEY_LENGTH, key_1.as_slice().len());
         let key_2 = Key::new(&mut cs_rng);
-        assert_eq!(KEY_LENGTH, key_2.0.len());
+        assert_eq!(KEY_LENGTH, key_2.as_slice().len());
         assert_ne!(key_1, key_2);
     }
 
@@ -178,9 +187,9 @@ mod tests {
     fn test_nonce() {
         let mut cs_rng = CsRng::new();
         let nonce_1 = Nonce::new(&mut cs_rng);
-        assert_eq!(NONCE_LENGTH, nonce_1.0.len());
+        assert_eq!(NONCE_LENGTH, nonce_1.as_slice().len());
         let nonce_2 = Nonce::new(&mut cs_rng);
-        assert_eq!(NONCE_LENGTH, nonce_2.0.len());
+        assert_eq!(NONCE_LENGTH, nonce_2.as_slice().len());
         assert_ne!(nonce_1, nonce_2);
     }
 
@@ -196,7 +205,7 @@ mod tests {
     }
 
     #[test]
-    fn test_encryption_decryption_combined() -> Result<(), CryptoBaseError> {
+    fn test_encryption_decryption_combined() -> Result<(), CryptoCoreError> {
         let mut cs_rng = CsRng::new();
         let key = Key::new(&mut cs_rng);
         let bytes = cs_rng.generate_random_bytes(8192);
@@ -218,7 +227,7 @@ mod tests {
     }
 
     #[test]
-    fn test_encryption_decryption_detached() -> Result<(), CryptoBaseError> {
+    fn test_encryption_decryption_detached() -> Result<(), CryptoCoreError> {
         let mut cs_rng = CsRng::new();
         let key = Key::new(&mut cs_rng);
         let bytes = cs_rng.generate_random_bytes(8192);

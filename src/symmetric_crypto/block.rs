@@ -1,11 +1,11 @@
-use rand_core::{CryptoRng, RngCore};
-
 use crate::{
     symmetric_crypto::{nonce::NonceTrait, SymmetricCrypto},
-    CryptoBaseError,
+    CryptoCoreError,
 };
+use rand_core::{CryptoRng, RngCore};
 
-/// A block holds clear text data that needs to be encrypted.
+/// Block holding clear text data that needs to be encrypted.
+///
 /// The max fixed length of clear text is set by the const generic
 /// `MAX_CLEAR_TEXT_LENGTH`. The max block encrypted length is available as
 /// `Block::MAX_ENCRYPTED_LENGTH`
@@ -51,16 +51,16 @@ where
         symmetric_key: &<S as SymmetricCrypto>::Key,
         uid: &[u8],
         block_number: usize,
-    ) -> Result<Self, CryptoBaseError> {
+    ) -> Result<Self, CryptoCoreError> {
         // The block header is always present
         if encrypted_bytes.len() < Self::ENCRYPTION_OVERHEAD {
-            return Err(CryptoBaseError::InvalidSize(format!(
+            return Err(CryptoCoreError::InvalidSize(format!(
                 "array of encrypted data bytes of length {} is too small",
                 encrypted_bytes.len(),
             )));
         }
         if encrypted_bytes.len() > Self::MAX_ENCRYPTED_LENGTH {
-            return Err(CryptoBaseError::InvalidSize(format!(
+            return Err(CryptoCoreError::InvalidSize(format!(
                 "array of encrypted data bytes of length {} is too large",
                 encrypted_bytes.len(),
             )));
@@ -96,7 +96,7 @@ where
         symmetric_key: &<S as SymmetricCrypto>::Key,
         uid: &[u8],
         block_number: usize,
-    ) -> Result<Vec<u8>, CryptoBaseError> {
+    ) -> Result<Vec<u8>, CryptoCoreError> {
         // refresh the nonce
         let nonce = S::Nonce::new(rng);
 
@@ -145,9 +145,9 @@ where
     /// zeroes if the offset is beyond the current end of the block.
     ///
     /// Return the length of the data written
-    pub fn write(&mut self, start_offset: usize, data: &[u8]) -> Result<usize, CryptoBaseError> {
+    pub fn write(&mut self, start_offset: usize, data: &[u8]) -> Result<usize, CryptoCoreError> {
         if start_offset >= MAX_CLEAR_TEXT_LENGTH {
-            return Err(CryptoBaseError::InvalidSize(format!(
+            return Err(CryptoCoreError::InvalidSize(format!(
                 "write in block: start offset: {} is greater than max block clear text len {}",
                 start_offset, MAX_CLEAR_TEXT_LENGTH
             )));
@@ -195,9 +195,9 @@ where
 {
     pub const LENGTH: usize = <S as SymmetricCrypto>::Nonce::LENGTH;
 
-    pub fn parse(bytes: &[u8]) -> Result<Self, CryptoBaseError> {
+    pub fn parse(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         if bytes.len() != Self::LENGTH {
-            return Err(CryptoBaseError::SizeError {
+            return Err(CryptoCoreError::SizeError {
                 given: bytes.len(),
                 expected: Self::LENGTH,
             });
@@ -209,7 +209,7 @@ where
     }
 
     pub fn as_bytes(&self) -> &[u8] {
-        self.nonce.as_bytes()
+        self.nonce.as_slice()
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

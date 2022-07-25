@@ -1,7 +1,8 @@
 use thiserror::Error;
 
+/// Error type for this module.
 #[derive(Debug, Error)]
-pub enum CryptoBaseError {
+pub enum CryptoCoreError {
     #[error("Wrong size: {given} given should be {expected}")]
     SizeError { given: usize, expected: usize },
     #[error("Invalid size: {0}")]

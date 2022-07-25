@@ -1,4 +1,6 @@
-use crate::{CryptoBaseError, KeyTrait};
+//! Define a symmetric key object of variable size.
+
+use crate::{CryptoCoreError, KeyTrait};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -8,9 +10,12 @@ use std::{
 };
 use zeroize::Zeroize;
 
+/// Symmetric key of a given size.
+///
+/// It is internally built using an array of bytes of the given length.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "Vec<u8>")]
-pub struct Key<const KEY_LENGTH: usize>(pub [u8; KEY_LENGTH]);
+pub struct Key<const KEY_LENGTH: usize>([u8; KEY_LENGTH]);
 
 impl<const KEY_LENGTH: usize> Key<KEY_LENGTH> {
     /// Generate a new symmetric random `Key`
@@ -20,7 +25,8 @@ impl<const KEY_LENGTH: usize> Key<KEY_LENGTH> {
         key
     }
 
-    const fn as_bytes(&self) -> &[u8] {
+    /// Convert the given key into a byte slice, without copy.
+    pub const fn as_slice(&self) -> &[u8] {
         &self.0
     }
 }
@@ -28,11 +34,13 @@ impl<const KEY_LENGTH: usize> Key<KEY_LENGTH> {
 impl<const KEY_LENGTH: usize> KeyTrait for Key<KEY_LENGTH> {
     const LENGTH: usize = KEY_LENGTH;
 
+    /// Convert the given key into bytes, with copy.
     fn to_bytes(&self) -> Vec<u8> {
-        self.as_bytes().to_vec()
+        self.as_slice().to_vec()
     }
 
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoBaseError> {
+    /// Try to convert the given bytes into a key. Size must be correct.
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
     }
 }
@@ -44,7 +52,7 @@ impl<const KEY_LENGTH: usize> From<&Key<KEY_LENGTH>> for Vec<u8> {
 }
 
 impl<const KEY_LENGTH: usize> TryFrom<Vec<u8>> for Key<KEY_LENGTH> {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(bytes.as_slice())
@@ -58,7 +66,7 @@ impl<const KEY_LENGTH: usize> From<Key<KEY_LENGTH>> for Vec<u8> {
 }
 
 impl<'a, const KEY_LENGTH: usize> TryFrom<&'a [u8]> for Key<KEY_LENGTH> {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         let b: [u8; KEY_LENGTH] = bytes.try_into().map_err(|_| Self::Error::SizeError {

@@ -1,4 +1,11 @@
-use crate::{CryptoBaseError, KeyTrait};
+//! Define the `X25519PublicKey` and `X25519PrivateKey` objects, asymmetric
+//! keys based on the Curve25519.
+//!
+//! Curve25519 is an eliptic curve defined by the equation `y^2 = x^3 + 486662x^2 + x`.
+//! Its security level is 128-bits. It is the fastest curve available at the
+//! time of this implementation.
+
+use crate::{CryptoCoreError, KeyTrait};
 use curve25519_dalek::{
     constants,
     ristretto::{CompressedRistretto, RistrettoPoint},
@@ -13,6 +20,9 @@ use std::{
 };
 use zeroize::Zeroize;
 
+/// Asymmetric private key based on Curve25519.
+///
+/// Internally, we use a curve scalar. It is 128-bits long.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "Vec<u8>")]
 pub struct X25519PrivateKey(Scalar);
@@ -51,13 +61,13 @@ impl KeyTrait for X25519PrivateKey {
         self.as_bytes().to_vec()
     }
 
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoBaseError> {
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
     }
 }
 
 impl TryFrom<Vec<u8>> for X25519PrivateKey {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(bytes.as_slice())
@@ -65,7 +75,7 @@ impl TryFrom<Vec<u8>> for X25519PrivateKey {
 }
 
 impl TryFrom<&[u8]> for X25519PrivateKey {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         let bytes: [u8; <Self>::LENGTH] = bytes.try_into().map_err(|_| Self::Error::SizeError {
@@ -89,7 +99,7 @@ impl From<X25519PrivateKey> for Vec<u8> {
 
 /// Parse from an hex encoded String
 impl TryFrom<&str> for X25519PrivateKey {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let bytes = hex::decode(value)?;
@@ -197,17 +207,22 @@ impl Drop for X25519PrivateKey {
     }
 }
 
+/// Asymmetric public key based on Curve25519.
+///
+/// Internally, we use a Ristretto point. It is 256-bits long, but we used its
+/// compressed form for serialization, which is 128-bits long.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "Vec<u8>")]
 pub struct X25519PublicKey(RistrettoPoint);
 
 impl X25519PublicKey {
+    /// Generate a new random public key.
     #[must_use]
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         Self::from(&X25519PrivateKey::new(rng))
     }
 
-    /// Get the array of bytes reprensenting the publiv key without copy.
+    /// Convert the given public key into an array of bytes.
     #[inline]
     #[must_use]
     pub fn to_array(&self) -> [u8; Self::LENGTH] {
@@ -218,14 +233,15 @@ impl X25519PublicKey {
 impl KeyTrait for X25519PublicKey {
     const LENGTH: usize = 32;
 
-    /// Convert the given public key into a vector of bytes (with copy).
+    /// Convert the given public key into a vector of bytes. If possible,
+    /// prefer the use of `to_array()` since it avoids a copy.
     #[inline]
     #[must_use]
     fn to_bytes(&self) -> Vec<u8> {
         self.0.compress().as_bytes().to_vec()
     }
 
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoBaseError> {
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
     }
 }
@@ -237,7 +253,7 @@ impl From<&X25519PrivateKey> for X25519PublicKey {
 }
 
 impl TryFrom<Vec<u8>> for X25519PublicKey {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(bytes.as_slice())
@@ -245,7 +261,7 @@ impl TryFrom<Vec<u8>> for X25519PublicKey {
 }
 
 impl TryFrom<&[u8]> for X25519PublicKey {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         if value.len() != <Self>::LENGTH {
@@ -273,7 +289,7 @@ impl From<X25519PublicKey> for Vec<u8> {
 
 /// Parse from an hex encoded String
 impl TryFrom<&str> for X25519PublicKey {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let bytes = hex::decode(value)?;
@@ -330,7 +346,7 @@ impl<'a> Mul<&'a X25519PrivateKey> for X25519PublicKey {
 
 #[cfg(test)]
 mod test {
-    use crate::{asymmetric::X25519PrivateKey, entropy::CsRng};
+    use crate::{asymmetric_crypto::X25519PrivateKey, entropy::CsRng};
 
     use super::X25519PublicKey;
 

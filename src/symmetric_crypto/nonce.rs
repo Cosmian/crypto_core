@@ -1,4 +1,8 @@
-use crate::CryptoBaseError;
+//! Define a nonce object, for use in symmetric encryption.
+//!
+//! TODO: describe how a nonce is used
+
+use crate::CryptoCoreError;
 use num_bigint::BigUint;
 use rand_core::{CryptoRng, RngCore};
 use std::{
@@ -8,16 +12,17 @@ use std::{
     vec::Vec,
 };
 
-pub trait NonceTrait: Sized + Clone {
-    /// Size of the nonce, in bytes.
+/// Trait defining a nonce for use in a symmetric encryption scheme.
+pub trait NonceTrait: Send + Sync + Sized + Clone {
+    /// Size of the nonce in bytes.
     const LENGTH: usize;
 
-    /// Generate a new nonce object
+    /// Generate a new nonce object.
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
     /// Try to deserialize the given bytes into a nonce object. The number of
     /// bytes must be equal to `LENGTH`.
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoBaseError>;
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
 
     /// Increment the nonce by the given value.
     #[must_use]
@@ -28,11 +33,14 @@ pub trait NonceTrait: Sized + Clone {
     fn xor(&self, b2: &[u8]) -> Self;
 
     /// Serialize the nonce.
-    fn as_bytes(&self) -> &[u8];
+    fn as_slice(&self) -> &[u8];
 }
 
+/// Nonce object of the given size.
+///
+/// Internally, it uses an array of bytes of the given size.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Nonce<const NONCE_LENGTH: usize>(pub [u8; NONCE_LENGTH]);
+pub struct Nonce<const NONCE_LENGTH: usize>([u8; NONCE_LENGTH]);
 
 impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
     const LENGTH: usize = NONCE_LENGTH;
@@ -43,8 +51,8 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
         Self(bytes)
     }
 
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoBaseError> {
-        let b: [u8; NONCE_LENGTH] = bytes.try_into().map_err(|_| CryptoBaseError::SizeError {
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
+        let b: [u8; NONCE_LENGTH] = bytes.try_into().map_err(|_| CryptoCoreError::SizeError {
             given: bytes.len(),
             expected: NONCE_LENGTH,
         })?;
@@ -67,13 +75,13 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
         Self(n)
     }
 
-    fn as_bytes(&self) -> &[u8] {
+    fn as_slice(&self) -> &[u8] {
         &self.0
     }
 }
 
 impl<const NONCE_LENGTH: usize> TryFrom<Vec<u8>> for Nonce<NONCE_LENGTH> {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from_bytes(&bytes)
@@ -81,7 +89,7 @@ impl<const NONCE_LENGTH: usize> TryFrom<Vec<u8>> for Nonce<NONCE_LENGTH> {
 }
 
 impl<'a, const NONCE_LENGTH: usize> TryFrom<&'a [u8]> for Nonce<NONCE_LENGTH> {
-    type Error = CryptoBaseError;
+    type Error = CryptoCoreError;
 
     fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         Self::try_from_bytes(bytes)

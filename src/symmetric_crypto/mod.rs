@@ -1,8 +1,6 @@
-//! Define traits used in this module.
-//!
-//! The `SymmetricCrypto` trait defines a symmetric encryption scheme. The
-//! `Dem` trait defines a DEM based on a symmetric scheme defined as described
-//! in the previous trait.
+//! Define the `SymmetricCrypto` and `DEM` traits and provide an implementation
+//! based on the AES GCM algorithm. Define the `Block` and `Metadata` objects
+//! to ease the use of AES on real data.
 
 pub mod aes_256_gcm_pure;
 pub mod key;
@@ -14,12 +12,10 @@ mod metadata;
 pub use block::Block;
 pub use metadata::Metadata;
 
-use crate::{CryptoBaseError, KeyTrait};
+use crate::{CryptoCoreError, KeyTrait};
 use nonce::NonceTrait;
 use rand_core::{CryptoRng, RngCore};
 use std::vec::Vec;
-
-pub const MIN_DATA_LENGTH: usize = 1;
 
 /// Defines a symmetric encryption scheme. If this scheme is authenticated,
 /// the `MAC_LENGTH` will be greater than `0`.
@@ -32,62 +28,79 @@ pub trait SymmetricCrypto: Send + Sync {
     fn description() -> String;
 
     /// Encrypts a message using a secret key and a public nonce in combined
-    /// mode: the encrypted message, as well as a tag authenticating both
-    /// the confidential message and non-confidential data, are put into the
-    /// encrypted result.
+    /// mode.
     ///
-    /// The total length of the encrypted data is the message length +
-    /// `MAC_LENGTH`
+    /// Append the MAC tag authenticating both the confidential and non
+    /// confidential data (aad) to the ciphertext. Thus, the length of the
+    /// encrypted data is the message length + `MAC_LENGTH`.
     ///
-    /// This function encrypts then tag: it can also be used as a MAC, with an
-    /// empty message.
+    /// It can also be used as a pur MAC by providing an empty message.
+    ///
+    /// # Parameters
+    ///
+    /// - `key`     : symmetric key to use for encryption
+    /// - `bytes`   : message bytes to encrypt
+    /// - `nonce`   : nonce to use
+    /// - `aad`     : additional associated data, the same data must be used
+    /// for decryption
     fn encrypt(
         key: &Self::Key,
         bytes: &[u8],
         nonce: &Self::Nonce,
-        additional_data: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoBaseError>;
+        aad: Option<&[u8]>,
+    ) -> Result<Vec<u8>, CryptoCoreError>;
 
-    /// Decrypts a message in combined mode: the MAC is appended to the cipher
-    /// text
+    /// Decrypts a message in combined mode.
     ///
-    /// The provided additional data must match those provided during encryption
-    /// for the MAC to verify.
+    /// Attemps to read a MAC appended to the ciphertext. The provided
+    /// additional data must match those provided during encryption for the
+    /// MAC to verify. Decryption will never be performed, even partially,
+    /// before verification.
     ///
-    /// Decryption will never be performed, even partially, before verification.
+    /// # Parameters
+    ///
+    /// - `key`     : symmetric key to use
+    /// - `bytes`   : encrypted bytes to decrypt (the MAC must be appended)
+    /// - `nonce`   : nonce to use for decryption
+    /// - `aad`     : additional associated data, the same data must be used
+    /// for encryption
     fn decrypt(
         key: &Self::Key,
         bytes: &[u8],
         nonce: &Self::Nonce,
-        additional_data: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoBaseError>;
+        aad: Option<&[u8]>,
+    ) -> Result<Vec<u8>, CryptoCoreError>;
 }
 
+/// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
+/// [ISO 2004](https://www.shoup.net/iso/std6.pdf).
 pub trait Dem: SymmetricCrypto {
-    /// Number of bytes added to the message length in the ciphertext
-    const ENCRYPTION_OVERHEAD: usize = Self::Key::LENGTH + Self::MAC_LENGTH;
+    /// Number of bytes added to the message length in the encapsulation.
+    const ENCAPSULATION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
 
-    /// Encapsulate data using a KEM-generated secret key `K`.
+    /// Encapsulate data using the given symmetric key.
     ///
-    /// - `rng` : secure random number generator
-    /// - `secret_key`      : KEM-generated secret key
-    /// - `additional_data` : optional data to use in the authentication method
-    /// - `message`         : message to encapsulate
+    /// - `rng`         : secure random number generator
+    /// - `secret_key`  : secret symmetric key
+    /// - `message`     : message to encapsulate
+    /// - `aad`         : optional data to use in the authentication method,
+    /// must use the same for decryption
     fn encaps<R: RngCore + CryptoRng>(
         rng: &mut R,
         secret_key: &[u8],
-        additional_data: Option<&[u8]>,
+        aad: Option<&[u8]>,
         message: &[u8],
-    ) -> Result<Vec<u8>, CryptoBaseError>;
+    ) -> Result<Vec<u8>, CryptoCoreError>;
 
-    /// Decapsulate using a KEM-generated secret key `K`.
+    /// Decapsulate data using the given symmetric key.
     ///
-    /// - `secret_key`      : KEM-generated secret key
-    /// - `additional_data` : optional data to use in the authentication method
-    /// - `encapsulation`   : encapsulation of the message
+    /// - `secret_key`      : secret symmetric key
+    /// - `encapsulation`   : message encapsulation
+    /// - `aad`             : optional data to use in the authentication method,
+    /// must use the same for encyption
     fn decaps(
         secret_key: &[u8],
-        additional_data: Option<&[u8]>,
+        aad: Option<&[u8]>,
         encapsulation: &[u8],
-    ) -> Result<Vec<u8>, CryptoBaseError>;
+    ) -> Result<Vec<u8>, CryptoCoreError>;
 }
