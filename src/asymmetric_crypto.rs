@@ -84,7 +84,7 @@ impl TryFrom<&[u8]> for X25519PrivateKey {
         })?;
         let scalar = Scalar::from_canonical_bytes(bytes).ok_or_else(|| {
             Self::Error::ConversionError(
-                "Given bytes do not represent a cannonical Scalar!".to_string(),
+                "Given bytes do not represent a canonical Scalar!".to_string(),
             )
         })?;
         Ok(Self(scalar))
@@ -114,11 +114,11 @@ impl Display for X25519PrivateKey {
     }
 }
 
-impl<'a> Mul<&'a X25519PrivateKey> for X25519PrivateKey {
-    type Output = X25519PrivateKey;
+impl<'a> Mul<&'a Self> for X25519PrivateKey {
+    type Output = Self;
 
-    fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 * rhs.0)
+    fn mul(self, rhs: &Self) -> Self::Output {
+        Self(self.0 * rhs.0)
     }
 }
 
@@ -131,18 +131,18 @@ impl<'a> Mul<&'a X25519PrivateKey> for &X25519PrivateKey {
 }
 
 impl Add for X25519PrivateKey {
-    type Output = X25519PrivateKey;
+    type Output = Self;
 
-    fn add(self, rhs: X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 + rhs.0)
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }
 
-impl<'a> Add<&'a X25519PrivateKey> for X25519PrivateKey {
-    type Output = X25519PrivateKey;
+impl<'a> Add<&'a Self> for X25519PrivateKey {
+    type Output = Self;
 
-    fn add(self, rhs: &X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 + rhs.0)
+    fn add(self, rhs: &Self) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }
 
@@ -163,18 +163,18 @@ impl<'a> Add<&'a X25519PrivateKey> for &X25519PrivateKey {
 }
 
 impl Sub for X25519PrivateKey {
-    type Output = X25519PrivateKey;
+    type Output = Self;
 
-    fn sub(self, rhs: X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 - rhs.0)
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
     }
 }
 
-impl<'a> Sub<&'a X25519PrivateKey> for X25519PrivateKey {
-    type Output = X25519PrivateKey;
+impl<'a> Sub<&'a Self> for X25519PrivateKey {
+    type Output = Self;
 
-    fn sub(self, rhs: &X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 - rhs.0)
+    fn sub(self, rhs: &Self) -> Self::Output {
+        Self(self.0 - rhs.0)
     }
 }
 
@@ -219,7 +219,9 @@ impl X25519PublicKey {
     /// Generate a new random public key.
     #[must_use]
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
-        Self::from(&X25519PrivateKey::new(rng))
+        let mut uniform_bytes = [0u8; 64];
+        rng.fill_bytes(&mut uniform_bytes);
+        Self(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
     }
 
     /// Convert the given public key into an array of bytes.
@@ -307,16 +309,16 @@ impl Display for X25519PublicKey {
 impl Add for X25519PublicKey {
     type Output = Self;
 
-    fn add(self, rhs: X25519PublicKey) -> Self::Output {
-        X25519PublicKey(self.0 + rhs.0)
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }
 
-impl<'a> Add<&'a X25519PublicKey> for X25519PublicKey {
-    type Output = X25519PublicKey;
+impl<'a> Add<&'a Self> for X25519PublicKey {
+    type Output = Self;
 
-    fn add(self, rhs: &X25519PublicKey) -> Self::Output {
-        X25519PublicKey(self.0 + rhs.0)
+    fn add(self, rhs: &Self) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }
 

@@ -21,7 +21,7 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
     /// Generate a new nonce object.
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
-    /// Try to deserialize the given `bytes` into a nonce object. Thenumber of
+    /// Try to deserialize the given `bytes` into a nonce object. The number of
     /// `bytes` must be equal to `Self::LENGTH`.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
 
