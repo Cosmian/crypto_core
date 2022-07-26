@@ -1,7 +1,7 @@
 //! Implement the `SymmetricCrypto` and `DEM` traits based on the AES 256 GCM
 //! algorithm.
-///
-/// It will use the AES native interface on the CPU if available.
+//!
+//! It will use the AES native interface on the CPU if available.
 use crate::{symmetric_crypto::SymmetricCrypto, CryptoCoreError};
 use aes_gcm::{
     aead::{generic_array::GenericArray, Aead, NewAead, Payload},
@@ -90,7 +90,7 @@ pub fn encrypt_combined(
 }
 
 /// Encrypts a message in place using a secret key and a public nonce in
-/// detached mode: the a tag authenticating both the confidential
+/// detached mode: the tag authenticating both the confidential
 /// message and non-confidential data, are returned separately
 ///
 /// The tag length is `MAC_LENGTH`
@@ -192,11 +192,11 @@ mod tests {
         assert_eq!(bytes.len() + MAC_LENGTH, encrypted_result.len());
         let recovered = decrypt_combined(&key, &encrypted_result, &iv, Some(&aad))?;
         assert_eq!(bytes, recovered);
-        // data should not be recovered if we modify the AAD.
+        // data should not be recovered if the AAD is modified
         let aad = cs_rng.generate_random_bytes(42);
         let recovered = decrypt_combined(&key, &encrypted_result, &iv, Some(&aad));
         assert_ne!(Ok(bytes.clone()), recovered);
-        // data should not be recovered if we modify the key
+        // data should not be recovered if the key is modified
         let new_key = Key::new(&mut cs_rng);
         let recovered = decrypt_combined(&new_key, &encrypted_result, &iv, Some(&aad));
         assert_ne!(Ok(bytes), recovered);

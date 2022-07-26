@@ -2,8 +2,8 @@ use crate::CryptoCoreError;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 
-/// Attempt getting the length of this slice as an u32 in 4 endian bytes and
-/// return an error if it overflows
+/// Attempts to get the length of this slice as an `u32` in 4 endian bytes and
+/// returns an error if it overflows
 fn get_u32_len(slice: &[u8]) -> Result<[u8; 4], CryptoCoreError> {
     u32::try_from(slice.len())
         .map_err(|_| {
@@ -21,7 +21,7 @@ pub struct BytesScanner<'a> {
 }
 
 impl<'a> BytesScanner<'a> {
-    /// Return a new byte scanner object.
+    /// Returns a new byte scanner object.
     #[must_use]
     pub const fn new(bytes: &'a [u8]) -> Self {
         BytesScanner { bytes, start: 0 }
@@ -42,7 +42,7 @@ impl<'a> BytesScanner<'a> {
         Ok(chunk)
     }
 
-    /// Read the next 4 big endian bytes to return an u32
+    /// Reads the next 4 big endian bytes to return an u32
     pub fn read_u32(&mut self) -> Result<u32, CryptoCoreError> {
         Ok(u32::from_be_bytes(self.next(4)?.try_into().map_err(
             |_e| CryptoCoreError::ConversionError("invalid u32".to_string()),
@@ -68,7 +68,7 @@ impl<'a> BytesScanner<'a> {
 ///    identifies a resource, such as a file, and is part of the AEAD of every
 ///    block when symmetrically encrypting data. It prevents an attacker from
 ///    moving blocks between resources.
-///  - when using FPE, it is the "tweak"
+///  - when using FPE, it is the "tweak" ([see Appendix C](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38G.pdf))
 ///
 /// The `additional_data` is not used as a security parameter. It is optional
 /// data (such as index tags) symmetrically encrypted as part of the header.
@@ -84,7 +84,7 @@ impl Metadata {
         self.uid.len() + self.additional_data.as_ref().unwrap_or(&vec![]).len()
     }
 
-    /// Return `true` if the given metadata is empty.
+    /// Returns `true` if the given metadata is empty.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
@@ -92,7 +92,7 @@ impl Metadata {
 
     /// Encode the metadata as a byte array
     ///
-    /// The first 4 bytes is the u32 length of the UID as big endian bytes
+    /// The first 4 bytes is the `u32` length of the UID as big endian bytes
     pub fn try_to_bytes(&self) -> Result<Vec<u8>, CryptoCoreError> {
         if self.is_empty() {
             return Ok(vec![]);

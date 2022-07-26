@@ -1,6 +1,7 @@
 //! Define a nonce object, for use in symmetric encryption.
 //!
-//! TODO: describe how a nonce is used
+//! A nonce, for Number used ONCE, is a randomly generated number used to
+//! ensure a ciphertext cannot be reused, hence avoiding replay attacks.
 
 use crate::CryptoCoreError;
 use num_bigint::BigUint;
@@ -20,15 +21,15 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
     /// Generate a new nonce object.
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
-    /// Try to deserialize the given bytes into a nonce object. The number of
-    /// bytes must be equal to `LENGTH`.
+    /// Try to deserialize the given `bytes` into a nonce object. Thenumber of
+    /// `bytes` must be equal to `Self::LENGTH`.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
 
     /// Increment the nonce by the given value.
     #[must_use]
     fn increment(&self, increment: usize) -> Self;
 
-    /// xor the nonce with the given value.
+    /// Xor the nonce with the given value.
     #[must_use]
     fn xor(&self, b2: &[u8]) -> Self;
 

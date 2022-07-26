@@ -6,12 +6,11 @@ use rand_core::{CryptoRng, RngCore};
 
 /// Block holding clear text data that needs to be encrypted.
 ///
-/// The max fixed length of clear text is set by the const generic
-/// `MAX_CLEAR_TEXT_LENGTH`. The max block encrypted length is available as
-/// `Block::MAX_ENCRYPTED_LENGTH`
+/// The max fixed length of clear text is `MAX_CLEAR_TEXT_LENGTH`.
+/// The max block encrypted length is `Block::MAX_ENCRYPTED_LENGTH`.
 ///
 /// When calling `to_encrypted_bytes(...)` an array of bytes is generated that
-/// is made of a `BlockHeder` containing the nonce, the cipher text and  -
+/// is made of a `BlockHeader` containing the nonce, the cipher text and  -
 /// depending on the symmetric scheme - an authentication MAC. The nonce is
 /// refreshed on each call to `to_encrypted_bytes(...)`
 pub struct Block<S, const MAX_CLEAR_TEXT_LENGTH: usize>
@@ -33,7 +32,7 @@ where
     /// Maximum number of bytes for an output ciphertext.
     pub const MAX_ENCRYPTED_LENGTH: usize = MAX_CLEAR_TEXT_LENGTH + Self::ENCRYPTION_OVERHEAD;
 
-    /// Create a new, empty block
+    /// Creates a new empty block
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -45,7 +44,7 @@ where
     /// Parses a block of encrypted data to a `Block`.
     /// The resource `uid` and `block_number` are part of the
     /// authentication scheme amd must be re-supplied with the
-    /// same values use to encrypt the block
+    /// same values used to encrypt the block
     pub fn from_encrypted_bytes(
         encrypted_bytes: &[u8],
         symmetric_key: &<S as SymmetricCrypto>::Key,
@@ -86,9 +85,9 @@ where
         })
     }
 
-    /// Generates the block encrypted data. The nonce is refreshed
-    /// on each call. the resource `uid` and `block_number` are part of the AEAD
-    /// and must be re-supplied to decrypt the bytes. They are used to guarantee
+    /// Generates the encrypted data block. The nonce is refreshed on each
+    /// call. The resource `uid` and `block_number` are part of the AEAD and
+    /// must be re-supplied to decrypt the bytes. They are used to guarantee
     /// that a block cannot be moved within and between resources
     pub fn to_encrypted_bytes<R: RngCore + CryptoRng>(
         &self,
@@ -129,7 +128,7 @@ where
         Ok(bytes)
     }
 
-    /// Return a reference to the clear text
+    /// Returns a reference to the clear text
     #[must_use]
     pub fn clear_text(&self) -> &[u8] {
         &self.clear_text
@@ -141,7 +140,7 @@ where
         self.clear_text
     }
 
-    /// Write the given clear text data in the block. Pad the block with
+    /// Writes the given clear text data in the block. Pad the block with
     /// zeroes if the offset is beyond the current end of the block.
     ///
     /// Return the length of the data written
@@ -185,7 +184,6 @@ pub struct BlockHeader<S>
 where
     S: SymmetricCrypto,
 {
-    // clear_text_length: u16,
     nonce: <S as SymmetricCrypto>::Nonce,
 }
 
@@ -196,22 +194,18 @@ where
     pub const LENGTH: usize = <S as SymmetricCrypto>::Nonce::LENGTH;
 
     pub fn parse(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        if bytes.len() != Self::LENGTH {
-            return Err(CryptoCoreError::SizeError {
-                given: bytes.len(),
-                expected: Self::LENGTH,
-            });
-        }
         //TODO: use transmute to make this faster ?
         Ok(Self {
             nonce: <<S as SymmetricCrypto>::Nonce>::try_from_bytes(bytes)?,
         })
     }
 
+    /// Convert the block header into a slice of bytes.
     pub fn as_bytes(&self) -> &[u8] {
         self.nonce.as_slice()
     }
 
+    /// Convert the block header into a vector of bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
         self.as_bytes().to_vec()
     }

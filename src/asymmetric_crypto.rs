@@ -22,7 +22,7 @@ use zeroize::Zeroize;
 
 /// Asymmetric private key based on Curve25519.
 ///
-/// Internally, we use a curve scalar. It is 128-bits long.
+/// Internally, a curve scalar is used. It is 128-bits long.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "Vec<u8>")]
 pub struct X25519PrivateKey(Scalar);
@@ -209,8 +209,8 @@ impl Drop for X25519PrivateKey {
 
 /// Asymmetric public key based on Curve25519.
 ///
-/// Internally, we use a Ristretto point. It is 256-bits long, but we used its
-/// compressed form for serialization, which is 128-bits long.
+/// Internally, a Ristretto point is used. It is 256-bits long, but its
+/// compressed form is used for serialization, which makes it 128-bits long.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "Vec<u8>")]
 pub struct X25519PublicKey(RistrettoPoint);

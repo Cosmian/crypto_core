@@ -6,7 +6,7 @@
 //! - a Key Derivation Function (KDF) can be found in the `kdf` module;
 //! - a Random Number Generator (RNG) can be found in the `entropy` module.
 //!
-//! We define `CryptoCoreError`, our error type.
+//! `CryptoCoreError` is the error type of the library.
 //!
 //! This crate also exposes a few traits for cryptographic objects defined in
 //! the modules.
