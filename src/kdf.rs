@@ -1,21 +1,25 @@
+use crate::CryptoCoreError;
 use hkdf::Hkdf;
 use sha2::Sha256;
 
-use crate::CryptoCoreError;
-
-/// Derive a key of `key_len` bytes using a HMAC-based Extract-and-Expand Key
-/// Derivation Function (HKDF) supplying a `master` key and some `info`
-/// context String. The hash function used is sha256.
+/// Derive a key of `KEY_LENGTH` bytes using a HMAC-based Extract-and-Expand
+/// Key Derivation Function (HKDF) supplying a `bytes` and some `info` context
+/// `String`. The hash function used is Sha256.
 ///
-/// TODO: implement traits for KDF and implement other versions ?
-///
-/// - `master`  : input bytes to hash
-/// - `key_len` : length of the key to generate
+/// - `bytes`   : input bytes to hash, should be at least 32-bytes long
 /// - `info`    : some optional additional information to use in the hash
-pub fn hkdf_256(master: &[u8], key_len: usize, info: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
-    let h = Hkdf::<Sha256>::new(None, master);
-    let mut out = vec![0_u8; key_len];
+pub fn hkdf_256<const KEY_LENGTH: usize>(
+    bytes: &[u8],
+    info: &[u8],
+) -> Result<[u8; KEY_LENGTH], CryptoCoreError> {
+    if bytes.len() < 32 {
+        return Err(CryptoCoreError::InvalidSize(
+            "Input `bytes` should be of length at least 32".to_string(),
+        ));
+    }
+    let h = Hkdf::<Sha256>::new(None, bytes);
+    let mut out = [0_u8; KEY_LENGTH];
     h.expand(info, &mut out)
-        .map_err(|_| CryptoCoreError::KdfError(key_len))?;
+        .map_err(|_| CryptoCoreError::KdfError(KEY_LENGTH))?;
     Ok(out)
 }

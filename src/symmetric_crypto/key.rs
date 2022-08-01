@@ -31,6 +31,12 @@ impl<const KEY_LENGTH: usize> Key<KEY_LENGTH> {
     }
 }
 
+impl<const KEY_LENGTH: usize> Default for Key<KEY_LENGTH> {
+    fn default() -> Self {
+        Self([0; KEY_LENGTH])
+    }
+}
+
 impl<const KEY_LENGTH: usize> KeyTrait for Key<KEY_LENGTH> {
     const LENGTH: usize = KEY_LENGTH;
 

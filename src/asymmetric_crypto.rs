@@ -346,6 +346,12 @@ impl<'a> Mul<&'a X25519PrivateKey> for X25519PublicKey {
     }
 }
 
+impl Zeroize for X25519PublicKey {
+    fn zeroize(&mut self) {
+        self.0.zeroize()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::{
