@@ -13,7 +13,7 @@ use zeroize::Zeroize;
 /// Symmetric key of a given size.
 ///
 /// It is internally built using an array of bytes of the given length.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "Vec<u8>")]
 pub struct Key<const KEY_LENGTH: usize>([u8; KEY_LENGTH]);
 

@@ -21,7 +21,7 @@ pub mod symmetric_crypto;
 pub use crate::error::CryptoCoreError;
 
 /// Trait defining a cryptographic key.
-pub trait KeyTrait: Send + Sync + Sized + Clone {
+pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone {
     /// Number of bytes in the serialized key.
     const LENGTH: usize;
 

@@ -23,7 +23,7 @@ use zeroize::Zeroize;
 /// Asymmetric private key based on Curve25519.
 ///
 /// Internally, a curve scalar is used. It is 128-bits long.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "Vec<u8>")]
 pub struct X25519PrivateKey(Scalar);
 
