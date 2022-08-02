@@ -21,14 +21,15 @@ pub mod symmetric_crypto;
 use zeroize::Zeroize;
 
 pub use crate::error::CryptoCoreError;
+pub use generic_array::{typenum, ArrayLength, GenericArray};
 
 /// Trait defining a cryptographic key.
 pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize {
     /// Number of bytes in the serialized key.
-    const LENGTH: usize;
+    type LENGTH: ArrayLength<u8>;
 
     /// Convert the given key into a vector of bytes.
-    fn to_bytes(&self) -> Vec<u8>;
+    fn to_bytes(&self) -> GenericArray<u8, Self::LENGTH>;
 
     /// Convert the given bytes into a key. An error is returned in case the
     /// conversion fails.

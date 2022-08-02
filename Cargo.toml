@@ -15,6 +15,7 @@ path = "src/lib.rs"
 aes = "0.8"
 aes-gcm = "0.9"
 curve25519-dalek = "3.2"
+generic-array = { version = "0.14.5", features = ["serde"] }
 # specify the js feature for the WASM target
 getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4"
