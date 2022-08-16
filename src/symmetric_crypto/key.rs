@@ -1,6 +1,6 @@
 //! Define a symmetric key object of variable size.
 
-use crate::{CryptoCoreError, KeyTrait};
+use crate::{symmetric_crypto::SymKey, CryptoCoreError, KeyTrait};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -24,10 +24,11 @@ impl<const KEY_LENGTH: usize> Key<KEY_LENGTH> {
         rng.fill_bytes(&mut key.0);
         key
     }
+}
 
-    /// Convert the given key into a byte slice, without copy.
-    pub const fn as_slice(&self) -> &[u8] {
-        &self.0
+impl<const KEY_LENGTH: usize> Default for Key<KEY_LENGTH> {
+    fn default() -> Self {
+        Self([0; KEY_LENGTH])
     }
 }
 
@@ -36,12 +37,19 @@ impl<const KEY_LENGTH: usize> KeyTrait for Key<KEY_LENGTH> {
 
     /// Convert the given key into bytes, with copy.
     fn to_bytes(&self) -> Vec<u8> {
-        self.as_slice().to_vec()
+        self.as_bytes().to_vec()
     }
 
     /// Try to convert the given bytes into a key. Size must be correct.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
+    }
+}
+
+impl<const KEY_LENGTH: usize> SymKey for Key<KEY_LENGTH> {
+    /// Convert the given key into a byte slice, without copy.
+    fn as_bytes(&self) -> &[u8] {
+        &self.0
     }
 }
 
@@ -111,7 +119,11 @@ impl<const KEY_LENGTH: usize> Drop for Key<KEY_LENGTH> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{entropy::CsRng, symmetric_crypto::key::Key, KeyTrait};
+    use crate::{
+        entropy::CsRng,
+        symmetric_crypto::{key::Key, SymKey},
+        KeyTrait,
+    };
 
     const KEY_LENGTH: usize = 128;
 
@@ -119,9 +131,9 @@ mod tests {
     fn test_key() {
         let mut cs_rng = CsRng::new();
         let key_1 = Key::<KEY_LENGTH>::new(&mut cs_rng);
-        assert_eq!(KEY_LENGTH, key_1.as_slice().len());
+        assert_eq!(KEY_LENGTH, key_1.as_bytes().len());
         let key_2 = Key::new(&mut cs_rng);
-        assert_eq!(KEY_LENGTH, key_2.as_slice().len());
+        assert_eq!(KEY_LENGTH, key_2.as_bytes().len());
         assert_ne!(key_1, key_2);
     }
 

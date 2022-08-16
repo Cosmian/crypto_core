@@ -2,14 +2,15 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
-use crate::{symmetric_crypto::SymmetricCrypto, CryptoCoreError};
+use crate::{
+    symmetric_crypto::{nonce::NonceTrait, SymKey, SymmetricCrypto},
+    CryptoCoreError,
+};
 use aes_gcm::{
     aead::{generic_array::GenericArray, Aead, NewAead, Payload},
     AeadInPlace, Aes256Gcm,
 };
 use std::{fmt::Display, vec::Vec};
-
-use super::nonce::NonceTrait;
 
 pub mod dem;
 
@@ -81,7 +82,7 @@ pub fn encrypt_combined(
     nonce: &Nonce,
     additional_data: Option<&[u8]>,
 ) -> Result<Vec<u8>, CryptoCoreError> {
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_slice()));
+    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_bytes()));
     let payload =
         additional_data.map_or_else(|| Payload::from(bytes), |aad| Payload { msg: bytes, aad });
     cipher
@@ -100,7 +101,7 @@ pub fn encrypt_in_place_detached(
     nonce: &Nonce,
     additional_data: Option<&[u8]>,
 ) -> Result<Vec<u8>, CryptoCoreError> {
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_slice()));
+    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_bytes()));
     let additional_data = additional_data.unwrap_or_default();
     cipher
         .encrypt_in_place_detached(
@@ -124,7 +125,7 @@ pub fn decrypt_combined(
     nonce: &Nonce,
     additional_data: Option<&[u8]>,
 ) -> Result<Vec<u8>, CryptoCoreError> {
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_slice()));
+    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_bytes()));
     let payload =
         additional_data.map_or_else(|| Payload::from(bytes), |aad| Payload { msg: bytes, aad });
     cipher
@@ -146,7 +147,7 @@ pub fn decrypt_in_place_detached(
     nonce: &Nonce,
     additional_data: Option<&[u8]>,
 ) -> Result<(), CryptoCoreError> {
-    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_slice()));
+    let cipher = Aes256Gcm::new(GenericArray::from_slice(key.as_bytes()));
     let additional_data = additional_data.unwrap_or_default();
     cipher
         .decrypt_in_place_detached(

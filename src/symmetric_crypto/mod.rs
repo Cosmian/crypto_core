@@ -17,11 +17,17 @@ use nonce::NonceTrait;
 use rand_core::{CryptoRng, RngCore};
 use std::vec::Vec;
 
+/// Defines a symmetric encryption key.
+pub trait SymKey: KeyTrait {
+    /// Convert the given key into a byte slice.
+    fn as_bytes(&self) -> &[u8];
+}
+
 /// Defines a symmetric encryption scheme. If this scheme is authenticated,
 /// the `MAC_LENGTH` will be greater than `0`.
 pub trait SymmetricCrypto: Send + Sync {
     const MAC_LENGTH: usize;
-    type Key: KeyTrait;
+    type Key: SymKey;
     type Nonce: NonceTrait;
 
     /// A short description of the scheme
@@ -52,7 +58,7 @@ pub trait SymmetricCrypto: Send + Sync {
 
     /// Decrypts a message in combined mode.
     ///
-    /// Attemps to read a MAC appended to the ciphertext. The provided
+    /// Attempts to read a MAC appended to the ciphertext. The provided
     /// additional data must match those provided during encryption for the
     /// MAC to verify. Decryption will never be performed, even partially,
     /// before verification.

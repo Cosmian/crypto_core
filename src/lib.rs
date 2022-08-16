@@ -18,10 +18,12 @@ pub mod entropy;
 pub mod kdf;
 pub mod symmetric_crypto;
 
+use zeroize::Zeroize;
+
 pub use crate::error::CryptoCoreError;
 
 /// Trait defining a cryptographic key.
-pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone {
+pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize {
     /// Number of bytes in the serialized key.
     const LENGTH: usize;
 
