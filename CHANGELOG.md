@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [1.1.0] - 2022-08-16
+### Added
+- Add `SymKey` trait to add `as_byte()` method
+- add `Zeroize` as `KeyTrait` super trait
+### Changed
+- Pass output length as a constant generic to the HKDF
+### Fixed
+- typos in doc
+### Removed
+---
+
+---
 ## [1.0.1] - 2022-08-02
 ### Added
 - Add `PartialEq + Eq` as `KeyTrait` super trait
