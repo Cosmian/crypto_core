@@ -14,7 +14,7 @@ pub fn hkdf_256<const KEY_LENGTH: usize>(
 ) -> Result<[u8; KEY_LENGTH], CryptoCoreError> {
     if bytes.len() < 32 {
         return Err(CryptoCoreError::InvalidSize(
-            "Input `bytes` should be of length at least 32".to_string(),
+            "Input `bytes` size should be at least 32".to_string(),
         ));
     }
     let h = Hkdf::<Sha256>::new(None, bytes);
