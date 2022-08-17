@@ -41,6 +41,10 @@ impl<KeyLength: Eq + ArrayLength<u8>> SymKey for Key<KeyLength> {
     fn as_bytes(&self) -> &[u8] {
         &self.0
     }
+
+    fn from_bytes(bytes: GenericArray<u8, Self::Length>) -> Self {
+        Self(bytes)
+    }
 }
 
 impl<KeyLength: Eq + ArrayLength<u8>> From<Key<KeyLength>> for GenericArray<u8, KeyLength> {

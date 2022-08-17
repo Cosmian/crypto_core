@@ -29,6 +29,7 @@ pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize {
     type Length: ArrayLength<u8>;
 
     /// Convert the given key into a vector of bytes.
+    #[must_use]
     fn to_bytes(&self) -> GenericArray<u8, Self::Length>;
 
     /// Convert the given bytes into a key. An error is returned in case the

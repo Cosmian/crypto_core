@@ -5,10 +5,7 @@
 //! Its security level is 128-bits. It is the fastest curve available at the
 //! time of this implementation.
 
-use crate::{
-    typenum::{ToInt, U32},
-    CryptoCoreError, GenericArray, KeyTrait,
-};
+use crate::{typenum::U32, CryptoCoreError, GenericArray, KeyTrait};
 use curve25519_dalek::{
     constants,
     ristretto::{CompressedRistretto, RistrettoPoint},
@@ -57,7 +54,7 @@ impl X25519PrivateKey {
 impl KeyTrait for X25519PrivateKey {
     type Length = U32;
 
-    /// Convert the given private key into bytes (with copy).
+    /// Convert the given private key into bytes.
     #[inline]
     #[must_use]
     fn to_bytes(&self) -> GenericArray<u8, Self::Length> {
@@ -86,14 +83,13 @@ impl TryFrom<&[u8]> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        if bytes.len() != <<Self as KeyTrait>::Length as ToInt<usize>>::to_int() {
-            return Err(Self::Error::SizeError {
-                given: bytes.len(),
-                expected: <<Self as KeyTrait>::Length as ToInt<usize>>::to_int(),
-            });
-        }
-        let bytes = <[u8; 32]>::try_from(bytes)
-            .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
+        let bytes: [u8; 32] = bytes.try_into().map_err(|e| {
+            Self::Error::ConversionError(format!(
+                "Error while converting slice of size {} to `X25519PublicKey`: {}",
+                bytes.len(),
+                e,
+            ))
+        })?;
         Self::try_from(bytes)
     }
 }
@@ -232,6 +228,7 @@ pub struct X25519PublicKey(RistrettoPoint);
 
 impl X25519PublicKey {
     /// Generate a new random public key.
+    #[inline]
     #[must_use]
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut uniform_bytes = [0u8; 64];
@@ -251,20 +248,7 @@ impl KeyTrait for X25519PublicKey {
     }
 
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        if bytes.len() != <<Self as KeyTrait>::Length as ToInt<usize>>::to_int() {
-            return Err(CryptoCoreError::SizeError {
-                given: bytes.len(),
-                expected: <<Self as KeyTrait>::Length as ToInt<usize>>::to_int(),
-            });
-        };
-        let point = CompressedRistretto::from_slice(bytes)
-            .decompress()
-            .ok_or_else(|| {
-                CryptoCoreError::ConversionError(
-                    "Cannot decompress given bytes into a valid curve point!".to_string(),
-                )
-            })?;
-        Ok(Self(point))
+        Self::try_from(bytes)
     }
 }
 
@@ -278,7 +262,13 @@ impl TryFrom<[u8; 32]> for X25519PublicKey {
     type Error = CryptoCoreError;
 
     fn try_from(bytes: [u8; 32]) -> Result<Self, Self::Error> {
-        Self::try_from(bytes.as_slice())
+        Ok(Self(CompressedRistretto(bytes).decompress().ok_or_else(
+            || {
+                CryptoCoreError::ConversionError(
+                    "Cannot decompress given bytes into a valid curve point!".to_string(),
+                )
+            },
+        )?))
     }
 }
 
@@ -286,7 +276,14 @@ impl TryFrom<&[u8]> for X25519PublicKey {
     type Error = CryptoCoreError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        Self::try_from_bytes(bytes)
+        let bytes: [u8; 32] = bytes.try_into().map_err(|e| {
+            Self::Error::ConversionError(format!(
+                "Error while converting slice of size {} to `X25519PublicKey`: {}",
+                bytes.len(),
+                e,
+            ))
+        })?;
+        Self::try_from(bytes)
     }
 }
 

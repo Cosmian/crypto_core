@@ -11,8 +11,9 @@ mod metadata;
 
 pub use block::Block;
 pub use metadata::Metadata;
+pub use metadata::BytesScanner;
 
-use crate::{CryptoCoreError, KeyTrait};
+use crate::{CryptoCoreError, GenericArray, KeyTrait};
 use nonce::NonceTrait;
 use rand_core::{CryptoRng, RngCore};
 use std::vec::Vec;
@@ -21,6 +22,10 @@ use std::vec::Vec;
 pub trait SymKey: KeyTrait {
     /// Convert the given key into a byte slice.
     fn as_bytes(&self) -> &[u8];
+
+    /// Convert the given bytes into a key.
+    #[must_use]
+    fn from_bytes(bytes: GenericArray<u8, Self::Length>) -> Self;
 }
 
 /// Defines a symmetric encryption scheme. If this scheme is authenticated,
