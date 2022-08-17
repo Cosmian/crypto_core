@@ -26,10 +26,10 @@ pub use generic_array::{typenum, ArrayLength, GenericArray};
 /// Trait defining a cryptographic key.
 pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize {
     /// Number of bytes in the serialized key.
-    type LENGTH: ArrayLength<u8>;
+    type Length: ArrayLength<u8>;
 
     /// Convert the given key into a vector of bytes.
-    fn to_bytes(&self) -> GenericArray<u8, Self::LENGTH>;
+    fn to_bytes(&self) -> GenericArray<u8, Self::Length>;
 
     /// Convert the given bytes into a key. An error is returned in case the
     /// conversion fails.

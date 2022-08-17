@@ -55,13 +55,13 @@ impl X25519PrivateKey {
 }
 
 impl KeyTrait for X25519PrivateKey {
-    type LENGTH = U32;
+    type Length = U32;
 
     /// Convert the given private key into bytes (with copy).
     #[inline]
     #[must_use]
-    fn to_bytes(&self) -> GenericArray<u8, Self::LENGTH> {
-        GenericArray::<u8, Self::LENGTH>::from(self.0.to_bytes())
+    fn to_bytes(&self) -> GenericArray<u8, Self::Length> {
+        GenericArray::<u8, Self::Length>::from(self.0.to_bytes())
     }
 
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
@@ -86,10 +86,10 @@ impl TryFrom<&[u8]> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        if bytes.len() != <<Self as KeyTrait>::LENGTH as ToInt<usize>>::to_int() {
+        if bytes.len() != <<Self as KeyTrait>::Length as ToInt<usize>>::to_int() {
             return Err(Self::Error::SizeError {
                 given: bytes.len(),
-                expected: <<Self as KeyTrait>::LENGTH as ToInt<usize>>::to_int(),
+                expected: <<Self as KeyTrait>::Length as ToInt<usize>>::to_int(),
             });
         }
         let bytes = <[u8; 32]>::try_from(bytes)
@@ -241,20 +241,20 @@ impl X25519PublicKey {
 }
 
 impl KeyTrait for X25519PublicKey {
-    type LENGTH = U32;
+    type Length = U32;
 
     /// Convert the given public key into an array of bytes.
     #[inline]
     #[must_use]
-    fn to_bytes(&self) -> GenericArray<u8, Self::LENGTH> {
-        GenericArray::<u8, Self::LENGTH>::from(self.0.compress().to_bytes())
+    fn to_bytes(&self) -> GenericArray<u8, Self::Length> {
+        GenericArray::<u8, Self::Length>::from(self.0.compress().to_bytes())
     }
 
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        if bytes.len() != <<Self as KeyTrait>::LENGTH as ToInt<usize>>::to_int() {
+        if bytes.len() != <<Self as KeyTrait>::Length as ToInt<usize>>::to_int() {
             return Err(CryptoCoreError::SizeError {
                 given: bytes.len(),
-                expected: <<Self as KeyTrait>::LENGTH as ToInt<usize>>::to_int(),
+                expected: <<Self as KeyTrait>::Length as ToInt<usize>>::to_int(),
             });
         };
         let point = CompressedRistretto::from_slice(bytes)

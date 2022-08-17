@@ -23,7 +23,7 @@ impl<KeyLength: ArrayLength<u8>> Key<KeyLength> {
 }
 
 impl<KeyLength: Eq + ArrayLength<u8>> KeyTrait for Key<KeyLength> {
-    type LENGTH = KeyLength;
+    type Length = KeyLength;
 
     /// Convert the given key into bytes, with copy.
     fn to_bytes(&self) -> generic_array::GenericArray<u8, KeyLength> {

@@ -17,16 +17,16 @@ impl Dem for Aes256GcmCrypto {
         additional_data: Option<&[u8]>,
         message: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        if secret_key.len() < <<Self::Key as KeyTrait>::LENGTH as Unsigned>::to_usize() {
+        if secret_key.len() < <<Self::Key as KeyTrait>::Length as Unsigned>::to_usize() {
             return Err(CryptoCoreError::SizeError {
                 given: secret_key.len(),
-                expected: <<Self::Key as KeyTrait>::LENGTH as Unsigned>::to_usize(),
+                expected: <<Self::Key as KeyTrait>::Length as Unsigned>::to_usize(),
             });
         }
         // AES GCM includes an authentication method
         // there is no need for parsing a MAC key
         let key = Self::Key::try_from(
-            &secret_key[..<<Self::Key as KeyTrait>::LENGTH as Unsigned>::to_usize()],
+            &secret_key[..<<Self::Key as KeyTrait>::Length as Unsigned>::to_usize()],
         )?;
         let nonce = Self::Nonce::new(rng);
         let mut c = Self::encrypt(&key, message, &nonce, additional_data)
@@ -43,16 +43,16 @@ impl Dem for Aes256GcmCrypto {
         additional_data: Option<&[u8]>,
         encapsulation: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        if secret_key.len() < <<Self::Key as KeyTrait>::LENGTH as Unsigned>::to_usize() {
+        if secret_key.len() < <<Self::Key as KeyTrait>::Length as Unsigned>::to_usize() {
             return Err(CryptoCoreError::SizeError {
                 given: secret_key.len(),
-                expected: <<Self::Key as KeyTrait>::LENGTH as Unsigned>::to_usize(),
+                expected: <<Self::Key as KeyTrait>::Length as Unsigned>::to_usize(),
             });
         }
         // AES GCM includes an authentication method
         // there is no need for parsing a MAC key
         let key = Self::Key::try_from(
-            &secret_key[..<<Self::Key as KeyTrait>::LENGTH as Unsigned>::to_usize()],
+            &secret_key[..<<Self::Key as KeyTrait>::Length as Unsigned>::to_usize()],
         )?;
         let nonce = Self::Nonce::try_from(&encapsulation[..Self::Nonce::LENGTH])?;
         Self::decrypt(
