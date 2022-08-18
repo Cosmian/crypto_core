@@ -22,6 +22,8 @@ use zeroize::Zeroize;
 
 pub use crate::error::CryptoCoreError;
 pub use generic_array::{typenum, ArrayLength, GenericArray};
+// reexport `rand_core` so that the PRNG implement the correct version of the traits
+pub use rand_core;
 
 /// Trait defining a cryptographic key.
 pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize {
