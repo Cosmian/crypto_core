@@ -59,6 +59,10 @@ impl<'a> BytesScanner<'a> {
             Some(remainder)
         }
     }
+
+    pub fn has_more(&self) -> bool {
+        self.start < self.bytes.len()
+    }
 }
 
 /// Metadata encrypted as part of the header
