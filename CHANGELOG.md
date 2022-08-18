@@ -3,11 +3,19 @@
 All notable changes to this project will be documented in this file.
 
 ---
+<<<<<<< HEAD
 ## [1.1.1] - 2022-08-19
 ### Added
 ### Changed
 ### Fixed
 - Fix `cargo audit`: upgrade bindgen crate version to 0.60
+=======
+## [2.0.0] - 2022-08-19
+### Added
+### Changed
+- Use GenericArrays
+### Fixed
+>>>>>>> 7d32868 (Add `Eq` as type bound in `KeyTrait`)
 ### Removed
 ---
 

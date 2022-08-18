@@ -28,7 +28,7 @@ pub use rand_core;
 /// Trait defining a cryptographic key.
 pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize {
     /// Number of bytes in the serialized key.
-    type Length: ArrayLength<u8>;
+    type Length: Eq + ArrayLength<u8>;
 
     /// Convert the given key into a vector of bytes.
     #[must_use]
