@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [1.1.1] - 2022-08-19
+### Added
+### Changed
+### Fixed
+- Fix `cargo audit`: upgrade bindgen crate version to 0.60
+### Removed
+---
+
+---
 ## [1.1.0] - 2022-08-16
 ### Added
 - Add `SymKey` trait to add `as_byte()` method
