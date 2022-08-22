@@ -10,8 +10,8 @@ mod block;
 mod metadata;
 
 pub use block::Block;
-pub use metadata::Metadata;
 pub use metadata::BytesScanner;
+pub use metadata::Metadata;
 
 use crate::{CryptoCoreError, GenericArray, KeyTrait};
 use nonce::NonceTrait;
