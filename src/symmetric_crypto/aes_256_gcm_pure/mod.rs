@@ -4,20 +4,20 @@
 //! It will use the AES native interface on the CPU if available.
 use crate::{
     symmetric_crypto::{nonce::NonceTrait, SymmetricCrypto},
-    typenum::U32,
     CryptoCoreError,
 };
 use aes::cipher::Unsigned;
 use aes_gcm::{
-    aead::{generic_array::GenericArray, Aead, NewAead, Payload},
+    aead::{Aead, NewAead, Payload},
     AeadInPlace, Aes256Gcm,
 };
+use generic_array::{typenum, GenericArray};
 use std::fmt::Display;
 
 pub mod dem;
 
 /// Use a 256-bit AES key
-pub type KeyLength = U32;
+pub type KeyLength = typenum::U32;
 
 /// Use a 96-bit nonce
 pub const NONCE_LENGTH: usize = 12;
@@ -166,9 +166,9 @@ mod tests {
             },
             nonce::NonceTrait,
         },
-        typenum::{U42, U8192},
         CryptoCoreError,
     };
+    use generic_array::typenum::{U42, U8192};
 
     #[test]
     fn test_encryption_decryption_combined() -> Result<(), CryptoCoreError> {

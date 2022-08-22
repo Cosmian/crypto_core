@@ -103,12 +103,8 @@ impl<KeyLength: ArrayLength<u8>> Deref for Key<KeyLength> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{
-        entropy::CsRng,
-        symmetric_crypto::key::Key,
-        typenum::{ToInt, U32},
-        KeyTrait,
-    };
+    use crate::{entropy::CsRng, symmetric_crypto::key::Key, KeyTrait};
+    use generic_array::typenum::{ToInt, U32};
 
     #[test]
     fn test_key() {

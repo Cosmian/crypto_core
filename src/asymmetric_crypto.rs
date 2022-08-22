@@ -5,12 +5,13 @@
 //! Its security level is 128-bits. It is the fastest curve available at the
 //! time of this implementation.
 
-use crate::{typenum::U32, CryptoCoreError, GenericArray, KeyTrait};
+use crate::{CryptoCoreError, KeyTrait};
 use curve25519_dalek::{
     constants,
     ristretto::{CompressedRistretto, RistrettoPoint},
     scalar::Scalar,
 };
+use generic_array::{typenum::U32, GenericArray};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{

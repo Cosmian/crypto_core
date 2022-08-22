@@ -57,10 +57,8 @@ impl CryptoRng for CsRng {}
 #[cfg(test)]
 mod test {
 
-    use crate::{
-        entropy::CsRng,
-        typenum::{Unsigned, U1024},
-    };
+    use crate::entropy::CsRng;
+    use generic_array::typenum::{Unsigned, U1024};
 
     #[test]
     fn test_random_bytes() {

@@ -13,7 +13,8 @@ pub use block::Block;
 pub use metadata::BytesScanner;
 pub use metadata::Metadata;
 
-use crate::{CryptoCoreError, GenericArray, KeyTrait};
+use crate::{CryptoCoreError, KeyTrait};
+use generic_array::GenericArray;
 use nonce::NonceTrait;
 use rand_core::{CryptoRng, RngCore};
 use std::vec::Vec;

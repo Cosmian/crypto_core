@@ -218,8 +218,8 @@ mod tests {
     use crate::{
         entropy::CsRng,
         symmetric_crypto::aes_256_gcm_pure::{Aes256GcmCrypto, Key},
-        typenum::{U100, U16384},
     };
+    use generic_array::typenum::{U100, U16384};
 
     const MAX_CLEAR_TEXT_LENGTH: usize = 4096;
     type Bl = Block<Aes256GcmCrypto, MAX_CLEAR_TEXT_LENGTH>;

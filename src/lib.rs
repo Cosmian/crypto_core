@@ -21,18 +21,21 @@ pub mod symmetric_crypto;
 use zeroize::Zeroize;
 
 pub use crate::error::CryptoCoreError;
-pub use generic_array::{typenum, ArrayLength, GenericArray};
-// reexport `rand_core` so that the PRNG implement the correct version of the traits
-pub use rand_core;
+
+pub mod reexport {
+    pub use generic_array;
+    // reexport `rand_core` so that the PRNG implement the correct version of the traits
+    pub use rand_core;
+}
 
 /// Trait defining a cryptographic key.
 pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize {
     /// Number of bytes in the serialized key.
-    type Length: Eq + ArrayLength<u8>;
+    type Length: Eq + generic_array::ArrayLength<u8>;
 
     /// Convert the given key into a vector of bytes.
     #[must_use]
-    fn to_bytes(&self) -> GenericArray<u8, Self::Length>;
+    fn to_bytes(&self) -> generic_array::GenericArray<u8, Self::Length>;
 
     /// Convert the given bytes into a key. An error is returned in case the
     /// conversion fails.

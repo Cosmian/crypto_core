@@ -3,19 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 ---
-<<<<<<< HEAD
+## [2.0.0] - 2022-08-22
+### Added
+- `Eq` super trait to `KeyTrait`
+- `from_bytes()` to `SymKey`
+### Changed
+- Use GenericArrays for keys
+### Fixed
+### Removed
+---
+
+---
 ## [1.1.1] - 2022-08-19
 ### Added
 ### Changed
 ### Fixed
 - Fix `cargo audit`: upgrade bindgen crate version to 0.60
-=======
-## [2.0.0] - 2022-08-19
-### Added
-### Changed
-- Use GenericArrays
-### Fixed
->>>>>>> 7d32868 (Add `Eq` as type bound in `KeyTrait`)
 ### Removed
 ---
 
