@@ -11,20 +11,21 @@ use curve25519_dalek::{
     ristretto::{CompressedRistretto, RistrettoPoint},
     scalar::Scalar,
 };
+use generic_array::{typenum::U32, GenericArray};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{
-    convert::{TryFrom, TryInto},
+    convert::TryFrom,
     fmt::Display,
     ops::{Add, Mul, Sub},
 };
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Asymmetric private key based on Curve25519.
 ///
 /// Internally, a curve scalar is used. It is 128-bits long.
-#[derive(Clone, Hash, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(try_from = "&[u8]", into = "Vec<u8>")]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(try_from = "&[u8]", into = "[u8; 32]")]
 pub struct X25519PrivateKey(Scalar);
 
 impl X25519PrivateKey {
@@ -52,13 +53,13 @@ impl X25519PrivateKey {
 }
 
 impl KeyTrait for X25519PrivateKey {
-    const LENGTH: usize = 32;
+    type Length = U32;
 
-    /// Convert the given private key into a vector of bytes (with copy).
+    /// Convert the given private key into bytes.
     #[inline]
     #[must_use]
-    fn to_bytes(&self) -> Vec<u8> {
-        self.as_bytes().to_vec()
+    fn to_bytes(&self) -> GenericArray<u8, Self::Length> {
+        GenericArray::<u8, Self::Length>::from(self.0.to_bytes())
     }
 
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
@@ -66,22 +67,10 @@ impl KeyTrait for X25519PrivateKey {
     }
 }
 
-impl TryFrom<Vec<u8>> for X25519PrivateKey {
+impl TryFrom<[u8; 32]> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
-    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-impl TryFrom<&[u8]> for X25519PrivateKey {
-    type Error = CryptoCoreError;
-
-    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let bytes: [u8; <Self>::LENGTH] = bytes.try_into().map_err(|_| Self::Error::SizeError {
-            given: bytes.len(),
-            expected: <Self>::LENGTH,
-        })?;
+    fn try_from(bytes: [u8; 32]) -> Result<Self, Self::Error> {
         let scalar = Scalar::from_canonical_bytes(bytes).ok_or_else(|| {
             Self::Error::ConversionError(
                 "Given bytes do not represent a canonical Scalar!".to_string(),
@@ -91,9 +80,32 @@ impl TryFrom<&[u8]> for X25519PrivateKey {
     }
 }
 
-impl From<X25519PrivateKey> for Vec<u8> {
+impl TryFrom<&[u8]> for X25519PrivateKey {
+    type Error = CryptoCoreError;
+
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        let bytes: [u8; 32] = bytes.try_into().map_err(|e| {
+            Self::Error::ConversionError(format!(
+                "Error while converting slice of size {} to `X25519PublicKey`: {}",
+                bytes.len(),
+                e,
+            ))
+        })?;
+        Self::try_from(bytes)
+    }
+}
+
+impl From<&X25519PrivateKey> for [u8; 32] {
+    fn from(key: &X25519PrivateKey) -> Self {
+        key.0.to_bytes()
+    }
+}
+
+// Needed by serde to derive `Deserialize`. Do not use otherwise since there
+// is a copy anyway
+impl From<X25519PrivateKey> for [u8; 32] {
     fn from(key: X25519PrivateKey) -> Self {
-        key.to_bytes()
+        key.0.to_bytes()
     }
 }
 
@@ -103,7 +115,7 @@ impl TryFrom<&str> for X25519PrivateKey {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let bytes = hex::decode(value)?;
-        Self::try_from(bytes)
+        Self::try_from(bytes.as_slice())
     }
 }
 
@@ -207,40 +219,35 @@ impl Drop for X25519PrivateKey {
     }
 }
 
+impl ZeroizeOnDrop for X25519PrivateKey {}
+
 /// Asymmetric public key based on Curve25519.
 ///
 /// Internally, a Ristretto point is used. It is 256-bits long, but its
 /// compressed form is used for serialization, which makes it 128-bits long.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(try_from = "&[u8]", into = "Vec<u8>")]
+#[serde(try_from = "&[u8]", into = "[u8; 32]")]
 pub struct X25519PublicKey(RistrettoPoint);
 
 impl X25519PublicKey {
     /// Generate a new random public key.
+    #[inline]
     #[must_use]
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut uniform_bytes = [0u8; 64];
         rng.fill_bytes(&mut uniform_bytes);
         Self(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
     }
+}
+
+impl KeyTrait for X25519PublicKey {
+    type Length = U32;
 
     /// Convert the given public key into an array of bytes.
     #[inline]
     #[must_use]
-    pub fn to_array(&self) -> [u8; Self::LENGTH] {
-        self.0.compress().to_bytes()
-    }
-}
-
-impl KeyTrait for X25519PublicKey {
-    const LENGTH: usize = 32;
-
-    /// Convert the given public key into a vector of bytes. If possible,
-    /// prefer the use of `to_array()` since it avoids a copy.
-    #[inline]
-    #[must_use]
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.compress().as_bytes().to_vec()
+    fn to_bytes(&self) -> GenericArray<u8, Self::Length> {
+        GenericArray::<u8, Self::Length>::from(self.0.compress().to_bytes())
     }
 
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
@@ -254,38 +261,46 @@ impl From<&X25519PrivateKey> for X25519PublicKey {
     }
 }
 
-impl TryFrom<Vec<u8>> for X25519PublicKey {
+impl TryFrom<[u8; 32]> for X25519PublicKey {
     type Error = CryptoCoreError;
 
-    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::try_from(bytes.as_slice())
+    fn try_from(bytes: [u8; 32]) -> Result<Self, Self::Error> {
+        Ok(Self(CompressedRistretto(bytes).decompress().ok_or_else(
+            || {
+                CryptoCoreError::ConversionError(
+                    "Cannot decompress given bytes into a valid curve point!".to_string(),
+                )
+            },
+        )?))
     }
 }
 
 impl TryFrom<&[u8]> for X25519PublicKey {
     type Error = CryptoCoreError;
 
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        if value.len() != <Self>::LENGTH {
-            return Err(Self::Error::SizeError {
-                given: value.len(),
-                expected: <Self>::LENGTH,
-            });
-        };
-        let point = CompressedRistretto::from_slice(value)
-            .decompress()
-            .ok_or_else(|| {
-                Self::Error::ConversionError(
-                    "Cannot decompress given bytes into a valid curve point!".to_string(),
-                )
-            })?;
-        Ok(Self(point))
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        let bytes: [u8; 32] = bytes.try_into().map_err(|e| {
+            Self::Error::ConversionError(format!(
+                "Error while converting slice of size {} to `X25519PublicKey`: {}",
+                bytes.len(),
+                e,
+            ))
+        })?;
+        Self::try_from(bytes)
     }
 }
 
-impl From<X25519PublicKey> for Vec<u8> {
+// Needed by serde to derive `Deserialize`. Do not use otherwise since there
+// is a copy anyway.
+impl From<X25519PublicKey> for [u8; 32] {
     fn from(key: X25519PublicKey) -> Self {
-        key.to_bytes()
+        key.0.compress().to_bytes()
+    }
+}
+
+impl From<&X25519PublicKey> for [u8; 32] {
+    fn from(key: &X25519PublicKey) -> Self {
+        key.0.compress().to_bytes()
     }
 }
 
@@ -352,19 +367,27 @@ impl Zeroize for X25519PublicKey {
     }
 }
 
+// Implement `Drop` trait to follow R23.
+impl Drop for X25519PublicKey {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for X25519PublicKey {}
+
 #[cfg(test)]
 mod test {
     use crate::{
         asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
         entropy::CsRng,
-        KeyTrait,
     };
 
     #[test]
     fn test_private_key_serialization() {
         let mut rng = CsRng::new();
         let sk = X25519PrivateKey::new(&mut rng);
-        let bytes = sk.to_bytes();
+        let bytes: [u8; 32] = (&sk).into();
         let recovered = X25519PrivateKey::try_from(bytes).unwrap();
         assert_eq!(sk, recovered);
     }
@@ -373,7 +396,7 @@ mod test {
     fn test_public_key_serialization() {
         let mut rng = CsRng::new();
         let pk = X25519PublicKey::new(&mut rng);
-        let bytes = pk.to_bytes();
+        let bytes: [u8; 32] = (&pk).into();
         let recovered = super::X25519PublicKey::try_from(bytes).unwrap();
         assert_eq!(pk, recovered);
     }

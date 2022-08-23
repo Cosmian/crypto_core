@@ -6,6 +6,7 @@ use crate::{
     },
     CryptoCoreError, KeyTrait,
 };
+use generic_array::typenum::Unsigned;
 use rand_core::{CryptoRng, RngCore};
 use std::convert::TryFrom;
 
@@ -16,15 +17,16 @@ impl Dem for Aes256GcmCrypto {
         additional_data: Option<&[u8]>,
         message: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        if secret_key.len() < Self::Key::LENGTH {
+        let key_length = <<Self::Key as KeyTrait>::Length as Unsigned>::to_usize();
+        if secret_key.len() < key_length {
             return Err(CryptoCoreError::SizeError {
                 given: secret_key.len(),
-                expected: Self::Key::LENGTH,
+                expected: key_length,
             });
         }
         // AES GCM includes an authentication method
         // there is no need for parsing a MAC key
-        let key = Self::Key::try_from(&secret_key[..Self::Key::LENGTH])?;
+        let key = Self::Key::try_from(&secret_key[..key_length])?;
         let nonce = Self::Nonce::new(rng);
         let mut c = Self::encrypt(&key, message, &nonce, additional_data)
             .map_err(|err| CryptoCoreError::EncryptionError(err.to_string()))?;
@@ -40,15 +42,16 @@ impl Dem for Aes256GcmCrypto {
         additional_data: Option<&[u8]>,
         encapsulation: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        if secret_key.len() < Self::Key::LENGTH {
+        let key_length = <<Self::Key as KeyTrait>::Length as Unsigned>::to_usize();
+        if secret_key.len() < key_length {
             return Err(CryptoCoreError::SizeError {
                 given: secret_key.len(),
-                expected: Self::Key::LENGTH,
+                expected: key_length,
             });
         }
         // AES GCM includes an authentication method
         // there is no need for parsing a MAC key
-        let key = Self::Key::try_from(&secret_key[..Self::Key::LENGTH])?;
+        let key = Self::Key::try_from(&secret_key[..key_length])?;
         let nonce = Self::Nonce::try_from(&encapsulation[..Self::Nonce::LENGTH])?;
         Self::decrypt(
             &key,
@@ -62,18 +65,20 @@ impl Dem for Aes256GcmCrypto {
 
 #[cfg(test)]
 mod tests {
+
     use crate::{
         entropy::CsRng,
         symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, Dem},
         CryptoCoreError,
     };
+    use generic_array::typenum::U256;
 
     #[test]
     fn test_dem() -> Result<(), CryptoCoreError> {
         let m = b"my secret message";
         let additional_data = Some(b"public tag".as_slice());
         let mut rng = CsRng::new();
-        let secret_key = rng.generate_random_bytes(256);
+        let secret_key = rng.generate_random_bytes::<U256>();
         let c = Aes256GcmCrypto::encaps(&mut rng, &secret_key, additional_data, m)?;
         let res = Aes256GcmCrypto::decaps(&secret_key, additional_data, &c)?;
         if res != m {

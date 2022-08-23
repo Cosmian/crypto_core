@@ -1,4 +1,5 @@
 use crate::CryptoCoreError;
+use generic_array::{ArrayLength, GenericArray};
 use hkdf::Hkdf;
 use sha2::Sha256;
 
@@ -8,18 +9,18 @@ use sha2::Sha256;
 ///
 /// - `bytes`   : input bytes to hash, should be at least 32-bytes long
 /// - `info`    : some optional additional information to use in the hash
-pub fn hkdf_256<const KEY_LENGTH: usize>(
+pub fn hkdf_256<KeyLength: ArrayLength<u8>>(
     bytes: &[u8],
     info: &[u8],
-) -> Result<[u8; KEY_LENGTH], CryptoCoreError> {
+) -> Result<GenericArray<u8, KeyLength>, CryptoCoreError> {
     if bytes.len() < 32 {
         return Err(CryptoCoreError::InvalidSize(
             "Input `bytes` size should be at least 32".to_string(),
         ));
     }
     let h = Hkdf::<Sha256>::new(None, bytes);
-    let mut out = [0_u8; KEY_LENGTH];
+    let mut out = GenericArray::<u8, KeyLength>::default();
     h.expand(info, &mut out)
-        .map_err(|_| CryptoCoreError::KdfError(KEY_LENGTH))?;
+        .map_err(|_| CryptoCoreError::KdfError(KeyLength::to_usize()))?;
     Ok(out)
 }

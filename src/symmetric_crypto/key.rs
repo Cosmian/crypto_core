@@ -1,43 +1,33 @@
 //! Define a symmetric key object of variable size.
 
 use crate::{symmetric_crypto::SymKey, CryptoCoreError, KeyTrait};
+use aes::cipher::generic_array::{ArrayLength, GenericArray};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::{
-    convert::{TryFrom, TryInto},
-    fmt::Display,
-    vec::Vec,
-};
-use zeroize::Zeroize;
+use std::{convert::TryFrom, fmt::Display, ops::Deref};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Symmetric key of a given size.
 ///
 /// It is internally built using an array of bytes of the given length.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "&[u8]", into = "Vec<u8>")]
-pub struct Key<const KEY_LENGTH: usize>([u8; KEY_LENGTH]);
+#[derive(Debug, Default, Hash, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Key<KeyLength: ArrayLength<u8>>(GenericArray<u8, KeyLength>);
 
-impl<const KEY_LENGTH: usize> Key<KEY_LENGTH> {
+impl<KeyLength: ArrayLength<u8>> Key<KeyLength> {
     /// Generate a new symmetric random `Key`
     pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
-        let mut key = Self([0_u8; KEY_LENGTH]);
+        let mut key = Self(GenericArray::<u8, KeyLength>::default());
         rng.fill_bytes(&mut key.0);
         key
     }
 }
 
-impl<const KEY_LENGTH: usize> Default for Key<KEY_LENGTH> {
-    fn default() -> Self {
-        Self([0; KEY_LENGTH])
-    }
-}
-
-impl<const KEY_LENGTH: usize> KeyTrait for Key<KEY_LENGTH> {
-    const LENGTH: usize = KEY_LENGTH;
+impl<KeyLength: Eq + ArrayLength<u8>> KeyTrait for Key<KeyLength> {
+    type Length = KeyLength;
 
     /// Convert the given key into bytes, with copy.
-    fn to_bytes(&self) -> Vec<u8> {
-        self.as_bytes().to_vec()
+    fn to_bytes(&self) -> generic_array::GenericArray<u8, KeyLength> {
+        self.0.clone()
     }
 
     /// Try to convert the given bytes into a key. Size must be correct.
@@ -46,101 +36,92 @@ impl<const KEY_LENGTH: usize> KeyTrait for Key<KEY_LENGTH> {
     }
 }
 
-impl<const KEY_LENGTH: usize> SymKey for Key<KEY_LENGTH> {
+impl<KeyLength: Eq + ArrayLength<u8>> SymKey for Key<KeyLength> {
     /// Convert the given key into a byte slice, without copy.
     fn as_bytes(&self) -> &[u8] {
         &self.0
     }
-}
 
-impl<const KEY_LENGTH: usize> From<&Key<KEY_LENGTH>> for Vec<u8> {
-    fn from(k: &Key<KEY_LENGTH>) -> Self {
-        k.0.to_vec()
+    fn from_bytes(bytes: GenericArray<u8, Self::Length>) -> Self {
+        Self(bytes)
     }
 }
 
-impl<const KEY_LENGTH: usize> TryFrom<Vec<u8>> for Key<KEY_LENGTH> {
-    type Error = CryptoCoreError;
-
-    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::try_from(bytes.as_slice())
+impl<KeyLength: Eq + ArrayLength<u8>> From<Key<KeyLength>> for GenericArray<u8, KeyLength> {
+    fn from(k: Key<KeyLength>) -> Self {
+        k.to_bytes()
     }
 }
 
-impl<const KEY_LENGTH: usize> From<Key<KEY_LENGTH>> for Vec<u8> {
-    fn from(key: Key<KEY_LENGTH>) -> Self {
-        key.to_bytes()
-    }
-}
-
-impl<'a, const KEY_LENGTH: usize> TryFrom<&'a [u8]> for Key<KEY_LENGTH> {
-    type Error = CryptoCoreError;
-
-    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
-        let b: [u8; KEY_LENGTH] = bytes.try_into().map_err(|_| Self::Error::SizeError {
-            given: bytes.len(),
-            expected: KEY_LENGTH,
-        })?;
-        Ok(Self(b))
-    }
-}
-
-impl<const KEY_LENGTH: usize> From<[u8; KEY_LENGTH]> for Key<KEY_LENGTH> {
-    fn from(b: [u8; KEY_LENGTH]) -> Self {
+impl<KeyLength: ArrayLength<u8>> From<GenericArray<u8, KeyLength>> for Key<KeyLength> {
+    fn from(b: GenericArray<u8, KeyLength>) -> Self {
         Self(b)
     }
 }
 
-impl<const KEY_LENGTH: usize> From<Key<KEY_LENGTH>> for [u8; KEY_LENGTH] {
-    fn from(k: Key<KEY_LENGTH>) -> [u8; KEY_LENGTH] {
-        k.0
+impl<'a, KeyLength: ArrayLength<u8>> TryFrom<&'a [u8]> for Key<KeyLength> {
+    type Error = CryptoCoreError;
+
+    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
+        if bytes.len() != KeyLength::to_usize() {
+            return Err(Self::Error::SizeError {
+                given: bytes.len(),
+                expected: KeyLength::to_usize(),
+            });
+        }
+        Ok(Self(GenericArray::<u8, KeyLength>::clone_from_slice(bytes)))
     }
 }
 
-impl<const KEY_LENGTH: usize> Display for Key<KEY_LENGTH> {
+impl<KeyLength: ArrayLength<u8>> Display for Key<KeyLength> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(self.0))
+        write!(f, "{}", hex::encode(self.as_slice()))
     }
 }
 
-impl<const KEY_LENGTH: usize> Zeroize for Key<KEY_LENGTH> {
+impl<KeyLength: ArrayLength<u8>> Zeroize for Key<KeyLength> {
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
 }
 
 // Implement `Drop` trait to follow R23.
-impl<const KEY_LENGTH: usize> Drop for Key<KEY_LENGTH> {
+impl<KeyLength: ArrayLength<u8>> Drop for Key<KeyLength> {
     fn drop(&mut self) {
         self.zeroize();
+    }
+}
+
+impl<KeyLength: ArrayLength<u8>> ZeroizeOnDrop for Key<KeyLength> {}
+
+impl<KeyLength: ArrayLength<u8>> Deref for Key<KeyLength> {
+    type Target = GenericArray<u8, KeyLength>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::{
-        entropy::CsRng,
-        symmetric_crypto::{key::Key, SymKey},
-        KeyTrait,
-    };
-
-    const KEY_LENGTH: usize = 128;
+    use crate::{entropy::CsRng, symmetric_crypto::key::Key, KeyTrait};
+    use generic_array::typenum::{ToInt, U32};
 
     #[test]
     fn test_key() {
         let mut cs_rng = CsRng::new();
-        let key_1 = Key::<KEY_LENGTH>::new(&mut cs_rng);
-        assert_eq!(KEY_LENGTH, key_1.as_bytes().len());
+        let key_1 = Key::<U32>::new(&mut cs_rng);
+        assert_eq!(<U32 as ToInt<usize>>::to_int(), key_1.len());
         let key_2 = Key::new(&mut cs_rng);
-        assert_eq!(KEY_LENGTH, key_2.as_bytes().len());
+        assert_eq!(<U32 as ToInt<usize>>::to_int(), key_2.len());
         assert_ne!(key_1, key_2);
     }
 
     #[test]
     fn test_key_serialization() {
         let mut cs_rng = CsRng::new();
-        let key = Key::<KEY_LENGTH>::new(&mut cs_rng);
+        let key = Key::<U32>::new(&mut cs_rng);
         let bytes = key.to_bytes();
         let res = Key::try_from(bytes).unwrap();
         assert_eq!(key, res);

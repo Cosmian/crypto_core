@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [2.0.0] - 2022-08-22
+### Added
+- `Eq` super trait to `KeyTrait`
+- `from_bytes()` to `SymKey`
+### Changed
+- Use GenericArrays for keys
+### Fixed
+### Removed
+---
+
+---
 ## [1.1.1] - 2022-08-19
 ### Added
 ### Changed

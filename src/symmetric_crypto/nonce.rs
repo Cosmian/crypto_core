@@ -19,6 +19,7 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
     const LENGTH: usize;
 
     /// Generate a new nonce object.
+    #[must_use]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
     /// Try to deserialize the given `bytes` into a nonce object. The number of

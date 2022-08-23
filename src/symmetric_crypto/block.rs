@@ -213,11 +213,13 @@ where
 
 #[cfg(test)]
 mod tests {
+
     use super::Block;
     use crate::{
         entropy::CsRng,
         symmetric_crypto::aes_256_gcm_pure::{Aes256GcmCrypto, Key},
     };
+    use generic_array::typenum::{U100, U16384};
 
     const MAX_CLEAR_TEXT_LENGTH: usize = 4096;
     type Bl = Block<Aes256GcmCrypto, MAX_CLEAR_TEXT_LENGTH>;
@@ -248,7 +250,7 @@ mod tests {
 
         let mut b = Bl::new();
         assert!(b.clear_text().is_empty());
-        let data = cs_rng.generate_random_bytes(16384);
+        let data = cs_rng.generate_random_bytes::<U16384>();
         let written = b.write(0, &data).expect("failed writing data");
         assert_eq!(MAX_CLEAR_TEXT_LENGTH, written);
 
@@ -278,11 +280,11 @@ mod tests {
         let mut b = Bl::new();
         assert!(b.clear_text().is_empty());
 
-        let data1 = cs_rng.generate_random_bytes(100);
+        let data1 = cs_rng.generate_random_bytes::<U100>();
         let written = b.write(0, &data1).expect("failed writing data");
         assert_eq!(100, written);
 
-        let data2 = cs_rng.generate_random_bytes(100);
+        let data2 = cs_rng.generate_random_bytes::<U100>();
         let written = b.write(200, &data2).expect("failed writing data");
         assert_eq!(100, written);
 
