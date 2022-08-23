@@ -18,7 +18,7 @@ pub mod entropy;
 pub mod kdf;
 pub mod symmetric_crypto;
 
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use crate::error::CryptoCoreError;
 
@@ -29,7 +29,7 @@ pub mod reexport {
 }
 
 /// Trait defining a cryptographic key.
-pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize {
+pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize + ZeroizeOnDrop {
     /// Number of bytes in the serialized key.
     type Length: Eq + generic_array::ArrayLength<u8>;
 

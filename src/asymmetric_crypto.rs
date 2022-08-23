@@ -19,7 +19,7 @@ use std::{
     fmt::Display,
     ops::{Add, Mul, Sub},
 };
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Asymmetric private key based on Curve25519.
 ///
@@ -219,6 +219,8 @@ impl Drop for X25519PrivateKey {
     }
 }
 
+impl ZeroizeOnDrop for X25519PrivateKey {}
+
 /// Asymmetric public key based on Curve25519.
 ///
 /// Internally, a Ristretto point is used. It is 256-bits long, but its
@@ -364,6 +366,15 @@ impl Zeroize for X25519PublicKey {
         self.0.zeroize()
     }
 }
+
+// Implement `Drop` trait to follow R23.
+impl Drop for X25519PublicKey {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for X25519PublicKey {}
 
 #[cfg(test)]
 mod test {

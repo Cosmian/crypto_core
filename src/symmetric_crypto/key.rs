@@ -5,7 +5,7 @@ use aes::cipher::generic_array::{ArrayLength, GenericArray};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, fmt::Display, ops::Deref};
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Symmetric key of a given size.
 ///
@@ -91,6 +91,8 @@ impl<KeyLength: ArrayLength<u8>> Drop for Key<KeyLength> {
         self.zeroize();
     }
 }
+
+impl<KeyLength: ArrayLength<u8>> ZeroizeOnDrop for Key<KeyLength> {}
 
 impl<KeyLength: ArrayLength<u8>> Deref for Key<KeyLength> {
     type Target = GenericArray<u8, KeyLength>;
