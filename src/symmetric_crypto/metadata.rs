@@ -60,6 +60,7 @@ impl<'a> BytesScanner<'a> {
         }
     }
 
+    /// Return `true` if there still are some bytes to read.
     pub fn has_more(&self) -> bool {
         self.start < self.bytes.len()
     }
