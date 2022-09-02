@@ -4,7 +4,7 @@ use crate::{symmetric_crypto::SymKey, CryptoCoreError, KeyTrait};
 use aes::cipher::generic_array::{ArrayLength, GenericArray};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::{convert::TryFrom, fmt::Display, ops::Deref};
+use std::{convert::TryFrom, fmt::Display, hash::Hash, ops::Deref};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Symmetric key of a given size.
@@ -36,7 +36,7 @@ impl<KeyLength: Eq + ArrayLength<u8>> KeyTrait for Key<KeyLength> {
     }
 }
 
-impl<KeyLength: Eq + ArrayLength<u8>> SymKey for Key<KeyLength> {
+impl<KeyLength: Hash + Eq + ArrayLength<u8>> SymKey for Key<KeyLength> {
     /// Convert the given key into a byte slice, without copy.
     fn as_bytes(&self) -> &[u8] {
         &self.0

@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [2.0.1] - 2022-09-02
+### Added
+- `Hash` super trait to `SymKey`
+### Changed
+### Fixed
+### Removed
+---
+
+---
 ## [2.0.0] - 2022-08-22
 ### Added
 - `Eq` super trait to `KeyTrait`

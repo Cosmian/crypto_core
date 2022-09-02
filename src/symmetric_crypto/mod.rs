@@ -17,10 +17,11 @@ use crate::{CryptoCoreError, KeyTrait};
 use generic_array::GenericArray;
 use nonce::NonceTrait;
 use rand_core::{CryptoRng, RngCore};
+use std::hash::Hash;
 use std::vec::Vec;
 
 /// Defines a symmetric encryption key.
-pub trait SymKey: KeyTrait {
+pub trait SymKey: KeyTrait + Hash {
     /// Convert the given key into a byte slice.
     fn as_bytes(&self) -> &[u8];
 
