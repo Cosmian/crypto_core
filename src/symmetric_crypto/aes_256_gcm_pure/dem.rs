@@ -2,31 +2,31 @@
 
 use crate::{
     symmetric_crypto::{
-        aes_256_gcm_pure::Aes256GcmCrypto, nonce::NonceTrait, Dem, SymmetricCrypto,
+        aes_256_gcm_pure::{Aes256GcmCrypto, KEY_LENGTH},
+        nonce::NonceTrait,
+        Dem, SymmetricCrypto,
     },
-    CryptoCoreError, KeyTrait,
+    CryptoCoreError,
 };
-use generic_array::typenum::Unsigned;
 use rand_core::{CryptoRng, RngCore};
 use std::convert::TryFrom;
 
-impl Dem for Aes256GcmCrypto {
+impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
     fn encaps<R: RngCore + CryptoRng>(
         rng: &mut R,
         secret_key: &[u8],
         additional_data: Option<&[u8]>,
         message: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        let key_length = <<Self::Key as KeyTrait>::Length as Unsigned>::to_usize();
-        if secret_key.len() < key_length {
+        if secret_key.len() < KEY_LENGTH {
             return Err(CryptoCoreError::SizeError {
                 given: secret_key.len(),
-                expected: key_length,
+                expected: KEY_LENGTH,
             });
         }
         // AES GCM includes an authentication method
         // there is no need for parsing a MAC key
-        let key = Self::Key::try_from(&secret_key[..key_length])?;
+        let key = Self::Key::try_from(&secret_key[..KEY_LENGTH])?;
         let nonce = Self::Nonce::new(rng);
         let mut c = Self::encrypt(&key, message, &nonce, additional_data)
             .map_err(|err| CryptoCoreError::EncryptionError(err.to_string()))?;
@@ -42,16 +42,15 @@ impl Dem for Aes256GcmCrypto {
         additional_data: Option<&[u8]>,
         encapsulation: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        let key_length = <<Self::Key as KeyTrait>::Length as Unsigned>::to_usize();
-        if secret_key.len() < key_length {
+        if secret_key.len() < KEY_LENGTH {
             return Err(CryptoCoreError::SizeError {
                 given: secret_key.len(),
-                expected: key_length,
+                expected: KEY_LENGTH,
             });
         }
         // AES GCM includes an authentication method
         // there is no need for parsing a MAC key
-        let key = Self::Key::try_from(&secret_key[..key_length])?;
+        let key = Self::Key::try_from(&secret_key[..KEY_LENGTH])?;
         let nonce = Self::Nonce::try_from(&encapsulation[..Self::Nonce::LENGTH])?;
         Self::decrypt(
             &key,
@@ -71,14 +70,13 @@ mod tests {
         symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, Dem},
         CryptoCoreError,
     };
-    use generic_array::typenum::U256;
 
     #[test]
     fn test_dem() -> Result<(), CryptoCoreError> {
         let m = b"my secret message";
         let additional_data = Some(b"public tag".as_slice());
         let mut rng = CsRng::new();
-        let secret_key = rng.generate_random_bytes::<U256>();
+        let secret_key = rng.generate_random_bytes::<256>();
         let c = Aes256GcmCrypto::encaps(&mut rng, &secret_key, additional_data, m)?;
         let res = Aes256GcmCrypto::decaps(&secret_key, additional_data, &c)?;
         if res != m {

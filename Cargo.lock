@@ -102,12 +102,11 @@ dependencies = [
 
 [[package]]
 name = "cosmian_crypto_core"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "aes 0.8.1",
  "aes-gcm",
  "curve25519-dalek",
- "generic-array",
  "getrandom 0.2.7",
  "hex",
  "hkdf",
@@ -188,7 +187,6 @@ version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bff49e947297f3312447abdca79f45f4738097cc82b06e72054d2223f601f1b9"
 dependencies = [
- "serde",
  "typenum",
  "version_check",
 ]
@@ -318,9 +316,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.13.1"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "074864da206b4973b84eb91683020dbefd6a8c3f0f38e054d93954e891935e4e"
+checksum = "2f7254b99e31cad77da24b08ebf628882739a608578bb1bcdfc1f9c21260d7c0"
 
 [[package]]
 name = "opaque-debug"

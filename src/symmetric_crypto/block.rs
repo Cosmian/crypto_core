@@ -13,21 +13,22 @@ use rand_core::{CryptoRng, RngCore};
 /// is made of a `BlockHeader` containing the nonce, the cipher text and  -
 /// depending on the symmetric scheme - an authentication MAC. The nonce is
 /// refreshed on each call to `to_encrypted_bytes(...)`
-pub struct Block<S, const MAX_CLEAR_TEXT_LENGTH: usize>
+pub struct Block<const KEY_LENGTH: usize, S, const MAX_CLEAR_TEXT_LENGTH: usize>
 where
-    S: SymmetricCrypto,
+    S: SymmetricCrypto<KEY_LENGTH>,
 {
     clear_text: Vec<u8>, //padded with zeroes if need be
     phantom_data: std::marker::PhantomData<S>,
 }
 
-impl<S, const MAX_CLEAR_TEXT_LENGTH: usize> Block<S, MAX_CLEAR_TEXT_LENGTH>
+impl<const KEY_LENGTH: usize, S, const MAX_CLEAR_TEXT_LENGTH: usize>
+    Block<KEY_LENGTH, S, MAX_CLEAR_TEXT_LENGTH>
 where
-    S: SymmetricCrypto,
+    S: SymmetricCrypto<KEY_LENGTH>,
 {
     /// Number of bytes added to the size of the input data in the output ciphertext.
     pub const ENCRYPTION_OVERHEAD: usize =
-        BlockHeader::<S>::LENGTH + <S as SymmetricCrypto>::MAC_LENGTH;
+        BlockHeader::<KEY_LENGTH, S>::LENGTH + <S as SymmetricCrypto<KEY_LENGTH>>::MAC_LENGTH;
 
     /// Maximum number of bytes for an output ciphertext.
     pub const MAX_ENCRYPTED_LENGTH: usize = MAX_CLEAR_TEXT_LENGTH + Self::ENCRYPTION_OVERHEAD;
@@ -47,7 +48,7 @@ where
     /// same values used to encrypt the block
     pub fn from_encrypted_bytes(
         encrypted_bytes: &[u8],
-        symmetric_key: &<S as SymmetricCrypto>::Key,
+        symmetric_key: &<S as SymmetricCrypto<KEY_LENGTH>>::Key,
         uid: &[u8],
         block_number: usize,
     ) -> Result<Self, CryptoCoreError> {
@@ -64,9 +65,10 @@ where
                 encrypted_bytes.len(),
             )));
         }
-        let block_header_len = BlockHeader::<S>::LENGTH;
+        let block_header_len = BlockHeader::<KEY_LENGTH, S>::LENGTH;
         // recover the block header and regenerate the IV
-        let block_header = BlockHeader::<S>::parse(&encrypted_bytes[0..block_header_len])?;
+        let block_header =
+            BlockHeader::<KEY_LENGTH, S>::parse(&encrypted_bytes[0..block_header_len])?;
         let mut ad = uid.to_vec();
         // Warning: `usize` can be interpreted as `u32` on 32-bits CPU-architecture.
         // The `u64`-cast prevents build on those 32-bits machine or on
@@ -92,7 +94,7 @@ where
     pub fn to_encrypted_bytes<R: RngCore + CryptoRng>(
         &self,
         rng: &mut R,
-        symmetric_key: &<S as SymmetricCrypto>::Key,
+        symmetric_key: &<S as SymmetricCrypto<KEY_LENGTH>>::Key,
         uid: &[u8],
         block_number: usize,
     ) -> Result<Vec<u8>, CryptoCoreError> {
@@ -113,7 +115,7 @@ where
         );
         // write the header
         bytes.append(
-            &mut BlockHeader::<S> {
+            &mut BlockHeader::<KEY_LENGTH, S> {
                 nonce: nonce.clone(),
             }
             .to_bytes(),
@@ -170,9 +172,9 @@ where
     }
 }
 
-impl<S, const N: usize> Default for Block<S, N>
+impl<const KEY_LENGTH: usize, S, const N: usize> Default for Block<KEY_LENGTH, S, N>
 where
-    S: SymmetricCrypto,
+    S: SymmetricCrypto<KEY_LENGTH>,
 {
     fn default() -> Self {
         Self::new()
@@ -180,23 +182,23 @@ where
 }
 
 /// The `BlockHeader` contains the nonce/IV of an encrypted `Block`
-pub struct BlockHeader<S>
+pub struct BlockHeader<const KEY_LENGTH: usize, S>
 where
-    S: SymmetricCrypto,
+    S: SymmetricCrypto<KEY_LENGTH>,
 {
-    nonce: <S as SymmetricCrypto>::Nonce,
+    nonce: <S as SymmetricCrypto<KEY_LENGTH>>::Nonce,
 }
 
-impl<S> BlockHeader<S>
+impl<const KEY_LENGTH: usize, S> BlockHeader<KEY_LENGTH, S>
 where
-    S: SymmetricCrypto,
+    S: SymmetricCrypto<KEY_LENGTH>,
 {
-    pub const LENGTH: usize = <S as SymmetricCrypto>::Nonce::LENGTH;
+    pub const LENGTH: usize = <S as SymmetricCrypto<KEY_LENGTH>>::Nonce::LENGTH;
 
     pub fn parse(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         //TODO: use transmute to make this faster ?
         Ok(Self {
-            nonce: <<S as SymmetricCrypto>::Nonce>::try_from_bytes(bytes)?,
+            nonce: <<S as SymmetricCrypto<KEY_LENGTH>>::Nonce>::try_from_bytes(bytes)?,
         })
     }
 
@@ -217,12 +219,10 @@ mod tests {
     use super::Block;
     use crate::{
         entropy::CsRng,
-        symmetric_crypto::aes_256_gcm_pure::{Aes256GcmCrypto, Key},
+        symmetric_crypto::aes_256_gcm_pure::{Aes256GcmCrypto, Key, KEY_LENGTH},
     };
-    use generic_array::typenum::{U100, U16384};
-
     const MAX_CLEAR_TEXT_LENGTH: usize = 4096;
-    type Bl = Block<Aes256GcmCrypto, MAX_CLEAR_TEXT_LENGTH>;
+    type Bl = Block<KEY_LENGTH, Aes256GcmCrypto, MAX_CLEAR_TEXT_LENGTH>;
 
     #[test]
     fn test_empty_block() {
@@ -250,7 +250,7 @@ mod tests {
 
         let mut b = Bl::new();
         assert!(b.clear_text().is_empty());
-        let data = cs_rng.generate_random_bytes::<U16384>();
+        let data = cs_rng.generate_random_bytes::<16384>();
         let written = b.write(0, &data).expect("failed writing data");
         assert_eq!(MAX_CLEAR_TEXT_LENGTH, written);
 
@@ -280,11 +280,11 @@ mod tests {
         let mut b = Bl::new();
         assert!(b.clear_text().is_empty());
 
-        let data1 = cs_rng.generate_random_bytes::<U100>();
+        let data1 = cs_rng.generate_random_bytes::<100>();
         let written = b.write(0, &data1).expect("failed writing data");
         assert_eq!(100, written);
 
-        let data2 = cs_rng.generate_random_bytes::<U100>();
+        let data2 = cs_rng.generate_random_bytes::<100>();
         let written = b.write(200, &data2).expect("failed writing data");
         assert_eq!(100, written);
 

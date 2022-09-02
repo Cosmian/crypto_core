@@ -14,27 +14,27 @@ pub use metadata::BytesScanner;
 pub use metadata::Metadata;
 
 use crate::{CryptoCoreError, KeyTrait};
-use generic_array::GenericArray;
 use nonce::NonceTrait;
 use rand_core::{CryptoRng, RngCore};
 use std::hash::Hash;
 use std::vec::Vec;
 
 /// Defines a symmetric encryption key.
-pub trait SymKey: KeyTrait + Hash {
+pub trait SymKey<const LENGTH: usize>: KeyTrait<LENGTH> + Hash {
     /// Convert the given key into a byte slice.
+    #[must_use]
     fn as_bytes(&self) -> &[u8];
 
     /// Convert the given bytes into a key.
     #[must_use]
-    fn from_bytes(bytes: GenericArray<u8, Self::Length>) -> Self;
+    fn from_bytes(bytes: [u8; LENGTH]) -> Self;
 }
 
 /// Defines a symmetric encryption scheme. If this scheme is authenticated,
 /// the `MAC_LENGTH` will be greater than `0`.
-pub trait SymmetricCrypto: Send + Sync {
+pub trait SymmetricCrypto<const KEY_LENGTH: usize>: Send + Sync {
     const MAC_LENGTH: usize;
-    type Key: SymKey;
+    type Key: SymKey<KEY_LENGTH>;
     type Nonce: NonceTrait;
 
     /// A short description of the scheme
@@ -87,7 +87,7 @@ pub trait SymmetricCrypto: Send + Sync {
 
 /// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
 /// [ISO 2004](https://www.shoup.net/iso/std6.pdf).
-pub trait Dem: SymmetricCrypto {
+pub trait Dem<const KEY_LENGTH: usize>: SymmetricCrypto<KEY_LENGTH> {
     /// Number of bytes added to the message length in the encapsulation.
     const ENCAPSULATION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
 
