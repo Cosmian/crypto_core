@@ -104,9 +104,9 @@ impl Metadata {
         }
         let mut bytes = Vec::with_capacity(4 + self.len());
         bytes.append(&mut get_u32_len(&self.uid)?.to_vec());
-        bytes.extend(&self.uid);
+        bytes.extend_from_slice(&self.uid);
         if let Some(ad) = &self.additional_data {
-            bytes.extend(ad);
+            bytes.extend_from_slice(ad);
         }
         Ok(bytes)
     }

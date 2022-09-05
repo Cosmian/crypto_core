@@ -74,7 +74,7 @@ where
         // Warning: `usize` can be interpreted as `u32` on 32-bits CPU-architecture.
         // The `u64`-cast prevents build on those 32-bits machine or on
         // `wasm32-unknown-unknown` builds.
-        ad.extend(&(block_number as u64).to_le_bytes());
+        ad.extend_from_slice(&(block_number as u64).to_le_bytes());
         // decrypt
         let clear_text = S::decrypt(
             symmetric_key,
@@ -104,11 +104,11 @@ where
 
         // get the associated data ready
         let mut ad = Vec::with_capacity(uid.len() + 8);
-        ad.extend(uid);
+        ad.extend_from_slice(uid);
         // Warning: `usize` can be interpreted as `u32` on 32-bits CPU-architecture.
         // The `u64`-cast prevents build on those 32-bits machine or on
         // `wasm32-unknown-unknown` builds.
-        ad.extend(&(block_number as u64).to_le_bytes());
+        ad.extend_from_slice(&(block_number as u64).to_le_bytes());
 
         // allocate correct number of bytes
         let mut bytes = Vec::with_capacity(
@@ -122,7 +122,7 @@ where
             .to_bytes(),
         );
         // write encrypted data
-        bytes.extend(S::encrypt(
+        bytes.append(&mut S::encrypt(
             symmetric_key,
             &self.clear_text,
             &nonce,
@@ -297,9 +297,9 @@ mod tests {
         let c = Bl::from_encrypted_bytes(&encrypted_bytes, &symmetric_key, &uid, 1)
             .expect("failed from encrypted bytes");
         let mut data: Vec<u8> = vec![];
-        data.extend(&data1);
-        data.extend(&[0_u8; 100]);
-        data.extend(&data2);
+        data.extend_from_slice(&data1);
+        data.extend_from_slice(&[0_u8; 100]);
+        data.extend_from_slice(&data2);
 
         assert_eq!(&data, c.clear_text());
     }

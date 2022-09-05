@@ -5,7 +5,7 @@
 //! Its security level is 128-bits. It is the fastest curve available at the
 //! time of this implementation.
 
-use crate::{CryptoCoreError, KeyTrait};
+use crate::{asymmetric_crypto::DhKeyPair, CryptoCoreError, KeyTrait};
 use curve25519_dalek::{
     constants,
     ristretto::{CompressedRistretto, RistrettoPoint},
@@ -59,11 +59,13 @@ impl X25519PrivateKey {
 
 impl KeyTrait<X25519_SK_LENGTH> for X25519PrivateKey {
     /// Converts the given key into bytes.
+    #[inline]
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0.to_bytes()
     }
 
     /// Converts the given bytes into key.
+    #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
     }
@@ -100,6 +102,7 @@ impl TryFrom<&[u8]> for X25519PrivateKey {
 // Needed by serde to derive `Deserialize`. Do not use otherwise since there
 // is a copy anyway
 impl From<X25519PrivateKey> for [u8; X25519_SK_LENGTH] {
+    #[inline]
     fn from(key: X25519PrivateKey) -> Self {
         key.0.to_bytes()
     }
@@ -243,6 +246,7 @@ impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
         self.0.compress().to_bytes()
     }
 
+    #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
     }
@@ -286,12 +290,14 @@ impl TryFrom<&[u8]> for X25519PublicKey {
 // Needed by serde to derive `Deserialize`. Do not use otherwise since there
 // is a copy anyway.
 impl From<X25519PublicKey> for [u8; X25519_PK_LENGTH] {
+    #[inline]
     fn from(key: X25519PublicKey) -> Self {
         key.0.compress().to_bytes()
     }
 }
 
 impl From<&X25519PublicKey> for [u8; X25519_PK_LENGTH] {
+    #[inline]
     fn from(key: &X25519PublicKey) -> Self {
         key.0.compress().to_bytes()
     }
@@ -369,10 +375,54 @@ impl Drop for X25519PublicKey {
 
 impl ZeroizeOnDrop for X25519PublicKey {}
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct X25519KeyPair {
+    pk: X25519PublicKey,
+    sk: X25519PrivateKey,
+}
+
+impl<'a> DhKeyPair<'a, X25519_PK_LENGTH, X25519_SK_LENGTH> for X25519KeyPair {
+    type PublicKey = X25519PublicKey;
+
+    type PrivateKey = X25519PrivateKey;
+
+    #[inline]
+    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+        let sk = X25519PrivateKey::new(rng);
+        let pk = X25519PublicKey::from(&sk);
+        Self { sk, pk }
+    }
+
+    #[inline]
+    fn public_key(&self) -> &Self::PublicKey {
+        &self.pk
+    }
+
+    #[inline]
+    fn private_key(&self) -> &Self::PrivateKey {
+        &self.sk
+    }
+}
+
+impl Zeroize for X25519KeyPair {
+    fn zeroize(&mut self) {
+        self.pk.zeroize();
+        self.sk.zeroize();
+    }
+}
+
+impl Drop for X25519KeyPair {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for X25519KeyPair {}
+
 #[cfg(test)]
 mod test {
     use crate::{
-        asymmetric_crypto::{
+        asymmetric_crypto::curve25519::{
             X25519PrivateKey, X25519PublicKey, X25519_PK_LENGTH, X25519_SK_LENGTH,
         },
         entropy::CsRng,

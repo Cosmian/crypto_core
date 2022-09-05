@@ -20,6 +20,7 @@ impl CsRng {
     /// Generate a vector of random bytes with the given length.
     ///
     /// - `len` : number of random bytes to generate
+    #[must_use]
     pub fn generate_random_bytes<const LENGTH: usize>(&mut self) -> [u8; LENGTH] {
         let mut bytes = [0; LENGTH];
         self.rng.fill_bytes(&mut bytes);
