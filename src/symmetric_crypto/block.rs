@@ -69,7 +69,8 @@ where
         // recover the block header and regenerate the IV
         let block_header =
             BlockHeader::<KEY_LENGTH, S>::parse(&encrypted_bytes[0..block_header_len])?;
-        let mut ad = uid.to_vec();
+        let mut ad = Vec::with_capacity(uid.len() + 8);
+        ad.extend_from_slice(uid);
         // Warning: `usize` can be interpreted as `u32` on 32-bits CPU-architecture.
         // The `u64`-cast prevents build on those 32-bits machine or on
         // `wasm32-unknown-unknown` builds.
