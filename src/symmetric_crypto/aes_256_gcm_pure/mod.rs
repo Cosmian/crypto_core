@@ -3,17 +3,15 @@
 //!
 //! It will use the AES native interface on the CPU if available.
 use crate::{
-    symmetric_crypto::{nonce::NonceTrait, SymmetricCrypto},
+    symmetric_crypto::{nonce::NonceTrait, SymKey, SymmetricCrypto},
     CryptoCoreError,
 };
 use aes_gcm::{
-    aead::{Aead, NewAead, Payload},
+    aead::{Aead, Payload},
     aes::cipher::generic_array::GenericArray,
-    AeadInPlace, Aes256Gcm,
+    AeadInPlace, Aes256Gcm, KeyInit,
 };
 use std::fmt::Display;
-
-use super::SymKey;
 
 pub mod dem;
 
