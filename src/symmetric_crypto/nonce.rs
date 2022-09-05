@@ -4,14 +4,12 @@
 //! ensure a ciphertext cannot be reused, hence avoiding replay attacks.
 
 use crate::CryptoCoreError;
-use num_bigint::BigUint;
-use rand_core::{CryptoRng, RngCore};
-use std::{
-    cmp::min,
+use core::{
     convert::{TryFrom, TryInto},
     fmt::{Debug, Display},
-    vec::Vec,
 };
+use num_bigint::BigUint;
+use rand_core::{CryptoRng, RngCore};
 
 /// Trait defining a nonce for use in a symmetric encryption scheme.
 pub trait NonceTrait: Send + Sync + Sized + Clone {
@@ -35,7 +33,7 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
     fn xor(&self, b2: &[u8]) -> Self;
 
     /// Serialize the nonce.
-    fn as_slice(&self) -> &[u8];
+    fn as_bytes(&self) -> &[u8];
 }
 
 /// Nonce object of the given size.
@@ -47,12 +45,14 @@ pub struct Nonce<const NONCE_LENGTH: usize>([u8; NONCE_LENGTH]);
 impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
     const LENGTH: usize = NONCE_LENGTH;
 
+    #[inline]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut bytes = [0_u8; NONCE_LENGTH];
         rng.fill_bytes(&mut bytes);
         Self(bytes)
     }
 
+    #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         let b: [u8; NONCE_LENGTH] = bytes.try_into().map_err(|_| CryptoCoreError::SizeError {
             given: bytes.len(),
@@ -61,6 +61,7 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
         Ok(Self(b))
     }
 
+    #[inline]
     fn increment(&self, increment: usize) -> Self {
         let mut bi = BigUint::from_bytes_le(&self.0);
         bi += BigUint::from(increment);
@@ -69,24 +70,18 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
         Self(bi_bytes.try_into().expect("This should never happen"))
     }
 
+    #[inline]
     fn xor(&self, b2: &[u8]) -> Self {
-        let mut n = self.0;
-        for i in 0..min(b2.len(), NONCE_LENGTH) {
-            n[i] ^= b2[i];
+        let mut n = [0; NONCE_LENGTH];
+        for (i, n_i) in n.iter_mut().enumerate() {
+            *n_i = self.0[i] ^ b2[i];
         }
         Self(n)
     }
 
-    fn as_slice(&self) -> &[u8] {
+    #[inline]
+    fn as_bytes(&self) -> &[u8] {
         &self.0
-    }
-}
-
-impl<const NONCE_LENGTH: usize> TryFrom<Vec<u8>> for Nonce<NONCE_LENGTH> {
-    type Error = CryptoCoreError;
-
-    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::try_from_bytes(&bytes)
     }
 }
 
@@ -101,12 +96,6 @@ impl<'a, const NONCE_LENGTH: usize> TryFrom<&'a [u8]> for Nonce<NONCE_LENGTH> {
 impl<const NONCE_LENGTH: usize> From<[u8; NONCE_LENGTH]> for Nonce<NONCE_LENGTH> {
     fn from(b: [u8; NONCE_LENGTH]) -> Self {
         Self(b)
-    }
-}
-
-impl<const NONCE_LENGTH: usize> From<Nonce<NONCE_LENGTH>> for Vec<u8> {
-    fn from(n: Nonce<NONCE_LENGTH>) -> Self {
-        n.0.to_vec()
     }
 }
 
@@ -129,9 +118,9 @@ mod tests {
     fn test_nonce() {
         let mut cs_rng = CsRng::new();
         let nonce_1 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
-        assert_eq!(NONCE_LENGTH, nonce_1.as_slice().len());
+        assert_eq!(NONCE_LENGTH, nonce_1.as_bytes().len());
         let nonce_2 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
-        assert_eq!(NONCE_LENGTH, nonce_2.as_slice().len());
+        assert_eq!(NONCE_LENGTH, nonce_2.as_bytes().len());
         assert_ne!(nonce_1, nonce_2);
     }
 

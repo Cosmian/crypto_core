@@ -82,7 +82,7 @@ dependencies = [
 
 [[package]]
 name = "cosmian_crypto_core"
-version = "3.0.0"
+version = "2.0.1"
 dependencies = [
  "aes-gcm",
  "curve25519-dalek",

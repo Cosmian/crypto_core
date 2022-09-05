@@ -104,7 +104,7 @@ impl TryFrom<&[u8]> for X25519PrivateKey {
 impl From<X25519PrivateKey> for [u8; X25519_SK_LENGTH] {
     #[inline]
     fn from(key: X25519PrivateKey) -> Self {
-        key.0.to_bytes()
+        key.to_bytes()
     }
 }
 
@@ -292,14 +292,7 @@ impl TryFrom<&[u8]> for X25519PublicKey {
 impl From<X25519PublicKey> for [u8; X25519_PK_LENGTH] {
     #[inline]
     fn from(key: X25519PublicKey) -> Self {
-        key.0.compress().to_bytes()
-    }
-}
-
-impl From<&X25519PublicKey> for [u8; X25519_PK_LENGTH] {
-    #[inline]
-    fn from(key: &X25519PublicKey) -> Self {
-        key.0.compress().to_bytes()
+        key.to_bytes()
     }
 }
 
