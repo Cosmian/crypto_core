@@ -23,10 +23,6 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
     /// `bytes` must be equal to `Self::LENGTH`.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
 
-    /// Increment the nonce by the given value.
-    #[must_use]
-    fn increment(&self, increment: u64) -> Self;
-
     /// Xor the nonce with the given value.
     #[must_use]
     fn xor(&self, b2: &[u8]) -> Self;
@@ -61,29 +57,6 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
     }
 
     #[inline]
-    fn increment(&self, increment: u64) -> Self {
-        let increment = increment.to_le_bytes();
-        assert!(NONCE_LENGTH > 8, "Consider using a longer Nonce!");
-        // add the first bytes
-        let mut res = [0; NONCE_LENGTH];
-        let mut carry = 0;
-        for (i, (b1, b2)) in self.0.iter().zip(increment).enumerate() {
-            (res[i], carry) = adc(*b1, b2, carry);
-        }
-        // take into account the potentially remaining carry
-        res[increment.len()] = self.0[8] + carry;
-        // copy the rest of the input nonce
-        for (res, b) in res
-            .iter_mut()
-            .rev()
-            .zip(self.0.iter().rev().take(NONCE_LENGTH - 7))
-        {
-            *res = *b;
-        }
-        Self(res)
-    }
-
-    #[inline]
     fn xor(&self, b2: &[u8]) -> Self {
         let mut n = [0; NONCE_LENGTH];
         for (i, n_i) in n.iter_mut().enumerate() {
@@ -96,12 +69,6 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
     fn as_bytes(&self) -> &[u8] {
         &self.0
     }
-}
-
-#[inline]
-const fn adc(a: u8, b: u8, carry: u8) -> (u8, u8) {
-    let ret = (a as u16) + (b as u16) + (carry as u16);
-    (ret as u8, (ret >> 8) as u8)
 }
 
 impl<'a, const NONCE_LENGTH: usize> TryFrom<&'a [u8]> for Nonce<NONCE_LENGTH> {
@@ -141,14 +108,5 @@ mod tests {
         let nonce_2 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
         assert_eq!(NONCE_LENGTH, nonce_2.as_bytes().len());
         assert_ne!(nonce_1, nonce_2);
-    }
-
-    #[test]
-    fn test_increment_nonce() {
-        let mut nonce: Nonce<NONCE_LENGTH> = Nonce::from([0_u8; NONCE_LENGTH]);
-        let inc = 1 << 10;
-        nonce = nonce.increment(inc);
-        println!("{}", hex::encode(nonce.0));
-        assert_eq!("000400000000000000000000", hex::encode(nonce.0));
     }
 }

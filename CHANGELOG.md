@@ -9,10 +9,10 @@ All notable changes to this project will be documented in this file.
   Computational Diffie-Helman problem is intractable
 ### Changed
 - use constant generics
-- `NonceTrait::increment()` does not depend on `big-int` anymore
 - use `core` instead of `std` when possible
 ### Fixed
 ### Removed
+- `NonceTrait::increment()`
 - `SymmetricCrypto` trait
 - `Block`
 ---
