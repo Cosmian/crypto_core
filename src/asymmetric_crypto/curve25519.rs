@@ -6,6 +6,11 @@
 //! time of this implementation.
 
 use crate::{asymmetric_crypto::DhKeyPair, CryptoCoreError, KeyTrait};
+use core::{
+    convert::TryFrom,
+    fmt::Display,
+    ops::{Add, Mul, Sub},
+};
 use curve25519_dalek::{
     constants,
     ristretto::{CompressedRistretto, RistrettoPoint},
@@ -13,11 +18,6 @@ use curve25519_dalek::{
 };
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
-use std::{
-    convert::TryFrom,
-    fmt::Display,
-    ops::{Add, Mul, Sub},
-};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// X25519 secret key length
@@ -120,7 +120,7 @@ impl TryFrom<&str> for X25519PrivateKey {
 
 /// Display the hex encoded value of the key
 impl Display for X25519PrivateKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", hex::encode(self.0.as_bytes()))
     }
 }
@@ -308,7 +308,7 @@ impl TryFrom<&str> for X25519PublicKey {
 
 /// Display the hex encoded value of the key
 impl Display for X25519PublicKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", hex::encode(self.0.compress().to_bytes()))
     }
 }

@@ -12,9 +12,9 @@ pub use metadata::BytesScanner;
 pub use metadata::Metadata;
 
 use crate::{CryptoCoreError, KeyTrait};
+use core::hash::Hash;
 use nonce::NonceTrait;
 use rand_core::{CryptoRng, RngCore};
-use std::hash::Hash;
 use std::vec::Vec;
 
 /// Defines a symmetric encryption key.

@@ -1,8 +1,8 @@
 //! Define a symmetric key object of variable size.
 
 use crate::{symmetric_crypto::SymKey, CryptoCoreError, KeyTrait};
+use core::{convert::TryFrom, fmt::Display, hash::Hash, ops::Deref};
 use rand_core::{CryptoRng, RngCore};
-use std::{convert::TryFrom, fmt::Display, hash::Hash, ops::Deref};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Symmetric key of a given size.
@@ -70,7 +70,7 @@ impl<'a, const KEY_LENGTH: usize> TryFrom<&'a [u8]> for Key<KEY_LENGTH> {
 }
 
 impl<const KEY_LENGTH: usize> Display for Key<KEY_LENGTH> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", hex::encode(self.as_bytes()))
     }
 }
@@ -108,7 +108,7 @@ impl<const KEY_LENGTH: usize> Deref for Key<KEY_LENGTH> {
 mod tests {
 
     use crate::{entropy::CsRng, symmetric_crypto::key::Key};
-    use std::ops::Deref;
+    use core::ops::Deref;
 
     const KEY_LENGTH: usize = 32;
 

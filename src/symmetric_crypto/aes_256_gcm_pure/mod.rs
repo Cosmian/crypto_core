@@ -24,7 +24,7 @@ const NONCE_LENGTH: usize = 12;
 /// Use a 128-bit MAC tag
 const MAC_LENGTH: usize = 16;
 
-/// A 96-bit nonce restricts the plaintext size to 4096-bytes
+/// A 96-bit nonce restricts the plaintext size to 4096 bytes
 const MAX_PLAINTEXT_LENGTH: usize = 4096;
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
@@ -234,7 +234,7 @@ mod tests {
     fn test_encryption_decryption_detached() -> Result<(), CryptoCoreError> {
         let mut cs_rng = CsRng::new();
         let key = Key::<KEY_LENGTH>::new(&mut cs_rng);
-        let bytes = cs_rng.generate_random_bytes::<8192>();
+        let bytes = cs_rng.generate_random_bytes::<1024>();
         let iv = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
         // no additional data
         let mut data = bytes;

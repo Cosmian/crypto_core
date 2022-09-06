@@ -119,7 +119,7 @@ impl<const NONCE_LENGTH: usize> From<[u8; NONCE_LENGTH]> for Nonce<NONCE_LENGTH>
 }
 
 impl<const NONCE_LENGTH: usize> Display for Nonce<NONCE_LENGTH> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", hex::encode(self.0))
     }
 }

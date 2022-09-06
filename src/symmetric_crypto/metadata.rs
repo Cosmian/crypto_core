@@ -1,6 +1,6 @@
 use crate::CryptoCoreError;
+use core::convert::TryInto;
 use serde::{Deserialize, Serialize};
-use std::convert::TryInto;
 
 /// Attempts to get the length of this slice as an `u32` in 4 endian bytes and
 /// returns an error if it overflows
