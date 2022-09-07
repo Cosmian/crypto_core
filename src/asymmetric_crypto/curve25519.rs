@@ -9,7 +9,7 @@ use crate::{asymmetric_crypto::DhKeyPair, CryptoCoreError, KeyTrait};
 use core::{
     convert::TryFrom,
     fmt::Display,
-    ops::{Add, Mul, Sub},
+    ops::{Add, Div, Mul, Sub},
 };
 use curve25519_dalek::{
     constants,
@@ -34,30 +34,23 @@ pub const X25519_PK_LENGTH: usize = 32;
 pub struct X25519PrivateKey(Scalar);
 
 impl X25519PrivateKey {
-    /// Generate a new private key.
-    #[must_use]
-    pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
-        let mut bytes = [0; 64];
-        rng.fill_bytes(&mut bytes);
-        Self(Scalar::from_bytes_mod_order_wide(&bytes))
-    }
-
     /// Convert to bytes without copy.
     #[inline]
     #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
-
-    /// Invert the given key for the multiplicative law
-    #[inline]
-    #[must_use]
-    pub fn invert(&self) -> Self {
-        Self(self.0.invert())
-    }
 }
 
 impl KeyTrait<X25519_SK_LENGTH> for X25519PrivateKey {
+    /// Generate a new random key.
+    #[inline]
+    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+        let mut bytes = [0; 64];
+        rng.fill_bytes(&mut bytes);
+        Self(Scalar::from_bytes_mod_order_wide(&bytes))
+    }
+
     /// Converts the given key into bytes.
     #[inline]
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
@@ -181,11 +174,19 @@ impl Sub for X25519PrivateKey {
     }
 }
 
-impl<'a> Sub<&'a Self> for X25519PrivateKey {
+impl<'a> Sub<&'a X25519PrivateKey> for &X25519PrivateKey {
+    type Output = X25519PrivateKey;
+
+    fn sub(self, rhs: &X25519PrivateKey) -> Self::Output {
+        X25519PrivateKey(self.0 - rhs.0)
+    }
+}
+
+impl Mul for X25519PrivateKey {
     type Output = Self;
 
-    fn sub(self, rhs: &Self) -> Self::Output {
-        Self(self.0 - rhs.0)
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(self.0 * rhs.0)
     }
 }
 
@@ -197,11 +198,21 @@ impl Sub<X25519PrivateKey> for &X25519PrivateKey {
     }
 }
 
-impl<'a> Sub<&'a X25519PrivateKey> for &X25519PrivateKey {
+impl Div for X25519PrivateKey {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        #[allow(clippy::suspicious_arithmetic_impl)]
+        Self(self.0 * rhs.0.invert())
+    }
+}
+
+impl<'a> Div<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
-    fn sub(self, rhs: &X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 - rhs.0)
+    fn div(self, rhs: &X25519PrivateKey) -> Self::Output {
+        #[allow(clippy::suspicious_arithmetic_impl)]
+        X25519PrivateKey(self.0 * rhs.0.invert())
     }
 }
 
@@ -228,18 +239,15 @@ impl ZeroizeOnDrop for X25519PrivateKey {}
 #[serde(try_from = "&[u8]", into = "[u8; 32]")]
 pub struct X25519PublicKey(RistrettoPoint);
 
-impl X25519PublicKey {
+impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
     /// Generate a new random public key.
     #[inline]
-    #[must_use]
-    pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut uniform_bytes = [0u8; 64];
         rng.fill_bytes(&mut uniform_bytes);
         Self(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
     }
-}
 
-impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
     /// Converts the given public key into an array of bytes.
     #[inline]
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
@@ -249,6 +257,12 @@ impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
+    }
+}
+
+impl From<X25519PrivateKey> for X25519PublicKey {
+    fn from(private_key: X25519PrivateKey) -> Self {
+        Self(&private_key.0 * &constants::RISTRETTO_BASEPOINT_TABLE)
     }
 }
 
@@ -313,18 +327,26 @@ impl Display for X25519PublicKey {
     }
 }
 
+impl Sub for X25519PublicKey {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+
+impl<'a> Sub<&'a X25519PublicKey> for &X25519PublicKey {
+    type Output = X25519PublicKey;
+
+    fn sub(self, rhs: &X25519PublicKey) -> Self::Output {
+        X25519PublicKey(self.0 - rhs.0)
+    }
+}
+
 impl Add for X25519PublicKey {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl<'a> Add<&'a Self> for X25519PublicKey {
-    type Output = Self;
-
-    fn add(self, rhs: &Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
 }
@@ -337,19 +359,19 @@ impl<'a> Add<&'a X25519PublicKey> for &X25519PublicKey {
     }
 }
 
+impl Mul<X25519PrivateKey> for X25519PublicKey {
+    type Output = Self;
+
+    fn mul(self, rhs: X25519PrivateKey) -> Self::Output {
+        Self(self.0 * rhs.0)
+    }
+}
+
 impl<'a> Mul<&'a X25519PrivateKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
     fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PublicKey(self.0 * rhs.0)
-    }
-}
-
-impl<'a> Mul<&'a X25519PrivateKey> for X25519PublicKey {
-    type Output = Self;
-
-    fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
-        Self(self.0 * rhs.0)
     }
 }
 
@@ -374,7 +396,7 @@ pub struct X25519KeyPair {
     sk: X25519PrivateKey,
 }
 
-impl<'a> DhKeyPair<'a, X25519_PK_LENGTH, X25519_SK_LENGTH> for X25519KeyPair {
+impl DhKeyPair<X25519_PK_LENGTH, X25519_SK_LENGTH> for X25519KeyPair {
     type PublicKey = X25519PublicKey;
 
     type PrivateKey = X25519PrivateKey;

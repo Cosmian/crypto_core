@@ -12,7 +12,7 @@ pub use metadata::BytesScanner;
 pub use metadata::Metadata;
 
 use crate::{CryptoCoreError, KeyTrait};
-use core::hash::Hash;
+use core::{fmt::Debug, hash::Hash};
 use nonce::NonceTrait;
 use rand_core::{CryptoRng, RngCore};
 use std::vec::Vec;
@@ -23,6 +23,10 @@ pub trait SymKey<const LENGTH: usize>: KeyTrait<LENGTH> + Hash {
     #[must_use]
     fn as_bytes(&self) -> &[u8];
 
+    /// Consume the key to return underlying bytes.
+    #[must_use]
+    fn into_bytes(self) -> [u8; LENGTH];
+
     /// Convert the given bytes into a key.
     #[must_use]
     fn from_bytes(bytes: [u8; LENGTH]) -> Self;
@@ -30,7 +34,7 @@ pub trait SymKey<const LENGTH: usize>: KeyTrait<LENGTH> + Hash {
 
 /// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
 /// [ISO 2004](https://www.shoup.net/iso/std6.pdf).
-pub trait Dem<const KEY_LENGTH: usize> {
+pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     /// Number of bytes added to the message length in the encapsulation.
     const ENCRYPTION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
 

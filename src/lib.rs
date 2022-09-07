@@ -18,6 +18,7 @@ pub mod entropy;
 pub mod kdf;
 pub mod symmetric_crypto;
 
+use rand_core::{CryptoRng, RngCore};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use crate::error::CryptoCoreError;
@@ -33,6 +34,10 @@ pub trait KeyTrait<const LENGTH: usize>:
 {
     /// Key length
     const LENGTH: usize = LENGTH;
+
+    /// Generate a new random key.
+    #[must_use]
+    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
     /// Convert the given key into a vector of bytes.
     #[must_use]

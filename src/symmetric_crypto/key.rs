@@ -11,16 +11,15 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub struct Key<const LENGTH: usize>([u8; LENGTH]);
 
-impl<const KEY_LENGTH: usize> Key<KEY_LENGTH> {
+impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
     /// Generate a new symmetric random `Key`
-    pub fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
-        let mut key = [0; KEY_LENGTH];
+    #[inline]
+    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+        let mut key = [0; LENGTH];
         rng.fill_bytes(&mut key);
         Self(key)
     }
-}
 
-impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
     /// Convert the given key into bytes.
     #[inline]
     fn to_bytes(&self) -> [u8; LENGTH] {
@@ -30,42 +29,29 @@ impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
     /// Try to convert the given bytes into a key. Size must be correct.
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        Self::try_from(bytes)
+        let bytes = <[u8; LENGTH]>::try_from(bytes)
+            .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
+        Ok(Self(bytes))
     }
 }
 
-impl<const KEY_LENGTH: usize> SymKey<KEY_LENGTH> for Key<KEY_LENGTH> {
+impl<const LENGTH: usize> SymKey<LENGTH> for Key<LENGTH> {
     /// Convert the given key into a byte slice.
     #[inline]
     fn as_bytes(&self) -> &[u8] {
         &self.0
     }
 
+    /// Consume the key to return underlying bytes.
+    #[inline]
+    fn into_bytes(self) -> [u8; LENGTH] {
+        self.0
+    }
+
     /// Convert the given bytes with correct size into a key.
-    fn from_bytes(bytes: [u8; KEY_LENGTH]) -> Self {
+    #[inline]
+    fn from_bytes(bytes: [u8; LENGTH]) -> Self {
         Self(bytes)
-    }
-}
-
-impl<const KEY_LENGTH: usize> From<Key<KEY_LENGTH>> for [u8; KEY_LENGTH] {
-    fn from(k: Key<KEY_LENGTH>) -> Self {
-        k.0
-    }
-}
-
-impl<const KEY_LENGTH: usize> From<[u8; KEY_LENGTH]> for Key<KEY_LENGTH> {
-    fn from(b: [u8; KEY_LENGTH]) -> Self {
-        Self(b)
-    }
-}
-
-impl<'a, const KEY_LENGTH: usize> TryFrom<&'a [u8]> for Key<KEY_LENGTH> {
-    type Error = CryptoCoreError;
-
-    fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
-        let bytes = <[u8; KEY_LENGTH]>::try_from(bytes)
-            .map_err(|e| Self::Error::ConversionError(e.to_string()))?;
-        Ok(Self(bytes))
     }
 }
 
@@ -107,8 +93,7 @@ impl<const KEY_LENGTH: usize> Deref for Key<KEY_LENGTH> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{entropy::CsRng, symmetric_crypto::key::Key};
-    use core::ops::Deref;
+    use crate::{entropy::CsRng, symmetric_crypto::key::Key, KeyTrait};
 
     const KEY_LENGTH: usize = 32;
 
@@ -120,14 +105,5 @@ mod tests {
         let key_2 = Key::new(&mut cs_rng);
         assert_eq!(KEY_LENGTH, key_2.len());
         assert_ne!(key_1, key_2);
-    }
-
-    #[test]
-    fn test_key_serialization() {
-        let mut cs_rng = CsRng::new();
-        let key = Key::<32>::new(&mut cs_rng);
-        let bytes = <[u8; 32]>::try_from(key.deref()).unwrap();
-        let res = Key::try_from(bytes).unwrap();
-        assert_eq!(key, res);
     }
 }

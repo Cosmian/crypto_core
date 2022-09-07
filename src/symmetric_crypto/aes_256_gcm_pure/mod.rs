@@ -29,6 +29,7 @@ const MAX_PLAINTEXT_LENGTH: usize = 4096;
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 256 GCM.
+#[derive(Debug, PartialEq, Eq)]
 pub struct Aes256GcmCrypto;
 
 impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
@@ -197,7 +198,7 @@ mod tests {
             nonce::NonceTrait,
             Dem, SymKey,
         },
-        CryptoCoreError,
+        CryptoCoreError, KeyTrait,
     };
 
     #[test]
