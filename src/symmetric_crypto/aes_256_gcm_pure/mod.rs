@@ -58,15 +58,12 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
         // allocate correct byte number
         let mut res: Vec<u8> = Vec::with_capacity(plaintext.len() + Self::ENCRYPTION_OVERHEAD);
         res.extend_from_slice(nonce.as_bytes());
-        res.append(
-            &mut encrypt_combined(
-                secret_key.as_bytes(),
-                plaintext,
-                nonce.as_bytes(),
-                additional_data,
-            )
-            .map_err(|err| CryptoCoreError::EncryptionError(err.to_string()))?,
-        );
+        res.append(&mut encrypt_combined(
+            secret_key.as_bytes(),
+            plaintext,
+            nonce.as_bytes(),
+            additional_data,
+        )?);
         Ok(res)
     }
 
@@ -89,16 +86,13 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
                 MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD
             )));
         }
-        // Read the nonce used for encryption. We know this will not fail since
-        // Self::Nonce::LENGTH < Self::ENCRYPTOION_OVERHEAD
-        let nonce = Self::Nonce::try_from(&ciphertext[..Self::Nonce::LENGTH])?;
+        // The ciphertext is of the form: nonce || AEAS ciphertext
         decrypt_combined(
             secret_key.as_bytes(),
             &ciphertext[Self::Nonce::LENGTH..],
-            nonce.as_bytes(),
+            &ciphertext[..Self::Nonce::LENGTH],
             additional_data,
         )
-        .map_err(|err| CryptoCoreError::EncryptionError(err.to_string()))
     }
 }
 

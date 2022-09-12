@@ -42,7 +42,7 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
 
     #[inline]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
-        let mut bytes = [0_u8; NONCE_LENGTH];
+        let mut bytes = [0; NONCE_LENGTH];
         rng.fill_bytes(&mut bytes);
         Self(bytes)
     }
@@ -58,9 +58,9 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
 
     #[inline]
     fn xor(&self, b2: &[u8]) -> Self {
-        let mut n = [0; NONCE_LENGTH];
-        for (i, n_i) in n.iter_mut().enumerate() {
-            *n_i = self.0[i] ^ b2[i];
+        let mut n = self.0;
+        for (ni, bi) in n.iter_mut().zip(b2) {
+            *ni ^= bi
         }
         Self(n)
     }

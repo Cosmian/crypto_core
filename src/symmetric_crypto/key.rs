@@ -61,12 +61,6 @@ impl<const KEY_LENGTH: usize> Display for Key<KEY_LENGTH> {
     }
 }
 
-impl<const KEY_LENGTH: usize> Default for Key<KEY_LENGTH> {
-    fn default() -> Self {
-        Self([0; KEY_LENGTH])
-    }
-}
-
 impl<const KEY_LENGTH: usize> Zeroize for Key<KEY_LENGTH> {
     fn zeroize(&mut self) {
         self.0.zeroize();

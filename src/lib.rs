@@ -30,7 +30,7 @@ pub mod reexport {
 
 /// Trait defining a cryptographic key.
 pub trait KeyTrait<const LENGTH: usize>:
-    PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize + ZeroizeOnDrop
+    Clone + Eq + PartialEq + Send + Sized + Sync + Zeroize + ZeroizeOnDrop
 {
     /// Key length
     const LENGTH: usize = LENGTH;

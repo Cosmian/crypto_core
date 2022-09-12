@@ -190,14 +190,6 @@ impl Mul for X25519PrivateKey {
     }
 }
 
-impl Sub<X25519PrivateKey> for &X25519PrivateKey {
-    type Output = X25519PrivateKey;
-
-    fn sub(self, rhs: X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 - rhs.0)
-    }
-}
-
 impl Div for X25519PrivateKey {
     type Output = Self;
 
