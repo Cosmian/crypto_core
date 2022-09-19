@@ -118,59 +118,11 @@ impl Display for X25519PrivateKey {
     }
 }
 
-impl<'a> Mul<&'a Self> for X25519PrivateKey {
-    type Output = Self;
-
-    fn mul(self, rhs: &Self) -> Self::Output {
-        Self(self.0 * rhs.0)
-    }
-}
-
-impl<'a> Mul<&'a X25519PrivateKey> for &X25519PrivateKey {
-    type Output = X25519PrivateKey;
-
-    fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 * rhs.0)
-    }
-}
-
-impl Add for X25519PrivateKey {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl<'a> Add<&'a Self> for X25519PrivateKey {
-    type Output = Self;
-
-    fn add(self, rhs: &Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl<'a> Add<X25519PrivateKey> for &'a X25519PrivateKey {
-    type Output = X25519PrivateKey;
-
-    fn add(self, rhs: X25519PrivateKey) -> Self::Output {
-        X25519PrivateKey(self.0 + rhs.0)
-    }
-}
-
 impl<'a> Add<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
     fn add(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PrivateKey(self.0 + rhs.0)
-    }
-}
-
-impl Sub for X25519PrivateKey {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0)
     }
 }
 
@@ -182,20 +134,11 @@ impl<'a> Sub<&'a X25519PrivateKey> for &X25519PrivateKey {
     }
 }
 
-impl Mul for X25519PrivateKey {
-    type Output = Self;
+impl<'a> Mul<&'a X25519PrivateKey> for &X25519PrivateKey {
+    type Output = X25519PrivateKey;
 
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0 * rhs.0)
-    }
-}
-
-impl Div for X25519PrivateKey {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        #[allow(clippy::suspicious_arithmetic_impl)]
-        Self(self.0 * rhs.0.invert())
+    fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
+        X25519PrivateKey(self.0 * rhs.0)
     }
 }
 
@@ -319,14 +262,6 @@ impl Display for X25519PublicKey {
     }
 }
 
-impl Sub for X25519PublicKey {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0)
-    }
-}
-
 impl<'a> Sub<&'a X25519PublicKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
@@ -335,27 +270,11 @@ impl<'a> Sub<&'a X25519PublicKey> for &X25519PublicKey {
     }
 }
 
-impl Add for X25519PublicKey {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
 impl<'a> Add<&'a X25519PublicKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
     fn add(self, rhs: &X25519PublicKey) -> Self::Output {
         X25519PublicKey(self.0 + rhs.0)
-    }
-}
-
-impl Mul<X25519PrivateKey> for X25519PublicKey {
-    type Output = Self;
-
-    fn mul(self, rhs: X25519PrivateKey) -> Self::Output {
-        Self(self.0 * rhs.0)
     }
 }
 
