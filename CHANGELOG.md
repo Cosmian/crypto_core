@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ---
-## [2.0.1] - 2022-09-06
+## [3.0.0] - 2022-09-20
 ### Added
 - `DhKeyPair` which represents an asymmetric key pair in a space wher the
   Computational Diffie-Helman problem is intractable
