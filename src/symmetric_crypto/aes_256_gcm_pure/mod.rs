@@ -24,8 +24,9 @@ const NONCE_LENGTH: usize = 12;
 /// Use a 128-bit MAC tag
 const MAC_LENGTH: usize = 16;
 
-/// A 96-bit nonce restricts the plaintext size to 4096 bytes
-const MAX_PLAINTEXT_LENGTH: usize = 4096;
+/// Plaintext size (in bytes) restriction from the NIST
+/// https://csrc.nist.gov/publications/detail/sp/800-38d/final
+const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 256 GCM.
@@ -47,7 +48,7 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
         plaintext: &[u8],
         additional_data: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        if plaintext.len() > MAX_PLAINTEXT_LENGTH {
+        if plaintext.len() as u64 > MAX_PLAINTEXT_LENGTH {
             return Err(CryptoCoreError::InvalidSize(format!(
                 "Plaintext is too large ({} bytes), max size: {} ",
                 plaintext.len(),
@@ -79,11 +80,11 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
                 Self::ENCRYPTION_OVERHEAD
             )));
         }
-        if ciphertext.len() > MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD {
+        if ciphertext.len() as u64 > MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD as u64 {
             return Err(CryptoCoreError::InvalidSize(format!(
                 "Ciphertext is too large ({} bytes), max size: {} ",
                 ciphertext.len(),
-                MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD
+                MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD as u64
             )));
         }
         // The ciphertext is of the form: nonce || AEAS ciphertext

@@ -54,7 +54,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     ///
     /// - `rng`         : secure random number generator
     /// - `secret_key`  : secret symmetric key
-    /// - `plaintext`     : plaintext message
+    /// - `plaintext`   : plaintext message
     /// - `aad`         : optional data to use in the authentication method,
     /// must use the same for decryption
     fn encrypt<R: RngCore + CryptoRng>(
