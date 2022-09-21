@@ -347,13 +347,7 @@ impl ZeroizeOnDrop for X25519KeyPair {}
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        asymmetric_crypto::curve25519::{
-            X25519PrivateKey, X25519PublicKey, X25519_PK_LENGTH, X25519_SK_LENGTH,
-        },
-        entropy::CsRng,
-        KeyTrait,
-    };
+    use crate::{asymmetric_crypto::curve25519::*, entropy::CsRng, KeyTrait};
 
     #[test]
     fn test_private_key_serialization() {
@@ -371,5 +365,19 @@ mod test {
         let bytes: [u8; X25519_PK_LENGTH] = pk.to_bytes();
         let recovered = super::X25519PublicKey::try_from(bytes).unwrap();
         assert_eq!(pk, recovered);
+    }
+
+    #[test]
+    fn test_dh_key_pair() {
+        let mut rng = CsRng::new();
+        let kp1 = X25519KeyPair::new(&mut rng);
+        let kp2 = X25519KeyPair::new(&mut rng);
+        // check the keys are randomly generated
+        assert_ne!(kp1, kp2);
+        // check DH Key exchange is possible
+        assert_eq!(
+            kp1.public_key() * kp2.private_key(),
+            kp2.public_key() * kp1.private_key()
+        );
     }
 }
