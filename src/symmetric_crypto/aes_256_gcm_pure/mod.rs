@@ -15,13 +15,13 @@ use rand_core::{CryptoRng, RngCore};
 
 use super::{key::Key, nonce::Nonce};
 
-/// Use a 256-bit AES key
+/// Use a 256-bit AES key.
 const KEY_LENGTH: usize = 32;
 
-/// Use a 96-bit nonce
+/// Use a 96-bit nonce.
 const NONCE_LENGTH: usize = 12;
 
-/// Use a 128-bit MAC tag
+/// Use a 128-bit MAC tag.
 const MAC_LENGTH: usize = 16;
 
 /// Plaintext size (in bytes) restriction from the NIST
@@ -87,7 +87,7 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
                 MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD as u64
             )));
         }
-        // The ciphertext is of the form: nonce || AEAS ciphertext
+        // The ciphertext is of the form: nonce || AEAD ciphertext
         decrypt_combined(
             secret_key.as_bytes(),
             &ciphertext[Self::Nonce::LENGTH..],

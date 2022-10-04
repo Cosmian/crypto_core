@@ -12,7 +12,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 pub struct Key<const LENGTH: usize>([u8; LENGTH]);
 
 impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
-    /// Generate a new symmetric random `Key`
+    /// Generates a new symmetric random `Key`.
     #[inline]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut key = [0; LENGTH];
@@ -20,13 +20,13 @@ impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
         Self(key)
     }
 
-    /// Convert the given key into bytes.
+    /// Converts the given key into bytes.
     #[inline]
     fn to_bytes(&self) -> [u8; LENGTH] {
         self.0.to_owned()
     }
 
-    /// Try to convert the given bytes into a key. Size must be correct.
+    /// Tries to convert the given bytes into a key. Size must be correct.
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         let bytes = <[u8; LENGTH]>::try_from(bytes)
@@ -36,19 +36,19 @@ impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
 }
 
 impl<const LENGTH: usize> SymKey<LENGTH> for Key<LENGTH> {
-    /// Convert the given key into a byte slice.
+    /// Converts the given key into a byte slice.
     #[inline]
     fn as_bytes(&self) -> &[u8] {
         &self.0
     }
 
-    /// Consume the key to return underlying bytes.
+    /// Consumes the key to return underlying bytes.
     #[inline]
     fn into_bytes(self) -> [u8; LENGTH] {
         self.0
     }
 
-    /// Convert the given bytes with correct size into a key.
+    /// Converts the given bytes with correct size into a key.
     #[inline]
     fn from_bytes(bytes: [u8; LENGTH]) -> Self {
         Self(bytes)
@@ -67,7 +67,7 @@ impl<const KEY_LENGTH: usize> Zeroize for Key<KEY_LENGTH> {
     }
 }
 
-// Implement `Drop` trait to follow R23.
+// Implements `Drop` trait to follow R23.
 impl<const KEY_LENGTH: usize> Drop for Key<KEY_LENGTH> {
     fn drop(&mut self) {
         self.zeroize();

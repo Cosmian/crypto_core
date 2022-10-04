@@ -19,15 +19,15 @@ use std::vec::Vec;
 
 /// Defines a symmetric encryption key.
 pub trait SymKey<const LENGTH: usize>: KeyTrait<LENGTH> + Hash {
-    /// Convert the given key into a byte slice.
+    /// Converts the given key into a byte slice.
     #[must_use]
     fn as_bytes(&self) -> &[u8];
 
-    /// Consume the key to return underlying bytes.
+    /// Consumes the key to return the underlying bytes.
     #[must_use]
     fn into_bytes(self) -> [u8; LENGTH];
 
-    /// Convert the given bytes into a key.
+    /// Converts the given bytes into a key.
     #[must_use]
     fn from_bytes(bytes: [u8; LENGTH]) -> Self;
 }
@@ -38,7 +38,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     /// Number of bytes added to the message length in the encapsulation.
     const ENCRYPTION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
 
-    /// MAC length
+    /// MAC tag length
     const MAC_LENGTH: usize;
 
     /// Symmetric key length
@@ -50,7 +50,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     /// Associated key type
     type Key: SymKey<KEY_LENGTH>;
 
-    /// Encrypt data using the given symmetric key.
+    /// Encrypts data using the given symmetric key.
     ///
     /// - `rng`         : secure random number generator
     /// - `secret_key`  : secret symmetric key
@@ -64,7 +64,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError>;
 
-    /// Decrypt data using the given symmetric key.
+    /// Decrypts data using the given symmetric key.
     ///
     /// - `secret_key`  : symmetric key
     /// - `ciphertext`  : ciphertext message

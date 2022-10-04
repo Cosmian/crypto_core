@@ -23,26 +23,26 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 pub use crate::error::CryptoCoreError;
 
 pub mod reexport {
-    // reexport `rand_core` so that the PRNG implement the correct version of the traits
+    // reexport `rand_core` so that the PRNGs implement the correct version of
+    // the traits
     pub use rand_core;
 }
 
-/// Trait defining a cryptographic key.
+/// Cryptographic key.
 pub trait KeyTrait<const LENGTH: usize>:
     Clone + Eq + PartialEq + Send + Sized + Sync + Zeroize + ZeroizeOnDrop
 {
     /// Key length
     const LENGTH: usize = LENGTH;
 
-    /// Generate a new random key.
+    /// Generates a new random key.
     #[must_use]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
-    /// Convert the given key into a vector of bytes.
+    /// Converts the given key into a vector of bytes.
     #[must_use]
     fn to_bytes(&self) -> [u8; LENGTH];
 
-    /// Convert the given bytes into a key. An error is returned in case the
-    /// conversion fails.
+    /// Tries to convert the given bytes into a key.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
 }

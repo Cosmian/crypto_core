@@ -1,4 +1,4 @@
-//! Define a nonce object, for use in symmetric encryption.
+//! Defines a nonce object, for use in symmetric encryption.
 //!
 //! A nonce, for Number used ONCE, is a randomly generated number used to
 //! ensure a ciphertext cannot be reused, hence avoiding replay attacks.
@@ -10,24 +10,24 @@ use core::{
 };
 use rand_core::{CryptoRng, RngCore};
 
-/// Trait defining a nonce for use in a symmetric encryption scheme.
+/// Defines a nonce to use in a symmetric encryption scheme.
 pub trait NonceTrait: Send + Sync + Sized + Clone {
     /// Size of the nonce in bytes.
     const LENGTH: usize;
 
-    /// Generate a new nonce object.
+    /// Generates a new nonce object.
     #[must_use]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
-    /// Try to deserialize the given `bytes` into a nonce object. The number of
-    /// `bytes` must be equal to `Self::LENGTH`.
+    /// Tries to deserialize the given `bytes` into a nonce object. The number
+    /// of `bytes` must be equal to `Self::LENGTH`.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
 
     /// Xor the nonce with the given value.
     #[must_use]
     fn xor(&self, b2: &[u8]) -> Self;
 
-    /// Serialize the nonce.
+    /// Serializes the nonce.
     fn as_bytes(&self) -> &[u8];
 }
 

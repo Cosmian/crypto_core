@@ -33,13 +33,13 @@ where
     /// Secret key
     type PrivateKey: KeyTrait<SK_LENGTH>;
 
-    /// Create a new key pair
+    /// Creates a new key pair
     #[must_use]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
-    /// Return a reference to the public key.
+    /// Returns a reference to the public key.
     fn public_key(&self) -> &Self::PublicKey;
 
-    /// Return a reference to the secret key.
+    /// Returns a reference to the secret key.
     fn private_key(&self) -> &Self::PrivateKey;
 }

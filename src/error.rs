@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-/// Error type for this module.
+/// Error type for this crate.
 #[derive(Debug, Error, PartialEq)]
 pub enum CryptoCoreError {
     #[error("Wrong size: {given} given should be {expected}")]

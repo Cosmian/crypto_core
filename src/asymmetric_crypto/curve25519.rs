@@ -34,7 +34,7 @@ pub const X25519_PK_LENGTH: usize = 32;
 pub struct X25519PrivateKey(Scalar);
 
 impl X25519PrivateKey {
-    /// Convert to bytes without copy.
+    /// Converts to bytes without copy.
     #[inline]
     #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
@@ -43,7 +43,7 @@ impl X25519PrivateKey {
 }
 
 impl KeyTrait<X25519_SK_LENGTH> for X25519PrivateKey {
-    /// Generate a new random key.
+    /// Generates a new random key.
     #[inline]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut bytes = [0; 64];
@@ -157,7 +157,7 @@ impl Zeroize for X25519PrivateKey {
     }
 }
 
-// Implement `Drop` trait to follow R23.
+// Implements `Drop` trait to follow R23.
 impl Drop for X25519PrivateKey {
     fn drop(&mut self) {
         self.zeroize();
@@ -175,7 +175,7 @@ impl ZeroizeOnDrop for X25519PrivateKey {}
 pub struct X25519PublicKey(RistrettoPoint);
 
 impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
-    /// Generate a new random public key.
+    /// Generates a new random public key.
     #[inline]
     fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut uniform_bytes = [0u8; 64];
@@ -189,6 +189,7 @@ impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
         self.0.compress().to_bytes()
     }
 
+    /// Converts the given bytes into key.
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
@@ -245,7 +246,7 @@ impl From<X25519PublicKey> for [u8; X25519_PK_LENGTH] {
     }
 }
 
-/// Parse from an hex encoded String
+/// Parses an hex encoded String
 impl TryFrom<&str> for X25519PublicKey {
     type Error = CryptoCoreError;
 
@@ -255,7 +256,7 @@ impl TryFrom<&str> for X25519PublicKey {
     }
 }
 
-/// Display the hex encoded value of the key
+/// Displays the hex encoded value of the key
 impl Display for X25519PublicKey {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", hex::encode(self.0.compress().to_bytes()))
@@ -292,7 +293,7 @@ impl Zeroize for X25519PublicKey {
     }
 }
 
-// Implement `Drop` trait to follow R23.
+// Implements `Drop` trait to follow R23.
 impl Drop for X25519PublicKey {
     fn drop(&mut self) {
         self.zeroize();
@@ -337,6 +338,7 @@ impl Zeroize for X25519KeyPair {
     }
 }
 
+// Implements `Drop` trait to follow R23.
 impl Drop for X25519KeyPair {
     fn drop(&mut self) {
         self.zeroize();
