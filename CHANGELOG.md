@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ---
-## [3.0.0] - 2022-09-20
+## [3.0.0] - 2022-10-04
 ### Added
 - `DhKeyPair` which represents an asymmetric key pair in a space wher the
   Computational Diffie-Helman problem is intractable
@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - `NonceTrait::increment()`
 - `SymmetricCrypto` trait
 - `Block`
+- `kdf` module
 ---
 
 ---

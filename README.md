@@ -11,7 +11,6 @@ Cosmian cryptographic resources:
 
 - symmetric cryptography primitives can be found in the `symmetric_crypto` module;
 - asymmetric cryptography primitives can be found in the `asymmetric_crypto` module;
-- a Key Derivation Function (KDF) can be found in the `kdf` module;
 - a Random Number Generator (RNG) can be found in the `entropy` module.
 
 The crate also defines `CryptoCoreError`, the error type, and a few traits.
@@ -23,27 +22,19 @@ GCM algorithm, as described in the [ISO 2004](https://www.shoup.net/iso/std6.pdf
 This implementation is 128-bits secure.
 
 It uses the [`aes_gcm`](https://docs.rs/aes-gcm/latest/aes_gcm/index.html)
-implementation of the AES GCM algorithm. This implementation make use of the
-AES instruction when available, which allows a high encryption speed.
+implementation of the AES GCM algorithm. This implementation makes use of the
+AES instruction set when available, which allows for a high encryption speed.
 
 ## Asymmetric Crypto
 
 This crate implements a public and a private key objects based on Curve25519.
-This is the fastest elliptic curve known when implementing these objects. Its
-security level is also 128 bits.
+This one of the fastest elliptic curves known when implementing these objects.
+Its security level is also 128 bits.
 
 It uses the [Dalek](https://github.com/dalek-cryptography/curve25519-dalek)
-implementation, which also offers an implementation of the Ristretto technique
-to construct a prime order group on the curve. This group is used to implement
+implementation, which offers an implementation of the Ristretto technique to
+construct a prime order group on the curve. This group is used to implement
 the public key.
-
-## Key Derivation Function (KDF)
-
-This crate uses the [`hkdf`](https://docs.rs/hkdf/latest/hkdf/) implementation
-of the HKDF algorithm, along with the Sha256 implementation of the Rust standard
-library in order to implement a KDF.
-
-Since Sha256 is 128-bits secure, this makes this KDF 128-bits secure too.
 
 ## Random Number Generator (RNG)
 
