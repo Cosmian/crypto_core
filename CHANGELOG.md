@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [3.0.0] - 2022-10-04
+### Added
+- `DhKeyPair` which represents an asymmetric key pair in a space wher the
+  Computational Diffie-Helman problem is intractable
+### Changed
+- use constant generics
+- use `core` instead of `std` when possible
+### Fixed
+### Removed
+- `NonceTrait::increment()`
+- `SymmetricCrypto` trait
+- `Block`
+- `kdf` module
+---
+
+---
 ## [2.0.0] - 2022-08-22
 ### Added
 - `Eq` super trait to `KeyTrait`

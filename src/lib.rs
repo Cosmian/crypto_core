@@ -15,29 +15,34 @@ mod error;
 
 pub mod asymmetric_crypto;
 pub mod entropy;
-pub mod kdf;
 pub mod symmetric_crypto;
 
+use rand_core::{CryptoRng, RngCore};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use crate::error::CryptoCoreError;
 
 pub mod reexport {
-    pub use generic_array;
-    // reexport `rand_core` so that the PRNG implement the correct version of the traits
+    // reexport `rand_core` so that the PRNGs implement the correct version of
+    // the traits
     pub use rand_core;
 }
 
-/// Trait defining a cryptographic key.
-pub trait KeyTrait: PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize + ZeroizeOnDrop {
-    /// Number of bytes in the serialized key.
-    type Length: Eq + generic_array::ArrayLength<u8>;
+/// Cryptographic key.
+pub trait KeyTrait<const LENGTH: usize>:
+    Clone + Eq + PartialEq + Send + Sized + Sync + Zeroize + ZeroizeOnDrop
+{
+    /// Key length
+    const LENGTH: usize = LENGTH;
 
-    /// Convert the given key into a vector of bytes.
+    /// Generates a new random key.
     #[must_use]
-    fn to_bytes(&self) -> generic_array::GenericArray<u8, Self::Length>;
+    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
 
-    /// Convert the given bytes into a key. An error is returned in case the
-    /// conversion fails.
+    /// Converts the given key into a vector of bytes.
+    #[must_use]
+    fn to_bytes(&self) -> [u8; LENGTH];
+
+    /// Tries to convert the given bytes into a key.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
 }

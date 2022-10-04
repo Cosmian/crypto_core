@@ -1,6 +1,6 @@
 use crate::CryptoCoreError;
+use core::convert::TryInto;
 use serde::{Deserialize, Serialize};
-use std::convert::TryInto;
 
 /// Attempts to get the length of this slice as an `u32` in 4 endian bytes and
 /// returns an error if it overflows
@@ -23,12 +23,13 @@ pub struct BytesScanner<'a> {
 impl<'a> BytesScanner<'a> {
     /// Returns a new byte scanner object.
     #[must_use]
+    #[inline]
     pub const fn new(bytes: &'a [u8]) -> Self {
         BytesScanner { bytes, start: 0 }
     }
 
     /// Returns a slice of the next `size` bytes or an error if less is
-    /// available
+    /// available.
     pub fn next(&mut self, size: usize) -> Result<&'a [u8], CryptoCoreError> {
         let end = self.start + size;
         if self.bytes.len() < end {
@@ -42,7 +43,7 @@ impl<'a> BytesScanner<'a> {
         Ok(chunk)
     }
 
-    /// Reads the next 4 big endian bytes to return an u32
+    /// Reads the next 4 big endian bytes to return an u32.
     pub fn read_u32(&mut self) -> Result<u32, CryptoCoreError> {
         Ok(u32::from_be_bytes(self.next(4)?.try_into().map_err(
             |_e| CryptoCoreError::ConversionError("invalid u32".to_string()),
@@ -60,23 +61,24 @@ impl<'a> BytesScanner<'a> {
         }
     }
 
-    /// Return `true` if there still are some bytes to read.
+    /// Returns `true` if there still are some bytes to read.
     pub fn has_more(&self) -> bool {
         self.start < self.bytes.len()
     }
 }
 
-/// Metadata encrypted as part of the header
+/// Metadata encrypted as part of the header.
 ///
 /// The `uid` is a security parameter:
-///  - when using a stream cipher such as AES, it uniquely
-///    identifies a resource, such as a file, and is part of the AEAD of every
-///    block when symmetrically encrypting data. It prevents an attacker from
-///    moving blocks between resources.
-///  - when using FPE, it is the "tweak" ([see Appendix C](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38G.pdf))
+///  - when using a stream cipher such as AES, it uniquely identifies a
+///    resource, such as a file, and is part of the AEAD of every block when
+///    symmetrically encrypting data. It prevents an attacker from moving
+///    blocks between resources.
+///  - when using FPE, it is the "tweak"
+///  ([see Appendix C](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-38G.pdf))
 ///
-/// The `additional_data` is not used as a security parameter. It is optional
-/// data (such as index tags) symmetrically encrypted as part of the header.
+/// The `additional_data` is *not* used as a security parameter, it is an
+/// optional data (such as index tags).
 #[derive(Debug, PartialEq, Eq, Clone, Default, Serialize, Deserialize)]
 pub struct Metadata {
     pub uid: Vec<u8>,
@@ -84,7 +86,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    /// The length in bytes of this meta data
+    /// Returns the length in bytes of this metadata.
     pub fn len(&self) -> usize {
         self.uid.len() + self.additional_data.as_ref().unwrap_or(&vec![]).len()
     }
@@ -95,23 +97,30 @@ impl Metadata {
         self.len() == 0
     }
 
-    /// Encode the metadata as a byte array
+    /// Encodes the metadata as a byte array.
     ///
     /// The first 4 bytes is the `u32` length of the UID as big endian bytes
+    ///
+    /// TODO: when LEB128 parsing is moved from CoverCrypt to an independent
+    /// crate, we can implement `read()` and `write()` for this object. This
+    /// will allows reducing the size of the serialized length saving up to 3
+    /// bytes when  the UID is small.
     pub fn try_to_bytes(&self) -> Result<Vec<u8>, CryptoCoreError> {
         if self.is_empty() {
             return Ok(vec![]);
         }
         let mut bytes = Vec::with_capacity(4 + self.len());
         bytes.append(&mut get_u32_len(&self.uid)?.to_vec());
-        bytes.extend(&self.uid);
+        bytes.extend_from_slice(&self.uid);
         if let Some(ad) = &self.additional_data {
-            bytes.extend(ad);
+            bytes.extend_from_slice(ad);
         }
         Ok(bytes)
     }
 
-    /// Decode the metadata from a byte array
+    /// Decodes the metadata from a byte array.
+    ///
+    /// TODO: see `try_to_bytes()` documentation.
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         if bytes.is_empty() {
             return Ok(Self::default());
