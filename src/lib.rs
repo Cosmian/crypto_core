@@ -15,7 +15,6 @@ mod error;
 
 pub mod asymmetric_crypto;
 pub mod entropy;
-pub mod kdf;
 pub mod symmetric_crypto;
 
 use rand_core::{CryptoRng, RngCore};
