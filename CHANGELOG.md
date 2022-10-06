@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [3.1.0] - 2022-10-06
+### Added
+- SHAKE256-based KDF
+- inline directives
+### Changed
+### Fixed
+### Removed
+---
+
+---
 ## [3.0.0] - 2022-10-04
 ### Added
 - `DhKeyPair` which represents an asymmetric key pair in a space wher the
