@@ -61,14 +61,16 @@ impl<const KEY_LENGTH: usize> Display for Key<KEY_LENGTH> {
     }
 }
 
-impl<const KEY_LENGTH: usize> Zeroize for Key<KEY_LENGTH> {
+impl<const LENGTH: usize> Zeroize for Key<LENGTH> {
+    #[inline]
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
 }
 
 // Implements `Drop` trait to follow R23.
-impl<const KEY_LENGTH: usize> Drop for Key<KEY_LENGTH> {
+impl<const LENGTH: usize> Drop for Key<LENGTH> {
+    #[inline]
     fn drop(&mut self) {
         self.zeroize();
     }

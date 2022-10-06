@@ -67,6 +67,7 @@ impl KeyTrait<X25519_SK_LENGTH> for X25519PrivateKey {
 impl TryFrom<[u8; Self::LENGTH]> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: [u8; Self::LENGTH]) -> Result<Self, Self::Error> {
         let scalar = Scalar::from_canonical_bytes(bytes).ok_or_else(|| {
             Self::Error::ConversionError(
@@ -80,14 +81,10 @@ impl TryFrom<[u8; Self::LENGTH]> for X25519PrivateKey {
 impl TryFrom<&[u8]> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let bytes: [u8; Self::LENGTH] = bytes.try_into().map_err(|e| {
-            Self::Error::ConversionError(format!(
-                "Error while converting slice of size {} to `X25519PublicKey`: {}",
-                bytes.len(),
-                e,
-            ))
-        })?;
+        let bytes = <[u8; Self::LENGTH]>::try_from(bytes)
+            .map_err(|e| Self::Error::ConversionError(e.to_string()))?;
         Self::try_from(bytes)
     }
 }
@@ -105,6 +102,7 @@ impl From<X25519PrivateKey> for [u8; X25519_SK_LENGTH] {
 impl TryFrom<&str> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let bytes = hex::decode(value)?;
         Self::try_from(bytes.as_slice())
@@ -121,6 +119,7 @@ impl Display for X25519PrivateKey {
 impl<'a> Add<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
+    #[inline]
     fn add(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PrivateKey(self.0 + rhs.0)
     }
@@ -129,6 +128,7 @@ impl<'a> Add<&'a X25519PrivateKey> for &X25519PrivateKey {
 impl<'a> Sub<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
+    #[inline]
     fn sub(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PrivateKey(self.0 - rhs.0)
     }
@@ -137,6 +137,7 @@ impl<'a> Sub<&'a X25519PrivateKey> for &X25519PrivateKey {
 impl<'a> Mul<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
+    #[inline]
     fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PrivateKey(self.0 * rhs.0)
     }
@@ -145,6 +146,7 @@ impl<'a> Mul<&'a X25519PrivateKey> for &X25519PrivateKey {
 impl<'a> Div<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
+    #[inline]
     fn div(self, rhs: &X25519PrivateKey) -> Self::Output {
         #[allow(clippy::suspicious_arithmetic_impl)]
         X25519PrivateKey(self.0 * rhs.0.invert())
@@ -152,6 +154,7 @@ impl<'a> Div<&'a X25519PrivateKey> for &X25519PrivateKey {
 }
 
 impl Zeroize for X25519PrivateKey {
+    #[inline]
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
@@ -159,6 +162,7 @@ impl Zeroize for X25519PrivateKey {
 
 // Implements `Drop` trait to follow R23.
 impl Drop for X25519PrivateKey {
+    #[inline]
     fn drop(&mut self) {
         self.zeroize();
     }
@@ -197,12 +201,14 @@ impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
 }
 
 impl From<X25519PrivateKey> for X25519PublicKey {
+    #[inline]
     fn from(private_key: X25519PrivateKey) -> Self {
         Self(&private_key.0 * &constants::RISTRETTO_BASEPOINT_TABLE)
     }
 }
 
 impl From<&X25519PrivateKey> for X25519PublicKey {
+    #[inline]
     fn from(private_key: &X25519PrivateKey) -> Self {
         Self(&private_key.0 * &constants::RISTRETTO_BASEPOINT_TABLE)
     }
@@ -211,6 +217,7 @@ impl From<&X25519PrivateKey> for X25519PublicKey {
 impl TryFrom<[u8; Self::LENGTH]> for X25519PublicKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: [u8; Self::LENGTH]) -> Result<Self, Self::Error> {
         Ok(Self(CompressedRistretto(bytes).decompress().ok_or_else(
             || {
@@ -225,14 +232,10 @@ impl TryFrom<[u8; Self::LENGTH]> for X25519PublicKey {
 impl TryFrom<&[u8]> for X25519PublicKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let bytes: [u8; Self::LENGTH] = bytes.try_into().map_err(|e| {
-            Self::Error::ConversionError(format!(
-                "Error while converting slice of size {} to `X25519PublicKey`: {}",
-                bytes.len(),
-                e,
-            ))
-        })?;
+        let bytes = <[u8; Self::LENGTH]>::try_from(bytes)
+            .map_err(|e| Self::Error::ConversionError(e.to_string()))?;
         Self::try_from(bytes)
     }
 }
@@ -250,6 +253,7 @@ impl From<X25519PublicKey> for [u8; X25519_PK_LENGTH] {
 impl TryFrom<&str> for X25519PublicKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let bytes = hex::decode(value)?;
         Self::try_from(bytes.as_slice())
@@ -266,6 +270,7 @@ impl Display for X25519PublicKey {
 impl<'a> Sub<&'a X25519PublicKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
+    #[inline]
     fn sub(self, rhs: &X25519PublicKey) -> Self::Output {
         X25519PublicKey(self.0 - rhs.0)
     }
@@ -274,6 +279,7 @@ impl<'a> Sub<&'a X25519PublicKey> for &X25519PublicKey {
 impl<'a> Add<&'a X25519PublicKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
+    #[inline]
     fn add(self, rhs: &X25519PublicKey) -> Self::Output {
         X25519PublicKey(self.0 + rhs.0)
     }
@@ -282,12 +288,14 @@ impl<'a> Add<&'a X25519PublicKey> for &X25519PublicKey {
 impl<'a> Mul<&'a X25519PrivateKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
+    #[inline]
     fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PublicKey(self.0 * rhs.0)
     }
 }
 
 impl Zeroize for X25519PublicKey {
+    #[inline]
     fn zeroize(&mut self) {
         self.0.zeroize()
     }
@@ -295,6 +303,7 @@ impl Zeroize for X25519PublicKey {
 
 // Implements `Drop` trait to follow R23.
 impl Drop for X25519PublicKey {
+    #[inline]
     fn drop(&mut self) {
         self.zeroize();
     }
@@ -332,6 +341,7 @@ impl DhKeyPair<X25519_PK_LENGTH, X25519_SK_LENGTH> for X25519KeyPair {
 }
 
 impl Zeroize for X25519KeyPair {
+    #[inline]
     fn zeroize(&mut self) {
         self.pk.zeroize();
         self.sk.zeroize();
@@ -340,6 +350,7 @@ impl Zeroize for X25519KeyPair {
 
 // Implements `Drop` trait to follow R23.
 impl Drop for X25519KeyPair {
+    #[inline]
     fn drop(&mut self) {
         self.zeroize();
     }

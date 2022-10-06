@@ -74,18 +74,21 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
 impl<'a, const NONCE_LENGTH: usize> TryFrom<&'a [u8]> for Nonce<NONCE_LENGTH> {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         Self::try_from_bytes(bytes)
     }
 }
 
-impl<const NONCE_LENGTH: usize> From<[u8; NONCE_LENGTH]> for Nonce<NONCE_LENGTH> {
-    fn from(b: [u8; NONCE_LENGTH]) -> Self {
+impl<const LENGTH: usize> From<[u8; LENGTH]> for Nonce<LENGTH> {
+    #[inline]
+    fn from(b: [u8; LENGTH]) -> Self {
         Self(b)
     }
 }
 
-impl<const NONCE_LENGTH: usize> Display for Nonce<NONCE_LENGTH> {
+impl<const LENGTH: usize> Display for Nonce<LENGTH> {
+    #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", hex::encode(self.0))
     }
