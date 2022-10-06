@@ -16,7 +16,7 @@ use curve25519_dalek::{
     ristretto::{CompressedRistretto, RistrettoPoint},
     scalar::Scalar,
 };
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -45,7 +45,7 @@ impl X25519PrivateKey {
 impl KeyTrait<X25519_SK_LENGTH> for X25519PrivateKey {
     /// Generates a new random key.
     #[inline]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; 64];
         rng.fill_bytes(&mut bytes);
         Self(Scalar::from_bytes_mod_order_wide(&bytes))
@@ -181,7 +181,7 @@ pub struct X25519PublicKey(RistrettoPoint);
 impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
     /// Generates a new random public key.
     #[inline]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut uniform_bytes = [0u8; 64];
         rng.fill_bytes(&mut uniform_bytes);
         Self(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
@@ -323,7 +323,7 @@ impl DhKeyPair<X25519_PK_LENGTH, X25519_SK_LENGTH> for X25519KeyPair {
     type PrivateKey = X25519PrivateKey;
 
     #[inline]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let sk = X25519PrivateKey::new(rng);
         let pk = X25519PublicKey::from(&sk);
         Self { sk, pk }
