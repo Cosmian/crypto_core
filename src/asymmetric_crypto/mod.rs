@@ -3,7 +3,7 @@ use core::{
     fmt::Debug,
     ops::{Add, Div, Mul, Sub},
 };
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub mod curve25519;
@@ -35,7 +35,7 @@ where
 
     /// Creates a new key pair
     #[must_use]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
 
     /// Returns a reference to the public key.
     fn public_key(&self) -> &Self::PublicKey;

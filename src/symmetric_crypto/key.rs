@@ -1,8 +1,8 @@
-//! Define a symmetric key object of variable size.
+//! Defines a symmetric key object of variable size.
 
 use crate::{symmetric_crypto::SymKey, CryptoCoreError, KeyTrait};
 use core::{convert::TryFrom, fmt::Display, hash::Hash, ops::Deref};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Symmetric key of a given size.
@@ -14,7 +14,7 @@ pub struct Key<const LENGTH: usize>([u8; LENGTH]);
 impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
     /// Generates a new symmetric random `Key`.
     #[inline]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut key = [0; LENGTH];
         rng.fill_bytes(&mut key);
         Self(key)
@@ -55,28 +55,30 @@ impl<const LENGTH: usize> SymKey<LENGTH> for Key<LENGTH> {
     }
 }
 
-impl<const KEY_LENGTH: usize> Display for Key<KEY_LENGTH> {
+impl<const LENGTH: usize> Display for Key<LENGTH> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", hex::encode(self.as_bytes()))
     }
 }
 
-impl<const KEY_LENGTH: usize> Zeroize for Key<KEY_LENGTH> {
+impl<const LENGTH: usize> Zeroize for Key<LENGTH> {
+    #[inline]
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
 }
 
 // Implements `Drop` trait to follow R23.
-impl<const KEY_LENGTH: usize> Drop for Key<KEY_LENGTH> {
+impl<const LENGTH: usize> Drop for Key<LENGTH> {
+    #[inline]
     fn drop(&mut self) {
         self.zeroize();
     }
 }
 
-impl<const KEY_LENGTH: usize> ZeroizeOnDrop for Key<KEY_LENGTH> {}
+impl<const LENGTH: usize> ZeroizeOnDrop for Key<LENGTH> {}
 
-impl<const KEY_LENGTH: usize> Deref for Key<KEY_LENGTH> {
+impl<const LENGTH: usize> Deref for Key<LENGTH> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
