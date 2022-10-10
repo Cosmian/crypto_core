@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [4.0.0] - 2022-10-19
+### Added
+- benches
+### Changed
+- use `Shake128` instead of `Shake256`
+### Fixed
+### Removed
+---
+
+---
 ## [3.1.0] - 2022-10-06
 ### Added
 - SHAKE256-based KDF
