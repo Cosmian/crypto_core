@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [4.0.0] - 2022-10-18
+### Added
+### Changed
+### Fixed
+### Removed
+- `Metadata`
+---
+
+---
 ## [3.1.0] - 2022-10-06
 ### Added
 - SHAKE256-based KDF

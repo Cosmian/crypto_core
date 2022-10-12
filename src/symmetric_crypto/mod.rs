@@ -1,15 +1,9 @@
 //! Define the `SymmetricCrypto` and `DEM` traits and provide an implementation
-//! based on the AES GCM algorithm. Define the `Block` and `Metadata` objects
-//! to ease the use of AES on real data.
+//! based on the AES GCM algorithm.
 
 pub mod aes_256_gcm_pure;
 pub mod key;
 pub mod nonce;
-
-mod metadata;
-
-pub use metadata::BytesScanner;
-pub use metadata::Metadata;
 
 use crate::{CryptoCoreError, KeyTrait};
 use core::{fmt::Debug, hash::Hash};
