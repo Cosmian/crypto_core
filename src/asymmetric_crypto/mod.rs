@@ -8,7 +8,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub mod curve25519;
 
-pub trait DhKeyPair<const PK_LENGTH: usize, const SK_LENGTH: usize>:
+pub trait DhKeyPair<const PUBLIC_KEY_LENGTH: usize, const PRIVATE_KEY_LENGTH: usize>:
     Debug + PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize + ZeroizeOnDrop
 where
     Self::PublicKey: From<Self::PrivateKey>,
@@ -19,19 +19,19 @@ where
         + Mul<&'b Self::PrivateKey, Output = Self::PrivateKey>
         + Div<&'b Self::PrivateKey, Output = Self::PrivateKey>,
 {
-    /// This is needed to be able to use `{ MyKeyPair::PK_LENGTH }`
+    /// This is needed to be able to use `{ MyKeyPair::PUBLIC_KEY_LENGTH }`
     /// as associated constant
-    const PK_LENGTH: usize = PK_LENGTH;
+    const PUBLIC_KEY_LENGTH: usize = PUBLIC_KEY_LENGTH;
 
-    /// This is needed to be able to use `{ MyKeyPair::SK_LENGTH }`
+    /// This is needed to be able to use `{ MyKeyPair::PRIVATE_KEY_LENGTH }`
     /// as associated constant
-    const SK_LENGTH: usize = SK_LENGTH;
+    const PRIVATE_KEY_LENGTH: usize = PRIVATE_KEY_LENGTH;
 
     /// Public key
-    type PublicKey: KeyTrait<PK_LENGTH>;
+    type PublicKey: KeyTrait<PUBLIC_KEY_LENGTH>;
 
-    /// Secret key
-    type PrivateKey: KeyTrait<SK_LENGTH>;
+    /// Private key
+    type PrivateKey: KeyTrait<PRIVATE_KEY_LENGTH>;
 
     /// Creates a new key pair
     #[must_use]
@@ -40,6 +40,6 @@ where
     /// Returns a reference to the public key.
     fn public_key(&self) -> &Self::PublicKey;
 
-    /// Returns a reference to the secret key.
+    /// Returns a reference to the private key.
     fn private_key(&self) -> &Self::PrivateKey;
 }

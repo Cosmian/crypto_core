@@ -20,11 +20,11 @@ use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-/// X25519 secret key length
-pub const X25519_SK_LENGTH: usize = 32;
+/// X25519 private key length
+pub const X25519_PRIVATE_KEY_LENGTH: usize = 32;
 
 /// X25519 public key length
-pub const X25519_PK_LENGTH: usize = 32;
+pub const X25519_PUBLIC_KEY_LENGTH: usize = 32;
 
 /// Asymmetric private key based on Curve25519.
 ///
@@ -42,7 +42,7 @@ impl X25519PrivateKey {
     }
 }
 
-impl KeyTrait<X25519_SK_LENGTH> for X25519PrivateKey {
+impl KeyTrait<X25519_PRIVATE_KEY_LENGTH> for X25519PrivateKey {
     /// Generates a new random key.
     #[inline]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
@@ -91,7 +91,7 @@ impl TryFrom<&[u8]> for X25519PrivateKey {
 
 // Needed by serde to derive `Deserialize`. Do not use otherwise since there
 // is a copy anyway
-impl From<X25519PrivateKey> for [u8; X25519_SK_LENGTH] {
+impl From<X25519PrivateKey> for [u8; X25519_PRIVATE_KEY_LENGTH] {
     #[inline]
     fn from(key: X25519PrivateKey) -> Self {
         key.to_bytes()
@@ -178,7 +178,7 @@ impl ZeroizeOnDrop for X25519PrivateKey {}
 #[serde(try_from = "&[u8]", into = "[u8; 32]")]
 pub struct X25519PublicKey(RistrettoPoint);
 
-impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
+impl KeyTrait<X25519_PUBLIC_KEY_LENGTH> for X25519PublicKey {
     /// Generates a new random public key.
     #[inline]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
@@ -242,7 +242,7 @@ impl TryFrom<&[u8]> for X25519PublicKey {
 
 // Needed by serde to derive `Deserialize`. Do not use otherwise since there
 // is a copy anyway.
-impl From<X25519PublicKey> for [u8; X25519_PK_LENGTH] {
+impl From<X25519PublicKey> for [u8; X25519_PUBLIC_KEY_LENGTH] {
     #[inline]
     fn from(key: X25519PublicKey) -> Self {
         key.to_bytes()
@@ -317,7 +317,7 @@ pub struct X25519KeyPair {
     sk: X25519PrivateKey,
 }
 
-impl DhKeyPair<X25519_PK_LENGTH, X25519_SK_LENGTH> for X25519KeyPair {
+impl DhKeyPair<X25519_PUBLIC_KEY_LENGTH, X25519_PRIVATE_KEY_LENGTH> for X25519KeyPair {
     type PublicKey = X25519PublicKey;
 
     type PrivateKey = X25519PrivateKey;
@@ -366,7 +366,7 @@ mod test {
     fn test_private_key_serialization() {
         let mut rng = CsRng::new();
         let sk = X25519PrivateKey::new(&mut rng);
-        let bytes: [u8; X25519_SK_LENGTH] = sk.to_bytes();
+        let bytes: [u8; X25519_PRIVATE_KEY_LENGTH] = sk.to_bytes();
         let recovered = X25519PrivateKey::try_from(bytes).unwrap();
         assert_eq!(sk, recovered);
     }
@@ -375,7 +375,7 @@ mod test {
     fn test_public_key_serialization() {
         let mut rng = CsRng::new();
         let pk = X25519PublicKey::new(&mut rng);
-        let bytes: [u8; X25519_PK_LENGTH] = pk.to_bytes();
+        let bytes: [u8; X25519_PUBLIC_KEY_LENGTH] = pk.to_bytes();
         let recovered = super::X25519PublicKey::try_from(bytes).unwrap();
         assert_eq!(pk, recovered);
     }
