@@ -23,7 +23,7 @@ const NONCE_LENGTH: usize = 12;
 const MAC_LENGTH: usize = 16;
 
 /// Plaintext size (in bytes) restriction from the NIST
-/// https://csrc.nist.gov/publications/detail/sp/800-38d/final
+/// <https://csrc.nist.gov/publications/detail/sp/800-38d/final>
 const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
