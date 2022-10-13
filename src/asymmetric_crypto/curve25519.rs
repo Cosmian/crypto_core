@@ -29,7 +29,7 @@ pub const X25519_PUBLIC_KEY_LENGTH: usize = 32;
 /// Asymmetric private key based on Curve25519.
 ///
 /// Internally, a curve scalar is used. It is 128-bits long.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Hash, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "[u8; 32]")]
 pub struct X25519PrivateKey(Scalar);
 
