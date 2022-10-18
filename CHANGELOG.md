@@ -6,9 +6,11 @@ All notable changes to this project will be documented in this file.
 ## [4.0.0] - 2022-10-18
 ### Added
 ### Changed
+- replace `Hc128` by `ChaCha12Rng`
 ### Fixed
 ### Removed
 - `Metadata`
+- custom `CsRng` interface -> use `RngCore` or `SeedableRng` instead
 ---
 
 ---

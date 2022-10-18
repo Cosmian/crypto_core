@@ -38,9 +38,9 @@ the public key.
 
 ## Random Number Generator (RNG)
 
-This crate uses the implementation of the HC128 algorithm from the
-[Rust standard library](https://docs.rs/rand/0.5.0/rand/prng/hc128/struct.Hc128Rng.html)
-to construct our RNG. It is therefore 128-bits secure.
+This crate uses the implementation of the CHACHA algorithm with 12 rounds from
+the [`rand_chacha`](https://rust-random.github.io/rand/rand_chacha/index.html)
+crate to construct our RNG. It is therefore 128-bits secure.
 
 ## Building
 

@@ -5,10 +5,9 @@ pub mod aes_256_gcm_pure;
 pub mod key;
 pub mod nonce;
 
-use crate::{CryptoCoreError, KeyTrait};
+use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, KeyTrait};
 use core::{fmt::Debug, hash::Hash};
 use nonce::NonceTrait;
-use rand_core::{CryptoRng, RngCore};
 use std::vec::Vec;
 
 /// Defines a symmetric encryption key.
@@ -51,7 +50,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     /// - `plaintext`   : plaintext message
     /// - `aad`         : optional data to use in the authentication method,
     /// must use the same for decryption
-    fn encrypt<R: RngCore + CryptoRng>(
+    fn encrypt<R: CryptoRngCore>(
         rng: &mut R,
         secret_key: &Self::Key,
         plaintext: &[u8],

@@ -1,8 +1,9 @@
 //! Defines a symmetric key object of variable size.
 
-use crate::{symmetric_crypto::SymKey, CryptoCoreError, KeyTrait};
+use crate::{
+    reexport::rand_core::CryptoRngCore, symmetric_crypto::SymKey, CryptoCoreError, KeyTrait,
+};
 use core::{convert::TryFrom, fmt::Display, hash::Hash, ops::Deref};
-use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Symmetric key of a given size.
@@ -89,13 +90,13 @@ impl<const LENGTH: usize> Deref for Key<LENGTH> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{entropy::CsRng, symmetric_crypto::key::Key, KeyTrait};
+    use crate::{reexport::rand_core::SeedableRng, symmetric_crypto::key::Key, CsRng, KeyTrait};
 
     const KEY_LENGTH: usize = 32;
 
     #[test]
     fn test_key() {
-        let mut cs_rng = CsRng::new();
+        let mut cs_rng = CsRng::from_entropy();
         let key_1 = Key::<KEY_LENGTH>::new(&mut cs_rng);
         assert_eq!(KEY_LENGTH, key_1.len());
         let key_2 = Key::new(&mut cs_rng);

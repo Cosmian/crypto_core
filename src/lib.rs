@@ -14,20 +14,21 @@
 mod error;
 
 pub mod asymmetric_crypto;
-pub mod entropy;
 pub mod kdf;
 pub mod symmetric_crypto;
+pub mod reexport {
+    // reexport `rand_core` so that the PRNGs implement the correct version of
+    // the traits
+    pub use rand_chacha::rand_core;
+}
 
-use rand_core::{CryptoRng, RngCore};
+use reexport::rand_core::{CryptoRng, RngCore};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use crate::error::CryptoCoreError;
 
-pub mod reexport {
-    // reexport `rand_core` so that the PRNGs implement the correct version of
-    // the traits
-    pub use rand_core;
-}
+/// Use ChaCha with 12 rounds as cryptographic RNG.
+pub type CsRng = rand_chacha::ChaCha12Rng;
 
 /// Cryptographic key.
 pub trait KeyTrait<const LENGTH: usize>:
