@@ -4,13 +4,14 @@
 mod error;
 
 pub mod asymmetric_crypto;
+pub mod bytes_ser_de;
 pub mod kdf;
-pub mod symmetric_crypto;
 pub mod reexport {
     // reexport `rand_core` so that the PRNGs implement the correct version of
     // the traits
     pub use rand_chacha::rand_core;
 }
+pub mod symmetric_crypto;
 
 use reexport::rand_core::{CryptoRng, RngCore};
 use zeroize::{Zeroize, ZeroizeOnDrop};
