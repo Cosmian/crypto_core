@@ -1,5 +1,5 @@
-//! Define the `SymmetricCrypto` and `DEM` traits and provide an implementation
-//! based on the AES GCM algorithm.
+//! Defines the `SymmetricCrypto` and `DEM` traits and provides an
+//! implementation based on AES256-GCM.
 
 pub mod aes_256_gcm_pure;
 pub mod key;

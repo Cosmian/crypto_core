@@ -1,3 +1,5 @@
+//! This demo is used in `README.md`.
+
 use cosmian_crypto_core::{
     asymmetric_crypto::{curve25519::X25519KeyPair, DhKeyPair},
     kdf,
