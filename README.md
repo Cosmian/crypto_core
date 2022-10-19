@@ -159,7 +159,7 @@ crate to construct our RNG. It is therefore 128-bits secure.
 
 ```
 Bench the generation of a cryptographic RNG
-                        time:   [1.2355 µs 1.2368 µs 1.2382 µs]
+                        time:   [353.84 ns 353.96 ns 354.10 ns]
 ```
 
 ### Key Derivation Function (KDF)
