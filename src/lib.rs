@@ -1,26 +1,17 @@
 //! This crate implements crypto primitives which are used in many other
-//! Cosmian cryptographic resources:
-//!
-//! - symmetric cryptography primitives can be found in the `symmetric_crypto` module;
-//! - asymmetric cryptography primitives can be found in the `asymmetric_crypto` module;
-//! - a Key Derivation Function (KDF) can be found in the `kdf` module;
-//! - a Random Number Generator (RNG) can be found in the `entropy` module.
-//!
-//! `CryptoCoreError` is the error type of the library.
-//!
-//! This crate also exposes a few traits for cryptographic objects defined in
-//! the modules.
+//! Cosmian cryptographic resources.
 
 mod error;
 
 pub mod asymmetric_crypto;
+pub mod bytes_ser_de;
 pub mod kdf;
-pub mod symmetric_crypto;
 pub mod reexport {
     // reexport `rand_core` so that the PRNGs implement the correct version of
     // the traits
     pub use rand_chacha::rand_core;
 }
+pub mod symmetric_crypto;
 
 use reexport::rand_core::{CryptoRng, RngCore};
 use zeroize::{Zeroize, ZeroizeOnDrop};

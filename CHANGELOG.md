@@ -5,8 +5,11 @@ All notable changes to this project will be documented in this file.
 ---
 ## [4.0.0] - 2022-10-18
 ### Added
+- `serialization` module
+- demo in `examples/demo.rs`
 ### Changed
 - replace `Hc128` by `ChaCha12Rng`
+- `README.md` follows template
 ### Fixed
 ### Removed
 - `Metadata`
