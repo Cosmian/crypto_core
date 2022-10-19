@@ -7,15 +7,18 @@ use std::io::{Read, Write};
 /// A `Serializable` object can easily be serialized and derserialized into an
 /// array of bytes.
 pub trait Serializable: Sized {
+    /// Error type returned by the serialization.
+    type Error: From<CryptoCoreError>;
+
     /// Writes to the given `Serializer`.
-    fn write(&self, ser: &mut Serializer) -> Result<usize, CryptoCoreError>;
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error>;
 
     /// Reads from the given `Deserializer`.
-    fn read(de: &mut Deserializer) -> Result<Self, CryptoCoreError>;
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error>;
 
     /// Serializes the object.
     #[inline]
-    fn try_to_bytes(&self) -> Result<Vec<u8>, CryptoCoreError> {
+    fn try_to_bytes(&self) -> Result<Vec<u8>, Self::Error> {
         let mut ser = Serializer::new();
         self.write(&mut ser)?;
         Ok(ser.finalize())
@@ -23,11 +26,11 @@ pub trait Serializable: Sized {
 
     /// Deserializes the object.
     #[inline]
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
+    fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.is_empty() {
-            return Err(CryptoCoreError::InvalidSize(
-                "Given byte string is empty".to_string(),
-            ));
+            return Err(
+                CryptoCoreError::InvalidSize("Given byte string is empty".to_string()).into(),
+            );
         }
         let mut de = Deserializer::new(bytes);
         Self::read(&mut de)
