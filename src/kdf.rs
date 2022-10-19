@@ -1,12 +1,15 @@
 /// Key Derivation Function (KDF).
 ///
-/// Derives the given inputs to the desired length using SHAKE256, which should
-/// then be imported where this macro is used:
+/// Derives the given inputs to the desired length using SHAKE128, which should
+/// then be imported where this macro is used.
 ///
 /// # Security
 ///
-/// The byte inputs shall contain enough entropy. For inputs with lower entropy
-/// like passwords, the Argon2 algorithm should be used.
+/// The input length needs to be at least 256 bits to give 128 bits of security.
+///
+/// [source](https://en.wikipedia.org/wiki/SHA-3#Instances)
+///
+/// For smaller inputs like passwords, the Argon2 algorithm should be used.
 ///
 /// # Example
 ///
@@ -16,12 +19,11 @@
 ///
 /// use sha3::{
 ///     digest::{ExtendableOutput, Update, XofReader},
-///     Shake256,
+///     Shake128,
 /// };
 ///
 /// const KEY_LENGTH: usize = 32;
 ///
-/// // input containing enough entropy
 /// const ikm: &str = "asdf34@!dsa@grq5e$2ASGy5";
 ///
 /// // derive a 32-bytes key
@@ -39,7 +41,7 @@
 macro_rules! kdf {
     ($length: ident, $($bytes: expr),+) => {
         {
-            let mut hasher = Shake256::default();
+            let mut hasher = Shake128::default();
             $(
                 hasher.update($bytes);
             )*
