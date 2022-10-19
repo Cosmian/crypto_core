@@ -3,12 +3,11 @@
 //! A nonce, for Number used ONCE, is a randomly generated number used to
 //! ensure a ciphertext cannot be reused, hence avoiding replay attacks.
 
-use crate::CryptoCoreError;
+use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError};
 use core::{
     convert::TryFrom,
     fmt::{Debug, Display},
 };
-use rand_core::CryptoRngCore;
 
 /// Defines a nonce to use in a symmetric encryption scheme.
 pub trait NonceTrait: Send + Sync + Sized + Clone {
@@ -95,15 +94,16 @@ impl<const LENGTH: usize> Display for Nonce<LENGTH> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        entropy::CsRng,
+        reexport::rand_core::SeedableRng,
         symmetric_crypto::nonce::{Nonce, NonceTrait},
+        CsRng,
     };
 
     const NONCE_LENGTH: usize = 12;
 
     #[test]
     fn test_nonce() {
-        let mut cs_rng = CsRng::new();
+        let mut cs_rng = CsRng::from_entropy();
         let nonce_1 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
         assert_eq!(NONCE_LENGTH, nonce_1.as_bytes().len());
         let nonce_2 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);

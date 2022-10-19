@@ -5,7 +5,9 @@
 //! Its security level is 128-bits. It is the fastest curve available at the
 //! time of this implementation.
 
-use crate::{asymmetric_crypto::DhKeyPair, CryptoCoreError, KeyTrait};
+use crate::{
+    asymmetric_crypto::DhKeyPair, reexport::rand_core::CryptoRngCore, CryptoCoreError, KeyTrait,
+};
 use core::{
     convert::TryFrom,
     fmt::Display,
@@ -16,7 +18,6 @@ use curve25519_dalek::{
     ristretto::{CompressedRistretto, RistrettoPoint},
     scalar::Scalar,
 };
-use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -360,11 +361,13 @@ impl ZeroizeOnDrop for X25519KeyPair {}
 
 #[cfg(test)]
 mod test {
-    use crate::{asymmetric_crypto::curve25519::*, entropy::CsRng, KeyTrait};
+    use crate::{
+        asymmetric_crypto::curve25519::*, reexport::rand_core::SeedableRng, CsRng, KeyTrait,
+    };
 
     #[test]
     fn test_private_key_serialization() {
-        let mut rng = CsRng::new();
+        let mut rng = CsRng::from_entropy();
         let sk = X25519PrivateKey::new(&mut rng);
         let bytes: [u8; X25519_PRIVATE_KEY_LENGTH] = sk.to_bytes();
         let recovered = X25519PrivateKey::try_from(bytes).unwrap();
@@ -373,7 +376,7 @@ mod test {
 
     #[test]
     fn test_public_key_serialization() {
-        let mut rng = CsRng::new();
+        let mut rng = CsRng::from_entropy();
         let pk = X25519PublicKey::new(&mut rng);
         let bytes: [u8; X25519_PUBLIC_KEY_LENGTH] = pk.to_bytes();
         let recovered = super::X25519PublicKey::try_from(bytes).unwrap();
@@ -382,7 +385,7 @@ mod test {
 
     #[test]
     fn test_dh_key_pair() {
-        let mut rng = CsRng::new();
+        let mut rng = CsRng::from_entropy();
         let kp1 = X25519KeyPair::new(&mut rng);
         let kp2 = X25519KeyPair::new(&mut rng);
         // check the keys are randomly generated
