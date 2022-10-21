@@ -7,7 +7,7 @@ name = "cosmian_crypto_core"
 version = "4.0.0"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib", "rlib", "staticlib"]
 name = "cosmian_crypto_core"
 path = "src/lib.rs"
 
