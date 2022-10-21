@@ -33,7 +33,16 @@ pub trait Serializable: Sized {
             );
         }
         let mut de = Deserializer::new(bytes);
-        Self::read(&mut de)
+        let res = Self::read(&mut de)?;
+        if de.finalize().is_empty() {
+            Ok(res)
+        } else {
+            // There should not be any more bytes to read
+            Err(CryptoCoreError::ConversionError(
+                "Remaining bytes after deserialization!".to_string(),
+            )
+            .into())
+        }
     }
 }
 
@@ -94,6 +103,19 @@ impl<'a> Deserializer<'a> {
             CryptoCoreError::InvalidSize(format!(
                 "Deserializer: failed reading array of: {} bytes",
                 len
+            ))
+        })?;
+        Ok(buf)
+    }
+
+    /// Reads all the remaining bytes.
+    #[inline]
+    pub fn value(&mut self) -> Result<Vec<u8>, CryptoCoreError> {
+        let mut buf = vec![0_u8; self.readable.len()];
+        self.readable.read_exact(&mut buf).map_err(|_| {
+            CryptoCoreError::InvalidSize(format!(
+                "Deserializer: failed reading array of: {} bytes",
+                self.readable.len()
             ))
         })?;
         Ok(buf)
