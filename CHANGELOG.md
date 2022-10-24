@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## [4.0.1] - 2022-10-24
+### Removed
+- crate-type `cdylib` in order to help the ios build
+---
+
+---
 ## [4.0.0] - 2022-10-19
 ### Added
 - benches
