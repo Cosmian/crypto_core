@@ -1,11 +1,11 @@
-use rand_core::{CryptoRng, RngCore, SeedableRng};
-use rand_hc::Hc128Rng;
+use crate::reexport::rand_core::{CryptoRng, Error, RngCore, SeedableRng};
+use rand_chacha::ChaCha12Rng;
 
 /// An implementation of a cryptographically secure
-/// pseudo random generator using HC128
+/// pseudo random generator using ThreadRng.
 #[derive(Debug)]
 pub struct CsRng {
-    rng: Hc128Rng,
+    rng: ChaCha12Rng,
 }
 
 impl CsRng {
@@ -14,7 +14,7 @@ impl CsRng {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            rng: Hc128Rng::from_entropy(),
+            rng: ChaCha12Rng::from_entropy(),
         }
     }
 
@@ -53,8 +53,8 @@ impl RngCore for CsRng {
     }
 
     #[inline]
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.rng.try_fill_bytes(dest).map_err(rand_core::Error::new)
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        self.rng.try_fill_bytes(dest)
     }
 }
 

@@ -3,12 +3,11 @@
 //! A nonce, for Number used ONCE, is a randomly generated number used to
 //! ensure a ciphertext cannot be reused, hence avoiding replay attacks.
 
-use crate::CryptoCoreError;
+use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError};
 use core::{
-    convert::{TryFrom, TryInto},
+    convert::TryFrom,
     fmt::{Debug, Display},
 };
-use rand_core::{CryptoRng, RngCore};
 
 /// Defines a nonce to use in a symmetric encryption scheme.
 pub trait NonceTrait: Send + Sync + Sized + Clone {
@@ -17,7 +16,7 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
 
     /// Generates a new nonce object.
     #[must_use]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
 
     /// Tries to deserialize the given `bytes` into a nonce object. The number
     /// of `bytes` must be equal to `Self::LENGTH`.
@@ -35,25 +34,23 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
 ///
 /// Internally, it uses an array of bytes of the given size.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Nonce<const NONCE_LENGTH: usize>([u8; NONCE_LENGTH]);
+pub struct Nonce<const LENGTH: usize>([u8; LENGTH]);
 
-impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
-    const LENGTH: usize = NONCE_LENGTH;
+impl<const LENGTH: usize> NonceTrait for Nonce<LENGTH> {
+    const LENGTH: usize = LENGTH;
 
     #[inline]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
-        let mut bytes = [0; NONCE_LENGTH];
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+        let mut bytes = [0; LENGTH];
         rng.fill_bytes(&mut bytes);
         Self(bytes)
     }
 
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        let b: [u8; NONCE_LENGTH] = bytes.try_into().map_err(|_| CryptoCoreError::SizeError {
-            given: bytes.len(),
-            expected: NONCE_LENGTH,
-        })?;
-        Ok(Self(b))
+        let bytes = <[u8; LENGTH]>::try_from(bytes)
+            .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
+        Ok(Self(bytes))
     }
 
     #[inline]
@@ -71,21 +68,24 @@ impl<const NONCE_LENGTH: usize> NonceTrait for Nonce<NONCE_LENGTH> {
     }
 }
 
-impl<'a, const NONCE_LENGTH: usize> TryFrom<&'a [u8]> for Nonce<NONCE_LENGTH> {
+impl<'a, const LENGTH: usize> TryFrom<&'a [u8]> for Nonce<LENGTH> {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         Self::try_from_bytes(bytes)
     }
 }
 
-impl<const NONCE_LENGTH: usize> From<[u8; NONCE_LENGTH]> for Nonce<NONCE_LENGTH> {
-    fn from(b: [u8; NONCE_LENGTH]) -> Self {
+impl<const LENGTH: usize> From<[u8; LENGTH]> for Nonce<LENGTH> {
+    #[inline]
+    fn from(b: [u8; LENGTH]) -> Self {
         Self(b)
     }
 }
 
-impl<const NONCE_LENGTH: usize> Display for Nonce<NONCE_LENGTH> {
+impl<const LENGTH: usize> Display for Nonce<LENGTH> {
+    #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", hex::encode(self.0))
     }
@@ -94,15 +94,16 @@ impl<const NONCE_LENGTH: usize> Display for Nonce<NONCE_LENGTH> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        entropy::CsRng,
+        reexport::rand_core::SeedableRng,
         symmetric_crypto::nonce::{Nonce, NonceTrait},
+        CsRng,
     };
 
     const NONCE_LENGTH: usize = 12;
 
     #[test]
     fn test_nonce() {
-        let mut cs_rng = CsRng::new();
+        let mut cs_rng = CsRng::from_entropy();
         let nonce_1 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
         assert_eq!(NONCE_LENGTH, nonce_1.as_bytes().len());
         let nonce_2 = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);

@@ -1,20 +1,13 @@
-//! Define the `SymmetricCrypto` and `DEM` traits and provide an implementation
-//! based on the AES GCM algorithm. Define the `Block` and `Metadata` objects
-//! to ease the use of AES on real data.
+//! Defines the `SymmetricCrypto` and `DEM` traits and provides an
+//! implementation based on AES256-GCM.
 
 pub mod aes_256_gcm_pure;
 pub mod key;
 pub mod nonce;
 
-mod metadata;
-
-pub use metadata::BytesScanner;
-pub use metadata::Metadata;
-
-use crate::{CryptoCoreError, KeyTrait};
+use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, KeyTrait};
 use core::{fmt::Debug, hash::Hash};
 use nonce::NonceTrait;
-use rand_core::{CryptoRng, RngCore};
 use std::vec::Vec;
 
 /// Defines a symmetric encryption key.
@@ -57,7 +50,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     /// - `plaintext`   : plaintext message
     /// - `aad`         : optional data to use in the authentication method,
     /// must use the same for decryption
-    fn encrypt<R: RngCore + CryptoRng>(
+    fn encrypt<R: CryptoRngCore>(
         rng: &mut R,
         secret_key: &Self::Key,
         plaintext: &[u8],

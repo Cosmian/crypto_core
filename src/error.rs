@@ -11,8 +11,6 @@ pub enum CryptoCoreError {
     HexParseError(#[from] hex::FromHexError),
     #[error("Failed to convert: {0}")]
     ConversionError(String),
-    #[error("Cannot derive key of size {0}")]
-    KdfError(usize),
     #[error("Key generation error")]
     KeyGenError,
     #[error("{0}")]

@@ -5,7 +5,9 @@
 //! Its security level is 128-bits. It is the fastest curve available at the
 //! time of this implementation.
 
-use crate::{asymmetric_crypto::DhKeyPair, CryptoCoreError, KeyTrait};
+use crate::{
+    asymmetric_crypto::DhKeyPair, reexport::rand_core::CryptoRngCore, CryptoCoreError, KeyTrait,
+};
 use core::{
     convert::TryFrom,
     fmt::Display,
@@ -16,20 +18,19 @@ use curve25519_dalek::{
     ristretto::{CompressedRistretto, RistrettoPoint},
     scalar::Scalar,
 };
-use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-/// X25519 secret key length
-pub const X25519_SK_LENGTH: usize = 32;
+/// X25519 private key length
+pub const X25519_PRIVATE_KEY_LENGTH: usize = 32;
 
 /// X25519 public key length
-pub const X25519_PK_LENGTH: usize = 32;
+pub const X25519_PUBLIC_KEY_LENGTH: usize = 32;
 
 /// Asymmetric private key based on Curve25519.
 ///
 /// Internally, a curve scalar is used. It is 128-bits long.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Hash, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(try_from = "&[u8]", into = "[u8; 32]")]
 pub struct X25519PrivateKey(Scalar);
 
@@ -42,10 +43,10 @@ impl X25519PrivateKey {
     }
 }
 
-impl KeyTrait<X25519_SK_LENGTH> for X25519PrivateKey {
+impl KeyTrait<X25519_PRIVATE_KEY_LENGTH> for X25519PrivateKey {
     /// Generates a new random key.
     #[inline]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; 64];
         rng.fill_bytes(&mut bytes);
         Self(Scalar::from_bytes_mod_order_wide(&bytes))
@@ -67,6 +68,7 @@ impl KeyTrait<X25519_SK_LENGTH> for X25519PrivateKey {
 impl TryFrom<[u8; Self::LENGTH]> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: [u8; Self::LENGTH]) -> Result<Self, Self::Error> {
         let scalar = Scalar::from_canonical_bytes(bytes).ok_or_else(|| {
             Self::Error::ConversionError(
@@ -80,21 +82,17 @@ impl TryFrom<[u8; Self::LENGTH]> for X25519PrivateKey {
 impl TryFrom<&[u8]> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let bytes: [u8; Self::LENGTH] = bytes.try_into().map_err(|e| {
-            Self::Error::ConversionError(format!(
-                "Error while converting slice of size {} to `X25519PublicKey`: {}",
-                bytes.len(),
-                e,
-            ))
-        })?;
+        let bytes = <[u8; Self::LENGTH]>::try_from(bytes)
+            .map_err(|e| Self::Error::ConversionError(e.to_string()))?;
         Self::try_from(bytes)
     }
 }
 
 // Needed by serde to derive `Deserialize`. Do not use otherwise since there
 // is a copy anyway
-impl From<X25519PrivateKey> for [u8; X25519_SK_LENGTH] {
+impl From<X25519PrivateKey> for [u8; X25519_PRIVATE_KEY_LENGTH] {
     #[inline]
     fn from(key: X25519PrivateKey) -> Self {
         key.to_bytes()
@@ -105,6 +103,7 @@ impl From<X25519PrivateKey> for [u8; X25519_SK_LENGTH] {
 impl TryFrom<&str> for X25519PrivateKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let bytes = hex::decode(value)?;
         Self::try_from(bytes.as_slice())
@@ -121,6 +120,7 @@ impl Display for X25519PrivateKey {
 impl<'a> Add<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
+    #[inline]
     fn add(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PrivateKey(self.0 + rhs.0)
     }
@@ -129,6 +129,7 @@ impl<'a> Add<&'a X25519PrivateKey> for &X25519PrivateKey {
 impl<'a> Sub<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
+    #[inline]
     fn sub(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PrivateKey(self.0 - rhs.0)
     }
@@ -137,6 +138,7 @@ impl<'a> Sub<&'a X25519PrivateKey> for &X25519PrivateKey {
 impl<'a> Mul<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
+    #[inline]
     fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PrivateKey(self.0 * rhs.0)
     }
@@ -145,6 +147,7 @@ impl<'a> Mul<&'a X25519PrivateKey> for &X25519PrivateKey {
 impl<'a> Div<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
+    #[inline]
     fn div(self, rhs: &X25519PrivateKey) -> Self::Output {
         #[allow(clippy::suspicious_arithmetic_impl)]
         X25519PrivateKey(self.0 * rhs.0.invert())
@@ -152,6 +155,7 @@ impl<'a> Div<&'a X25519PrivateKey> for &X25519PrivateKey {
 }
 
 impl Zeroize for X25519PrivateKey {
+    #[inline]
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
@@ -159,6 +163,7 @@ impl Zeroize for X25519PrivateKey {
 
 // Implements `Drop` trait to follow R23.
 impl Drop for X25519PrivateKey {
+    #[inline]
     fn drop(&mut self) {
         self.zeroize();
     }
@@ -174,10 +179,10 @@ impl ZeroizeOnDrop for X25519PrivateKey {}
 #[serde(try_from = "&[u8]", into = "[u8; 32]")]
 pub struct X25519PublicKey(RistrettoPoint);
 
-impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
+impl KeyTrait<X25519_PUBLIC_KEY_LENGTH> for X25519PublicKey {
     /// Generates a new random public key.
     #[inline]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut uniform_bytes = [0u8; 64];
         rng.fill_bytes(&mut uniform_bytes);
         Self(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
@@ -197,12 +202,14 @@ impl KeyTrait<X25519_PK_LENGTH> for X25519PublicKey {
 }
 
 impl From<X25519PrivateKey> for X25519PublicKey {
+    #[inline]
     fn from(private_key: X25519PrivateKey) -> Self {
         Self(&private_key.0 * &constants::RISTRETTO_BASEPOINT_TABLE)
     }
 }
 
 impl From<&X25519PrivateKey> for X25519PublicKey {
+    #[inline]
     fn from(private_key: &X25519PrivateKey) -> Self {
         Self(&private_key.0 * &constants::RISTRETTO_BASEPOINT_TABLE)
     }
@@ -211,6 +218,7 @@ impl From<&X25519PrivateKey> for X25519PublicKey {
 impl TryFrom<[u8; Self::LENGTH]> for X25519PublicKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: [u8; Self::LENGTH]) -> Result<Self, Self::Error> {
         Ok(Self(CompressedRistretto(bytes).decompress().ok_or_else(
             || {
@@ -225,21 +233,17 @@ impl TryFrom<[u8; Self::LENGTH]> for X25519PublicKey {
 impl TryFrom<&[u8]> for X25519PublicKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let bytes: [u8; Self::LENGTH] = bytes.try_into().map_err(|e| {
-            Self::Error::ConversionError(format!(
-                "Error while converting slice of size {} to `X25519PublicKey`: {}",
-                bytes.len(),
-                e,
-            ))
-        })?;
+        let bytes = <[u8; Self::LENGTH]>::try_from(bytes)
+            .map_err(|e| Self::Error::ConversionError(e.to_string()))?;
         Self::try_from(bytes)
     }
 }
 
 // Needed by serde to derive `Deserialize`. Do not use otherwise since there
 // is a copy anyway.
-impl From<X25519PublicKey> for [u8; X25519_PK_LENGTH] {
+impl From<X25519PublicKey> for [u8; X25519_PUBLIC_KEY_LENGTH] {
     #[inline]
     fn from(key: X25519PublicKey) -> Self {
         key.to_bytes()
@@ -250,6 +254,7 @@ impl From<X25519PublicKey> for [u8; X25519_PK_LENGTH] {
 impl TryFrom<&str> for X25519PublicKey {
     type Error = CryptoCoreError;
 
+    #[inline]
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let bytes = hex::decode(value)?;
         Self::try_from(bytes.as_slice())
@@ -266,6 +271,7 @@ impl Display for X25519PublicKey {
 impl<'a> Sub<&'a X25519PublicKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
+    #[inline]
     fn sub(self, rhs: &X25519PublicKey) -> Self::Output {
         X25519PublicKey(self.0 - rhs.0)
     }
@@ -274,6 +280,7 @@ impl<'a> Sub<&'a X25519PublicKey> for &X25519PublicKey {
 impl<'a> Add<&'a X25519PublicKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
+    #[inline]
     fn add(self, rhs: &X25519PublicKey) -> Self::Output {
         X25519PublicKey(self.0 + rhs.0)
     }
@@ -282,12 +289,14 @@ impl<'a> Add<&'a X25519PublicKey> for &X25519PublicKey {
 impl<'a> Mul<&'a X25519PrivateKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
+    #[inline]
     fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
         X25519PublicKey(self.0 * rhs.0)
     }
 }
 
 impl Zeroize for X25519PublicKey {
+    #[inline]
     fn zeroize(&mut self) {
         self.0.zeroize()
     }
@@ -295,6 +304,7 @@ impl Zeroize for X25519PublicKey {
 
 // Implements `Drop` trait to follow R23.
 impl Drop for X25519PublicKey {
+    #[inline]
     fn drop(&mut self) {
         self.zeroize();
     }
@@ -308,13 +318,13 @@ pub struct X25519KeyPair {
     sk: X25519PrivateKey,
 }
 
-impl DhKeyPair<X25519_PK_LENGTH, X25519_SK_LENGTH> for X25519KeyPair {
+impl DhKeyPair<X25519_PUBLIC_KEY_LENGTH, X25519_PRIVATE_KEY_LENGTH> for X25519KeyPair {
     type PublicKey = X25519PublicKey;
 
     type PrivateKey = X25519PrivateKey;
 
     #[inline]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let sk = X25519PrivateKey::new(rng);
         let pk = X25519PublicKey::from(&sk);
         Self { sk, pk }
@@ -332,6 +342,7 @@ impl DhKeyPair<X25519_PK_LENGTH, X25519_SK_LENGTH> for X25519KeyPair {
 }
 
 impl Zeroize for X25519KeyPair {
+    #[inline]
     fn zeroize(&mut self) {
         self.pk.zeroize();
         self.sk.zeroize();
@@ -340,6 +351,7 @@ impl Zeroize for X25519KeyPair {
 
 // Implements `Drop` trait to follow R23.
 impl Drop for X25519KeyPair {
+    #[inline]
     fn drop(&mut self) {
         self.zeroize();
     }
@@ -349,29 +361,31 @@ impl ZeroizeOnDrop for X25519KeyPair {}
 
 #[cfg(test)]
 mod test {
-    use crate::{asymmetric_crypto::curve25519::*, entropy::CsRng, KeyTrait};
+    use crate::{
+        asymmetric_crypto::curve25519::*, reexport::rand_core::SeedableRng, CsRng, KeyTrait,
+    };
 
     #[test]
     fn test_private_key_serialization() {
-        let mut rng = CsRng::new();
+        let mut rng = CsRng::from_entropy();
         let sk = X25519PrivateKey::new(&mut rng);
-        let bytes: [u8; X25519_SK_LENGTH] = sk.to_bytes();
+        let bytes: [u8; X25519_PRIVATE_KEY_LENGTH] = sk.to_bytes();
         let recovered = X25519PrivateKey::try_from(bytes).unwrap();
         assert_eq!(sk, recovered);
     }
 
     #[test]
     fn test_public_key_serialization() {
-        let mut rng = CsRng::new();
+        let mut rng = CsRng::from_entropy();
         let pk = X25519PublicKey::new(&mut rng);
-        let bytes: [u8; X25519_PK_LENGTH] = pk.to_bytes();
+        let bytes: [u8; X25519_PUBLIC_KEY_LENGTH] = pk.to_bytes();
         let recovered = super::X25519PublicKey::try_from(bytes).unwrap();
         assert_eq!(pk, recovered);
     }
 
     #[test]
     fn test_dh_key_pair() {
-        let mut rng = CsRng::new();
+        let mut rng = CsRng::from_entropy();
         let kp1 = X25519KeyPair::new(&mut rng);
         let kp2 = X25519KeyPair::new(&mut rng);
         // check the keys are randomly generated

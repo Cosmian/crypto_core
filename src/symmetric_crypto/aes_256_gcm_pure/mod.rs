@@ -3,7 +3,8 @@
 //!
 //! It will use the AES native interface on the CPU if available.
 use crate::{
-    symmetric_crypto::{nonce::NonceTrait, Dem, SymKey},
+    reexport::rand_core::CryptoRngCore,
+    symmetric_crypto::{key::Key, nonce::Nonce, nonce::NonceTrait, Dem, SymKey},
     CryptoCoreError,
 };
 use aes_gcm::{
@@ -11,9 +12,6 @@ use aes_gcm::{
     aes::cipher::generic_array::GenericArray,
     AeadInPlace, Aes256Gcm, KeyInit,
 };
-use rand_core::{CryptoRng, RngCore};
-
-use super::{key::Key, nonce::Nonce};
 
 /// Use a 256-bit AES key.
 const KEY_LENGTH: usize = 32;
@@ -25,7 +23,7 @@ const NONCE_LENGTH: usize = 12;
 const MAC_LENGTH: usize = 16;
 
 /// Plaintext size (in bytes) restriction from the NIST
-/// https://csrc.nist.gov/publications/detail/sp/800-38d/final
+/// <https://csrc.nist.gov/publications/detail/sp/800-38d/final>
 const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
@@ -42,7 +40,7 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
 
     type Nonce = Nonce<NONCE_LENGTH>;
 
-    fn encrypt<R: RngCore + CryptoRng>(
+    fn encrypt<R: CryptoRngCore>(
         rng: &mut R,
         secret_key: &Self::Key,
         plaintext: &[u8],
@@ -182,7 +180,7 @@ pub fn decrypt_in_place_detached(
 mod tests {
 
     use crate::{
-        entropy::CsRng,
+        reexport::rand_core::{RngCore, SeedableRng},
         symmetric_crypto::{
             aes_256_gcm_pure::{
                 decrypt_combined, decrypt_in_place_detached, encrypt_combined,
@@ -193,14 +191,15 @@ mod tests {
             nonce::NonceTrait,
             Dem, SymKey,
         },
-        CryptoCoreError, KeyTrait,
+        CryptoCoreError, CsRng, KeyTrait,
     };
 
     #[test]
     fn test_encryption_decryption_combined() -> Result<(), CryptoCoreError> {
-        let mut cs_rng = CsRng::new();
+        let mut cs_rng = CsRng::from_entropy();
         let key = Key::<KEY_LENGTH>::new(&mut cs_rng);
-        let bytes = cs_rng.generate_random_bytes::<8192>();
+        let mut bytes = [0; 8192];
+        cs_rng.fill_bytes(&mut bytes);
         let iv = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
         // no additional data
         let encrypted_result = encrypt_combined(&key, &bytes, iv.as_bytes(), None)?;
@@ -209,14 +208,16 @@ mod tests {
         let recovered = decrypt_combined(&key, &encrypted_result, iv.as_bytes(), None)?;
         assert_eq!(bytes.to_vec(), recovered);
         // additional data
-        let aad = cs_rng.generate_random_bytes::<42>();
+        let mut aad = [0; 42];
+        cs_rng.fill_bytes(&mut aad);
         let encrypted_result = encrypt_combined(&key, &bytes, iv.as_bytes(), Some(&aad))?;
         assert_ne!(encrypted_result, bytes.to_vec());
         assert_eq!(bytes.len() + MAC_LENGTH, encrypted_result.len());
         let recovered = decrypt_combined(&key, &encrypted_result, iv.as_bytes(), Some(&aad))?;
         assert_eq!(bytes.to_vec(), recovered);
         // data should not be recovered if the AAD is modified
-        let aad = cs_rng.generate_random_bytes::<42>();
+        let mut aad = [0; 42];
+        cs_rng.fill_bytes(&mut aad);
         let recovered = decrypt_combined(&key, &encrypted_result, iv.as_bytes(), Some(&aad));
         assert_ne!(Ok(bytes.to_vec()), recovered);
         // data should not be recovered if the key is modified
@@ -228,9 +229,10 @@ mod tests {
 
     #[test]
     fn test_encryption_decryption_detached() -> Result<(), CryptoCoreError> {
-        let mut cs_rng = CsRng::new();
+        let mut cs_rng = CsRng::from_entropy();
         let key = Key::<KEY_LENGTH>::new(&mut cs_rng);
-        let bytes = cs_rng.generate_random_bytes::<1024>();
+        let mut bytes = [0; 1024];
+        cs_rng.fill_bytes(&mut bytes);
         let iv = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
         // no additional data
         let mut data = bytes;
@@ -241,7 +243,8 @@ mod tests {
         decrypt_in_place_detached(&key, &mut data, &tag, iv.as_bytes(), None)?;
         assert_eq!(bytes, data);
         // // additional data
-        let ad = cs_rng.generate_random_bytes::<42>();
+        let mut ad = [0; 42];
+        cs_rng.fill_bytes(&mut ad);
         let mut data = bytes;
         let tag = encrypt_in_place_detached(&key, &mut data, iv.as_bytes(), Some(&ad))?;
         assert_ne!(bytes, data);
@@ -256,7 +259,7 @@ mod tests {
     fn test_dem() -> Result<(), CryptoCoreError> {
         let m = b"my secret message";
         let additional_data = Some(b"public tag".as_slice());
-        let mut rng = CsRng::new();
+        let mut rng = CsRng::from_entropy();
         let secret_key = Key::new(&mut rng);
         let c = Aes256GcmCrypto::encrypt(&mut rng, &secret_key, m, additional_data)?;
         let res = Aes256GcmCrypto::decrypt(&secret_key, &c, additional_data)?;
