@@ -10,16 +10,30 @@ pub trait Serializable: Sized {
     /// Error type returned by the serialization.
     type Error: From<CryptoCoreError>;
 
+    /// Retrieves the length of the serialized object if it can be known.
+    ///
+    /// This length will be used to initialize the `Serializer` with the
+    /// correct capacity in `try_to_bytes()`. If `None` is provided, 0 will be
+    /// used.
+    #[must_use]
+    fn length(&self) -> Option<usize> {
+        None
+    }
+
     /// Writes to the given `Serializer`.
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error>;
 
     /// Reads from the given `Deserializer`.
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error>;
 
-    /// Serializes the object.
+    /// Serializes the object. Allocates the correct capacity if it is known.
     #[inline]
     fn try_to_bytes(&self) -> Result<Vec<u8>, Self::Error> {
-        let mut ser = Serializer::new();
+        let mut ser = if let Some(length) = self.length() {
+            Serializer::with_capacity(length)
+        } else {
+            Serializer::new()
+        };
         self.write(&mut ser)?;
         Ok(ser.finalize())
     }
@@ -108,19 +122,6 @@ impl<'a> Deserializer<'a> {
         Ok(buf)
     }
 
-    /// Reads all the remaining bytes.
-    #[inline]
-    pub fn value(&mut self) -> Result<Vec<u8>, CryptoCoreError> {
-        let mut buf = vec![0_u8; self.readable.len()];
-        self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::InvalidSize(format!(
-                "Deserializer: failed reading array of: {} bytes",
-                self.readable.len()
-            ))
-        })?;
-        Ok(buf)
-    }
-
     /// Consumes the `Deserializer` and returns the remaining bytes.
     #[inline]
     pub fn finalize(self) -> Vec<u8> {
@@ -137,6 +138,13 @@ impl Serializer {
     #[inline]
     pub const fn new() -> Self {
         Self { writable: vec![] }
+    }
+
+    /// Generates a new `Serializer` with the given capacity.
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            writable: Vec::with_capacity(capacity),
+        }
     }
 
     /// Writes a `u64` to the `Serializer`.
