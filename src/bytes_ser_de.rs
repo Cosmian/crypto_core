@@ -15,10 +15,7 @@ pub trait Serializable: Sized {
     /// This length will be used to initialize the `Serializer` with the
     /// correct capacity in `try_to_bytes()`. If `None` is provided, 0 will be
     /// used.
-    #[must_use]
-    fn length(&self) -> Option<usize> {
-        None
-    }
+    fn length(&self) -> usize;
 
     /// Writes to the given `Serializer`.
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error>;
@@ -29,11 +26,7 @@ pub trait Serializable: Sized {
     /// Serializes the object. Allocates the correct capacity if it is known.
     #[inline]
     fn try_to_bytes(&self) -> Result<Vec<u8>, Self::Error> {
-        let mut ser = if let Some(length) = self.length() {
-            Serializer::with_capacity(length)
-        } else {
-            Serializer::new()
-        };
+        let mut ser = Serializer::with_capacity(self.length());
         self.write(&mut ser)?;
         Ok(ser.finalize())
     }
@@ -120,6 +113,12 @@ impl<'a> Deserializer<'a> {
             ))
         })?;
         Ok(buf)
+    }
+
+    /// Returns a pointer to the underlying value.
+    #[inline]
+    pub fn value(&self) -> &[u8] {
+        self.readable
     }
 
     /// Consumes the `Deserializer` and returns the remaining bytes.

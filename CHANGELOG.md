@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ---
-## [4.1.0] - 2022-10-25
+## Unreleased
 ### Added
 - `<impl Serializable>::length()`
 - `Serializer::with_capacity()`
