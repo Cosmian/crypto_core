@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - `<impl Serializable>::try_to_bytes()` now allocates
   `<impl Serializable>::length()` bytes to the `Serializer` on creation
+- `kdf!` uses `$crate` local objects => remove `sha3` dependency in caller
 ### Fixed
 ### Removed
 ---

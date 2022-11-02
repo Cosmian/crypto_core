@@ -13,7 +13,7 @@ pub mod reexport {
 }
 pub mod symmetric_crypto;
 
-use reexport::rand_core::{CryptoRng, RngCore};
+use reexport::rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use crate::error::CryptoCoreError;
@@ -30,7 +30,7 @@ pub trait KeyTrait<const LENGTH: usize>:
 
     /// Generates a new random key.
     #[must_use]
-    fn new<R: RngCore + CryptoRng>(rng: &mut R) -> Self;
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
 
     /// Converts the given key into a vector of bytes.
     #[must_use]
