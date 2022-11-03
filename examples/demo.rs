@@ -29,11 +29,9 @@ fn main() {
     // Derivation of a secret key from the DHKEX shared secret.
     const KEY_DERIVATION_INFO: &[u8] = b"Curve25519 KDF derivation";
     const KEY_LENGTH: usize = Aes256GcmCrypto::KEY_LENGTH;
-    let symmetric_key = SymKey::<KEY_LENGTH>::from_bytes(kdf!(
-        KEY_LENGTH,
-        &shared_secret.to_bytes(),
-        KEY_DERIVATION_INFO
-    ));
+    let symmetric_key = SymKey::<KEY_LENGTH>::from_bytes(
+        kdf!(KEY_LENGTH, &shared_secret.to_bytes(), KEY_DERIVATION_INFO).unwrap(),
+    );
 
     // DEM encapsulation using AES256-GCM. In order to prevent nonce reuse,
     // the nonce is managed internally.
