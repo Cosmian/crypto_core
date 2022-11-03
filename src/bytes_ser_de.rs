@@ -26,7 +26,7 @@ pub trait Serializable: Sized {
     #[inline]
     fn try_to_bytes(&self) -> Result<Vec<u8>, Self::Error> {
         let mut ser = Serializer::with_capacity(self.length());
-        self.write(&mut ser)?;
+        ser.write(self)?;
         Ok(ser.finalize())
     }
 
@@ -39,9 +39,9 @@ pub trait Serializable: Sized {
             );
         }
         let mut de = Deserializer::new(bytes);
-        let res = Self::read(&mut de)?;
-        if de.finalize().is_empty() {
-            Ok(res)
+        let res = de.read();
+        if res.is_err() || de.finalize().is_empty() {
+            res
         } else {
             // There should not be any more bytes to read
             Err(CryptoCoreError::ConversionError(
@@ -60,7 +60,7 @@ impl<'a> Deserializer<'a> {
     /// Generates a new `Deserializer` from the given bytes.
     ///
     /// - `bytes`   : bytes to deserialize
-    #[inline]
+    #[inline(always)]
     pub const fn new(bytes: &'a [u8]) -> Deserializer<'a> {
         Deserializer { readable: bytes }
     }
@@ -114,14 +114,20 @@ impl<'a> Deserializer<'a> {
         Ok(buf)
     }
 
+    /// Reads the value of a type which implements `Serializable`.
+    #[inline(always)]
+    pub fn read<T: Serializable>(&mut self) -> Result<T, <T as Serializable>::Error> {
+        T::read(self)
+    }
+
     /// Returns a pointer to the underlying value.
-    #[inline]
+    #[inline(always)]
     pub fn value(&self) -> &[u8] {
         self.readable
     }
 
     /// Consumes the `Deserializer` and returns the remaining bytes.
-    #[inline]
+    #[inline(always)]
     pub fn finalize(self) -> Vec<u8> {
         self.readable.to_vec()
     }
@@ -133,13 +139,13 @@ pub struct Serializer {
 
 impl Serializer {
     /// Generates a new `Serializer`.
-    #[inline]
+    #[inline(always)]
     pub const fn new() -> Self {
         Self { writable: vec![] }
     }
 
     /// Generates a new `Serializer` with the given capacity.
-    #[inline]
+    #[inline(always)]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             writable: Vec::with_capacity(capacity),
@@ -188,15 +194,26 @@ impl Serializer {
         Ok(len)
     }
 
+    /// Writes an value which type implements `Serializable`.
+    ///
+    /// - `value`   : value to write
+    #[inline(always)]
+    pub fn write<T: Serializable>(
+        &mut self,
+        value: &T,
+    ) -> Result<usize, <T as Serializable>::Error> {
+        value.write(self)
+    }
+
     /// Consumes the `Serializer` and returns the serialized bytes.
-    #[inline]
+    #[inline(always)]
     pub fn finalize(self) -> Vec<u8> {
         self.writable
     }
 }
 
 impl Default for Serializer {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }
