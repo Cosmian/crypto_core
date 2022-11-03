@@ -3,7 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 ---
+## Unreleased
+### Added
+- `<impl Serializable>::length()`
+- `Serializer::with_capacity()`
+### Changed
+- `<impl Serializable>::try_to_bytes()` now allocates
+  `<impl Serializable>::length()` bytes to the `Serializer` on creation
+### Fixed
+### Removed
+---
+
+---
 ## [4.0.1] - 2022-10-24
+### Added
+### Changed
+### Fixed
 ### Removed
 - crate-type `cdylib` in order to help the ios build
 ---

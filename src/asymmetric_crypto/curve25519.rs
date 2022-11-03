@@ -6,7 +6,8 @@
 //! time of this implementation.
 
 use crate::{
-    asymmetric_crypto::DhKeyPair, reexport::rand_core::CryptoRngCore, CryptoCoreError, KeyTrait,
+    asymmetric_crypto::DhKeyPair, bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore,
+    CryptoCoreError, KeyTrait,
 };
 use core::{
     convert::TryFrom,
@@ -62,6 +63,22 @@ impl KeyTrait<X25519_PRIVATE_KEY_LENGTH> for X25519PrivateKey {
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
+    }
+}
+
+impl Serializable for X25519PrivateKey {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        Self::LENGTH
+    }
+
+    fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
+        ser.write_array(self.as_bytes())
+    }
+
+    fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
+        Self::try_from(de.read_array::<{ Self::LENGTH }>()?)
     }
 }
 
@@ -198,6 +215,22 @@ impl KeyTrait<X25519_PUBLIC_KEY_LENGTH> for X25519PublicKey {
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         Self::try_from(bytes)
+    }
+}
+
+impl Serializable for X25519PublicKey {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        Self::LENGTH
+    }
+
+    fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
+        ser.write_array(&self.to_bytes())
+    }
+
+    fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
+        Self::try_from(de.read_array::<{ Self::LENGTH }>()?)
     }
 }
 
