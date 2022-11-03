@@ -13,8 +13,7 @@ pub trait Serializable: Sized {
     /// Retrieves the length of the serialized object if it can be known.
     ///
     /// This length will be used to initialize the `Serializer` with the
-    /// correct capacity in `try_to_bytes()`. If `None` is provided, 0 will be
-    /// used.
+    /// correct capacity in `try_to_bytes()`.
     fn length(&self) -> usize;
 
     /// Writes to the given `Serializer`.
@@ -140,6 +139,7 @@ impl Serializer {
     }
 
     /// Generates a new `Serializer` with the given capacity.
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             writable: Vec::with_capacity(capacity),
