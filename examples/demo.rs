@@ -7,11 +7,6 @@ use cosmian_crypto_core::{
     symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, Dem, SymKey},
     CsRng, KeyTrait,
 };
-use sha3::{
-    digest::XofReader,
-    digest::{ExtendableOutput, Update},
-    Shake128,
-};
 
 fn main() {
     // The random generator should be instantiated at the highest possible
