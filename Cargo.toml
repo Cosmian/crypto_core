@@ -1,10 +1,10 @@
 [package]
+name = "cosmian_crypto_core"
+version = "5.0.0"
 authors = ["Bruno Grieder <bruno.grieder@cosmian.com>", "Théophile BRÉZOT <theophile.brezot@cosmian.com>"]
-description = "Crypto lib for pure crypto primitives"
 edition = "2021"
 license = "MIT/Apache-2.0"
-name = "cosmian_crypto_core"
-version = "4.0.1"
+description = "Crypto lib for pure crypto primitives"
 
 [lib]
 crate-type = ["rlib", "staticlib"]
@@ -14,7 +14,6 @@ path = "src/lib.rs"
 [dependencies]
 aes-gcm = "0.10"
 curve25519-dalek = "3.2"
-# specify the js feature for the WASM target
 getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4"
 leb128 = "0.2.5"
@@ -28,8 +27,8 @@ zeroize = "1.5"
 criterion = "0.4"
 
 [[bench]]
-name = "benches"
 harness = false
+name = "benches"
 
 [profile.bench]
 debug = true
