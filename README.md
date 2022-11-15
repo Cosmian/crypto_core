@@ -1,9 +1,8 @@
 # Cosmian CryptoCore &emsp; [![Build Status]][actions] [![Latest Version]][crates.io]
 
-
-[Build Status]: https://img.shields.io/github/workflow/status/Cosmian/crypto_core/CI%20checks/main
+[build status]: https://img.shields.io/github/workflow/status/Cosmian/crypto_core/CI%20checks/main
 [actions]: https://github.com/Cosmian/crypto_core/actions?query=branch%3Amain
-[Latest Version]: https://img.shields.io/crates/v/cosmian_crypto_core.svg
+[latest version]: https://img.shields.io/crates/v/cosmian_crypto_core.svg
 [crates.io]: https://crates.io/crates/cosmian_crypto_core
 
 This crate implements the cryptographic primitives which are used in many other
@@ -83,10 +82,13 @@ println!("Message has been privately and successfully transmitted!");
 ### Build
 
 To install and build Cosmian CryptoCore, just clone the repo:
+
 ```
 git clone https://github.com/Cosmian/crypto_core.git
 ```
+
 and build it with Cargo:
+
 ```
 cargo build --release
 ```
@@ -95,19 +97,23 @@ cargo build --release
 
 To use Cosmian CryptoCore in another Rust software, just add the dependency
 using Cargo:
+
 ```
 cargo add cosmian_crypto_core
 ```
+
 and use it in your project!
 
 ### Run tests and benchmarks
 
 Tests can be run with:
+
 ```
 cargo test --release
 ```
 
 Benchmarks can be run with:
+
 ```
 cargo bench
 ```
@@ -176,6 +182,7 @@ bench the KDF derivation of a 32-bytes IKM into a 64-bytes key
 ## Documentation
 
 The documentation can be generated using Cargo:
+
 ```
 cargo docs
 ```
