@@ -10,17 +10,23 @@ pub trait Serializable: Sized {
     /// Error type returned by the serialization.
     type Error: From<CryptoCoreError>;
 
+    /// Retrieves the length of the serialized object if it can be known.
+    ///
+    /// This length will be used to initialize the `Serializer` with the
+    /// correct capacity in `try_to_bytes()`.
+    fn length(&self) -> usize;
+
     /// Writes to the given `Serializer`.
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error>;
 
     /// Reads from the given `Deserializer`.
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error>;
 
-    /// Serializes the object.
+    /// Serializes the object. Allocates the correct capacity if it is known.
     #[inline]
     fn try_to_bytes(&self) -> Result<Vec<u8>, Self::Error> {
-        let mut ser = Serializer::new();
-        self.write(&mut ser)?;
+        let mut ser = Serializer::with_capacity(self.length());
+        ser.write(self)?;
         Ok(ser.finalize())
     }
 
@@ -33,9 +39,9 @@ pub trait Serializable: Sized {
             );
         }
         let mut de = Deserializer::new(bytes);
-        let res = Self::read(&mut de)?;
-        if de.finalize().is_empty() {
-            Ok(res)
+        let res = de.read();
+        if res.is_err() || de.finalize().is_empty() {
+            res
         } else {
             // There should not be any more bytes to read
             Err(CryptoCoreError::ConversionError(
@@ -54,7 +60,7 @@ impl<'a> Deserializer<'a> {
     /// Generates a new `Deserializer` from the given bytes.
     ///
     /// - `bytes`   : bytes to deserialize
-    #[inline]
+    #[inline(always)]
     pub const fn new(bytes: &'a [u8]) -> Deserializer<'a> {
         Deserializer { readable: bytes }
     }
@@ -108,21 +114,20 @@ impl<'a> Deserializer<'a> {
         Ok(buf)
     }
 
-    /// Reads all the remaining bytes.
-    #[inline]
-    pub fn value(&mut self) -> Result<Vec<u8>, CryptoCoreError> {
-        let mut buf = vec![0_u8; self.readable.len()];
-        self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::InvalidSize(format!(
-                "Deserializer: failed reading array of: {} bytes",
-                self.readable.len()
-            ))
-        })?;
-        Ok(buf)
+    /// Reads the value of a type which implements `Serializable`.
+    #[inline(always)]
+    pub fn read<T: Serializable>(&mut self) -> Result<T, <T as Serializable>::Error> {
+        T::read(self)
+    }
+
+    /// Returns a pointer to the underlying value.
+    #[inline(always)]
+    pub fn value(&self) -> &[u8] {
+        self.readable
     }
 
     /// Consumes the `Deserializer` and returns the remaining bytes.
-    #[inline]
+    #[inline(always)]
     pub fn finalize(self) -> Vec<u8> {
         self.readable.to_vec()
     }
@@ -134,9 +139,17 @@ pub struct Serializer {
 
 impl Serializer {
     /// Generates a new `Serializer`.
-    #[inline]
+    #[inline(always)]
     pub const fn new() -> Self {
         Self { writable: vec![] }
+    }
+
+    /// Generates a new `Serializer` with the given capacity.
+    #[inline(always)]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            writable: Vec::with_capacity(capacity),
+        }
     }
 
     /// Writes a `u64` to the `Serializer`.
@@ -181,27 +194,85 @@ impl Serializer {
         Ok(len)
     }
 
+    /// Writes an value which type implements `Serializable`.
+    ///
+    /// - `value`   : value to write
+    #[inline(always)]
+    pub fn write<T: Serializable>(
+        &mut self,
+        value: &T,
+    ) -> Result<usize, <T as Serializable>::Error> {
+        value.write(self)
+    }
+
     /// Consumes the `Serializer` and returns the serialized bytes.
-    #[inline]
+    #[inline(always)]
     pub fn finalize(self) -> Vec<u8> {
         self.writable
     }
 }
 
 impl Default for Serializer {
-    #[inline]
+    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }
 }
 
+/// Computes the length of the LEB128 serialization of the given `usize`.
+///
+/// # Unsigned LEB128
+///
+/// MSB ------------------ LSB
+///       10011000011101100101  In raw binary
+///      010011000011101100101  Padded to a multiple of 7 bits
+///  0100110  0001110  1100101  Split into 7-bit groups
+/// 00100110 10001110 11100101  Add high 1 bits on all but last (most significant) group to form bytes
+///     0x26     0x8E     0xE5  In hexadecimal
+///
+/// → 0xE5 0x8E 0x26            Output stream (LSB to MSB)
+///
+/// Source: [Wikipedia](https://en.wikipedia.org/wiki/LEB128#Encoding_format)
+///
+/// # Parameters
+///
+/// - `n`   : `usize` for which to compute the length of the serialization
+#[inline]
+pub fn to_leb128_len(n: usize) -> usize {
+    let mut n = n >> 7;
+    let mut size = 1;
+    while n != 0 {
+        size += 1;
+        n >>= 7;
+    }
+    size
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Deserializer, Serializer};
-    use crate::CryptoCoreError;
+    use super::{to_leb128_len, Deserializer, Serializer};
+    use crate::{
+        reexport::rand_core::{RngCore, SeedableRng},
+        CryptoCoreError, CsRng,
+    };
 
     #[test]
-    pub fn test_ser_de() -> Result<(), CryptoCoreError> {
+    fn test_to_leb128_len() {
+        let mut rng = CsRng::from_entropy();
+        let mut ser = Serializer::new();
+        for i in 1..1000 {
+            let n = rng.next_u32();
+            let length = ser.write_u64(n as u64).unwrap();
+            assert_eq!(
+                length,
+                to_leb128_len(n as usize),
+                "Wrong serialization length for {i}th integer: `{n}u64`"
+            );
+        }
+    }
+
+    #[test]
+    fn test_ser_de() -> Result<(), CryptoCoreError> {
         let a1 = b"azerty".to_vec();
         let a2 = b"".to_vec();
         let a3 = "nbvcxwmlkjhgfdsqpoiuytreza)àç_è-('é&".as_bytes().to_vec();

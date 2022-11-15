@@ -1,16 +1,12 @@
 use cosmian_crypto_core::{
     asymmetric_crypto::{curve25519::X25519KeyPair, DhKeyPair},
     kdf,
+    reexport::rand_core::RngCore,
     reexport::rand_core::SeedableRng,
     symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::Key, Dem},
     CsRng, KeyTrait,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
-use rand_chacha::rand_core::RngCore;
-use sha3::{
-    digest::{ExtendableOutput, Update, XofReader},
-    Shake128,
-};
 
 /// Bench the Group-Scalar multiplication on which is based the
 /// Diffie-Hellman key exchange. This gives an indication on how fast

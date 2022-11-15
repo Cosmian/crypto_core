@@ -1,3 +1,8 @@
+pub use sha3::{
+    digest::{ExtendableOutput, Update, XofReader},
+    Shake128,
+};
+
 /// Key Derivation Function (KDF).
 ///
 /// Derives the given inputs to the desired length using SHAKE128, which should
@@ -16,11 +21,6 @@
 /// ```
 /// #[macro_use]
 /// use cosmian_crypto_core::kdf;
-///
-/// use sha3::{
-///     digest::{ExtendableOutput, Update, XofReader},
-///     Shake128,
-/// };
 ///
 /// const KEY_LENGTH: usize = 32;
 ///
@@ -41,13 +41,13 @@
 macro_rules! kdf {
     ($length: ident, $($bytes: expr),+) => {
         {
-            let mut hasher = Shake128::default();
+            let mut hasher = $crate::kdf::Shake128::default();
             $(
-                hasher.update($bytes);
+                <$crate::kdf::Shake128 as $crate::kdf::Update>::update(&mut hasher, $bytes);
             )*
-            let mut reader = hasher.finalize_xof();
+            let mut reader = <$crate::kdf::Shake128 as $crate::kdf::ExtendableOutput>::finalize_xof(hasher);
             let mut res = [0; $length];
-            reader.read(&mut res);
+            <<$crate::kdf::Shake128 as $crate::kdf::ExtendableOutput>::Reader as $crate::kdf::XofReader>::read(&mut reader, &mut res);
             res
         }
     };
