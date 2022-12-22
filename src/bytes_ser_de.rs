@@ -2,7 +2,10 @@
 
 use crate::CryptoCoreError;
 use leb128;
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write},
+    mem::size_of,
+};
 
 /// A `Serializable` object can easily be serialized and derserialized into an
 /// array of bytes.
@@ -34,9 +37,11 @@ pub trait Serializable: Sized {
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.is_empty() {
-            return Err(
-                CryptoCoreError::InvalidSize("Given byte string is empty".to_string()).into(),
-            );
+            return Err(CryptoCoreError::DeserialisationSizeError {
+                given: 0,
+                expected: size_of::<Self>(),
+            }
+            .into());
         }
         let mut de = Deserializer::new(bytes);
         let res = de.read();
@@ -44,9 +49,10 @@ pub trait Serializable: Sized {
             res
         } else {
             // There should not be any more bytes to read
-            Err(CryptoCoreError::ConversionError(
-                "Remaining bytes after deserialization!".to_string(),
-            )
+            Err(CryptoCoreError::DeserialisationSizeError {
+                given: bytes.len(),
+                expected: size_of::<Self>(),
+            }
             .into())
         }
     }
@@ -68,12 +74,7 @@ impl<'a> Deserializer<'a> {
     /// Reads a `u64` from the `Deserializer`.
     #[inline]
     pub fn read_u64(&mut self) -> Result<u64, CryptoCoreError> {
-        leb128::read::unsigned(&mut self.readable).map_err(|e| {
-            CryptoCoreError::InvalidSize(format!(
-                "Deserializer: failed reading the size of the next array: {}",
-                e
-            ))
-        })
+        leb128::read::unsigned(&mut self.readable).map_err(CryptoCoreError::ReadLeb128Error)
     }
 
     /// Reads an array of bytes of length `LENGTH` from the `Deserializer`.
@@ -81,9 +82,10 @@ impl<'a> Deserializer<'a> {
     pub fn read_array<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], CryptoCoreError> {
         let mut buf = [0; LENGTH];
         self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::InvalidSize(format!(
-                "Deserializer: failed reading array of: {LENGTH} bytes",
-            ))
+            CryptoCoreError::DeserialisationSizeError {
+                given: self.readable.len(),
+                expected: LENGTH,
+            }
         })?;
         Ok(buf)
     }
@@ -99,17 +101,16 @@ impl<'a> Deserializer<'a> {
             return Ok(vec![]);
         };
         let len = usize::try_from(len_u64).map_err(|_| {
-            CryptoCoreError::InvalidSize(format!(
-                "Deserializer: size of array is too big: {} bytes",
-                len_u64
+            CryptoCoreError::GenericDeserialisationError(format!(
+                "size of array is too big for architecture: {len_u64} bytes",
             ))
         })?;
         let mut buf = vec![0_u8; len];
         self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::InvalidSize(format!(
-                "Deserializer: failed reading array of: {} bytes",
-                len
-            ))
+            CryptoCoreError::DeserialisationSizeError {
+                expected: len,
+                given: self.readable.len(),
+            }
         })?;
         Ok(buf)
     }
@@ -157,12 +158,8 @@ impl Serializer {
     /// - `n`   : `u64` to write
     #[inline]
     pub fn write_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
-        leb128::write::unsigned(&mut self.writable, n).map_err(|e| {
-            CryptoCoreError::InvalidSize(format!(
-                "Serializer: unexpected LEB128 error writing {} bytes: {}",
-                n, e
-            ))
-        })
+        leb128::write::unsigned(&mut self.writable, n)
+            .map_err(|error| CryptoCoreError::WriteLeb128Error { value: n, error })
     }
 
     /// Writes an array of bytes to the `Serializer`.
@@ -170,13 +167,12 @@ impl Serializer {
     /// - `array`   : array of bytes to write
     #[inline]
     pub fn write_array(&mut self, array: &[u8]) -> Result<usize, CryptoCoreError> {
-        self.writable.write(array).map_err(|e| {
-            CryptoCoreError::InvalidSize(format!(
-                "Serializer: unexpected error writing {} bytes: {}",
-                array.len(),
-                e
-            ))
-        })
+        self.writable
+            .write(array)
+            .map_err(|error| CryptoCoreError::SerialisationIoError {
+                bytes_len: array.len(),
+                error,
+            })
     }
 
     /// Writes a vector of bytes to the `Serializer`.
