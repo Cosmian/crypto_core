@@ -5,7 +5,7 @@ use thiserror::Error;
 pub enum CryptoCoreError {
     #[error("wrong size when parsing bytes: {given} given should be {expected}")]
     DeserialisationSizeError { given: usize, expected: usize },
-    #[error("when reading LEB128 size, {0}")]
+    #[error("when reading LEB128, {0}")]
     ReadLeb128Error(leb128::read::Error),
     #[error("deserialisation error: {0}")]
     GenericDeserialisationError(String),
@@ -13,7 +13,7 @@ pub enum CryptoCoreError {
     #[error("when writing {value} as LEB128 size, IO error {error}")]
     WriteLeb128Error { value: u64, error: std::io::Error },
 
-    #[error("when writing {bytes_len} bytes, IO error {error}")]
+    #[error("when writing {bytes_len} bytes, {error}")]
     SerialisationIoError {
         bytes_len: usize,
         error: std::io::Error,
