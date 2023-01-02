@@ -3,6 +3,8 @@ use thiserror::Error;
 /// Error type for this crate.
 #[derive(Debug, Error)]
 pub enum CryptoCoreError {
+    #[error("empty input when parsing bytes")]
+    DeserialisationEmptyError,
     #[error("wrong size when parsing bytes: {given} given should be {expected}")]
     DeserialisationSizeError { given: usize, expected: usize },
     #[error("when reading LEB128, {0}")]

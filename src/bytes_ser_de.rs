@@ -2,10 +2,7 @@
 
 use crate::CryptoCoreError;
 use leb128;
-use std::{
-    io::{Read, Write},
-    mem::size_of,
-};
+use std::io::{Read, Write};
 
 /// A `Serializable` object can easily be serialized and derserialized into an
 /// array of bytes.
@@ -37,23 +34,22 @@ pub trait Serializable: Sized {
     #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.is_empty() {
-            return Err(CryptoCoreError::DeserialisationSizeError {
-                given: 0,
-                expected: size_of::<Self>(),
-            }
-            .into());
+            return Err(CryptoCoreError::DeserialisationEmptyError.into());
         }
+
         let mut de = Deserializer::new(bytes);
-        let res = de.read();
-        if res.is_err() || de.finalize().is_empty() {
-            res
-        } else {
-            // There should not be any more bytes to read
-            Err(CryptoCoreError::DeserialisationSizeError {
-                given: bytes.len(),
-                expected: size_of::<Self>(),
+        match de.read() {
+            Ok(result) => {
+                if de.finalize().is_empty() {
+                    Ok(result)
+                } else {
+                    Err(CryptoCoreError::DeserialisationSizeError {
+                        given: bytes.len(),
+                        expected: result.length(),
+                    })?
+                }
             }
-            .into())
+            Err(err) => Err(err)?,
         }
     }
 }
