@@ -102,7 +102,7 @@ impl<'a> Deserializer<'a> {
         };
         let len = usize::try_from(len_u64).map_err(|_| {
             CryptoCoreError::GenericDeserialisationError(format!(
-                "size of array is too big for architecture: {len_u64} bytes",
+                "size of vector is too big for architecture: {len_u64} bytes",
             ))
         })?;
         let mut buf = vec![0_u8; len];
