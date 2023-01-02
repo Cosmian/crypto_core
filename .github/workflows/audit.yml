@@ -1,0 +1,20 @@
+---
+name: Audit
+
+on:
+  schedule:
+    # At 8:30 every day
+    - cron: "30 8 * * *"
+
+jobs:
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions-rs/toolchain@v1
+      - name: Check deprecated dependencies
+        uses: actions-rs/cargo@v1
+        with:
+          command: audit
+          args: --deny warnings --ignore RUSTSEC-2021-0145

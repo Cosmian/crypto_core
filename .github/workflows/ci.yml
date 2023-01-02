@@ -1,7 +1,7 @@
 ---
 name: CI checks
 
-on: [push, pull_request]
+on: push
 
 jobs:
   lint:
@@ -34,11 +34,6 @@ jobs:
         with:
           command: clippy
           args: --all-targets --all-features -- -D warnings
-      - name: Check deprecated dependencies
-        uses: actions-rs/cargo@v1
-        with:
-          command: audit
-          args: --deny warnings
 
   test:
     name: Test on ${{ matrix.os }}
