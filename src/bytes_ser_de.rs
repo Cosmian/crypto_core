@@ -88,6 +88,7 @@ impl<'a> Deserializer<'a> {
     /// `LEB128()` is the LEB128 serialization function.
     pub fn read_vec(&mut self) -> Result<Vec<u8>, CryptoCoreError> {
         // The size of the vector is prefixed to the serialization.
+        let original_length = self.readable.len();
         let len_u64 = self.read_u64()?;
         if len_u64 == 0 {
             return Ok(vec![]);
@@ -100,8 +101,8 @@ impl<'a> Deserializer<'a> {
         let mut buf = vec![0_u8; len];
         self.readable.read_exact(&mut buf).map_err(|_| {
             CryptoCoreError::DeserialisationSizeError {
-                expected: len,
-                given: self.readable.len(),
+                expected: len + to_leb128_len(len),
+                given: original_length,
             }
         })?;
         Ok(buf)
@@ -245,6 +246,31 @@ mod tests {
         CryptoCoreError, CsRng,
     };
 
+    /// We don't have a non-fixed size implementation of Serializable inside
+    /// crypto_core so just have a dummy implementation here.
+    #[derive(Debug)]
+    struct DummyLeb128Serializable {
+        bytes: Vec<u8>,
+    }
+
+    impl Serializable for DummyLeb128Serializable {
+        type Error = CryptoCoreError;
+
+        fn length(&self) -> usize {
+            to_leb128_len(self.bytes.len()) + self.bytes.len()
+        }
+
+        fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
+            ser.write_vec(&self.bytes)
+        }
+
+        fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
+            Ok(Self {
+                bytes: de.read_vec()?,
+            })
+        }
+    }
+
     #[test]
     fn test_to_leb128_len() {
         let mut rng = CsRng::from_entropy();
@@ -286,6 +312,14 @@ mod tests {
 
         assert_eq!(reserialized_key, serialized_key);
 
+        let dummy = DummyLeb128Serializable {
+            bytes: vec![1; 512],
+        };
+        let serialized_dummy = dummy.try_to_bytes()?;
+        let deserialized_dummy = DummyLeb128Serializable::try_from_bytes(&serialized_dummy)?;
+
+        assert_eq!(deserialized_dummy.bytes, dummy.bytes);
+
         Ok(())
     }
 
@@ -324,6 +358,50 @@ mod tests {
                 })
             ));
         }
+
+        {
+            let empty_error = DummyLeb128Serializable::try_from_bytes(&[]);
+
+            dbg!(&empty_error);
+            assert!(matches!(
+                empty_error,
+                Err(CryptoCoreError::DeserialisationEmptyError)
+            ));
+        }
+
+        let dummy = DummyLeb128Serializable {
+            bytes: vec![1; 512],
+        };
+
+        {
+            let mut bytes = dummy.try_to_bytes()?;
+            bytes.pop();
+            let too_small_error = DummyLeb128Serializable::try_from_bytes(&bytes);
+
+            dbg!(&too_small_error);
+            assert!(matches!(
+                too_small_error,
+                Err(CryptoCoreError::DeserialisationSizeError {
+                    given: 513,
+                    expected: 514
+                })
+            ));
+        }
+        {
+            let mut bytes = dummy.try_to_bytes()?;
+            bytes.push(42);
+            let too_big_error = DummyLeb128Serializable::try_from_bytes(&bytes);
+
+            dbg!(&too_big_error);
+            assert!(matches!(
+                too_big_error,
+                Err(CryptoCoreError::DeserialisationSizeError {
+                    given: 515,
+                    expected: 514
+                })
+            ));
+        }
+
         Ok(())
     }
 }
