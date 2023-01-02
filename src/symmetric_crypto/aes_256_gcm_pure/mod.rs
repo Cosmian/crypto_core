@@ -47,11 +47,10 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
         additional_data: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
         if plaintext.len() as u64 > MAX_PLAINTEXT_LENGTH {
-            return Err(CryptoCoreError::InvalidSize(format!(
-                "Plaintext is too large ({} bytes), max size: {} ",
-                plaintext.len(),
-                MAX_PLAINTEXT_LENGTH
-            )));
+            return Err(CryptoCoreError::PlaintextTooBigError {
+                plaintext_len: plaintext.len(),
+                max: MAX_PLAINTEXT_LENGTH,
+            });
         }
         let nonce = Self::Nonce::new(rng);
         // allocate correct byte number
@@ -72,18 +71,16 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
         additional_data: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
         if ciphertext.len() < Self::ENCRYPTION_OVERHEAD {
-            return Err(CryptoCoreError::InvalidSize(format!(
-                "Ciphertext is too small ({} bytes), min size: {}",
-                ciphertext.len(),
-                Self::ENCRYPTION_OVERHEAD
-            )));
+            return Err(CryptoCoreError::CiphertextTooSmallError {
+                ciphertext_len: ciphertext.len(),
+                min: Self::ENCRYPTION_OVERHEAD as u64,
+            });
         }
         if ciphertext.len() as u64 > MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD as u64 {
-            return Err(CryptoCoreError::InvalidSize(format!(
-                "Ciphertext is too large ({} bytes), max size: {} ",
-                ciphertext.len(),
-                MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD as u64
-            )));
+            return Err(CryptoCoreError::CiphertextTooBigError {
+                ciphertext_len: ciphertext.len(),
+                max: MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD as u64,
+            });
         }
         // The ciphertext is of the form: nonce || AEAD ciphertext
         decrypt_combined(
@@ -110,7 +107,7 @@ pub fn encrypt_combined(
         additional_data.map_or_else(|| Payload::from(bytes), |aad| Payload { msg: bytes, aad });
     Aes256Gcm::new(GenericArray::from_slice(key))
         .encrypt(GenericArray::from_slice(nonce), payload)
-        .map_err(|e| CryptoCoreError::EncryptionError(e.to_string()))
+        .map_err(|_| CryptoCoreError::EncryptionError)
 }
 
 /// Encrypts a message in place using a secret key and a public nonce in
@@ -130,7 +127,7 @@ pub fn encrypt_in_place_detached(
             additional_data.unwrap_or_default(),
             bytes,
         )
-        .map_err(|e| CryptoCoreError::DecryptionError(e.to_string()))
+        .map_err(|_| CryptoCoreError::DecryptionError)
         .map(|t| t.to_vec())
 }
 
@@ -149,7 +146,7 @@ pub fn decrypt_combined(
     let payload = additional_data.map_or_else(|| Payload::from(msg), |aad| Payload { msg, aad });
     Aes256Gcm::new(GenericArray::from_slice(key))
         .decrypt(GenericArray::from_slice(nonce), payload)
-        .map_err(|e| CryptoCoreError::DecryptionError(e.to_string()))
+        .map_err(|_| CryptoCoreError::DecryptionError)
 }
 
 /// Decrypts a message in pace in detached mode.
@@ -173,7 +170,7 @@ pub fn decrypt_in_place_detached(
             bytes,
             GenericArray::from_slice(tag),
         )
-        .map_err(|e| CryptoCoreError::DecryptionError(e.to_string()))
+        .map_err(|_| CryptoCoreError::DecryptionError)
 }
 
 #[cfg(test)]
@@ -219,11 +216,11 @@ mod tests {
         let mut aad = [0; 42];
         cs_rng.fill_bytes(&mut aad);
         let recovered = decrypt_combined(&key, &encrypted_result, iv.as_bytes(), Some(&aad));
-        assert_ne!(Ok(bytes.to_vec()), recovered);
+        assert!(matches!(recovered, Err(CryptoCoreError::DecryptionError)));
         // data should not be recovered if the key is modified
         let new_key = Key::<KEY_LENGTH>::new(&mut cs_rng);
         let recovered = decrypt_combined(&new_key, &encrypted_result, iv.as_bytes(), Some(&aad));
-        assert_ne!(Ok(bytes.to_vec()), recovered);
+        assert!(matches!(recovered, Err(CryptoCoreError::DecryptionError)));
         Ok(())
     }
 
@@ -263,11 +260,7 @@ mod tests {
         let secret_key = Key::new(&mut rng);
         let c = Aes256GcmCrypto::encrypt(&mut rng, &secret_key, m, additional_data)?;
         let res = Aes256GcmCrypto::decrypt(&secret_key, &c, additional_data)?;
-        if res != m {
-            return Err(CryptoCoreError::DecryptionError(
-                "Decaps failed".to_string(),
-            ));
-        }
+        assert_eq!(res, m, "Decryption failed");
         Ok(())
     }
 }
