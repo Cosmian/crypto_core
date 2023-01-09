@@ -1,9 +1,11 @@
-use crate::{reexport::rand_core::CryptoRngCore, KeyTrait};
 use core::{
     fmt::Debug,
     ops::{Add, Div, Mul, Sub},
 };
+
 use zeroize::{Zeroize, ZeroizeOnDrop};
+
+use crate::{reexport::rand_core::CryptoRngCore, KeyTrait};
 
 pub mod curve25519;
 

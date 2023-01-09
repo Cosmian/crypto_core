@@ -18,7 +18,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use crate::error::CryptoCoreError;
 
-/// Use ChaCha with 12 rounds as cryptographic RNG.
+/// Use `ChaCha` with 12 rounds as cryptographic RNG.
 pub type CsRng = rand_chacha::ChaCha12Rng;
 
 /// Cryptographic key.

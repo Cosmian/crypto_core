@@ -1,9 +1,8 @@
-# Cosmian CryptoCore &emsp; [![Build Status]][actions] [![Latest Version]][crates.io]
+## CryptoCore
 
-[build status]: https://img.shields.io/github/workflow/status/Cosmian/crypto_core/CI%20checks/main
-[actions]: https://github.com/Cosmian/crypto_core/actions?query=branch%3Amain
-[latest version]: https://img.shields.io/crates/v/cosmian_crypto_core.svg
-[crates.io]: https://crates.io/crates/cosmian_crypto_core
+![Build status](https://github.com/Cosmian/crypto_core/actions/workflows/ci.yml/badge.svg)
+![Build status](https://github.com/Cosmian/crypto_core/actions/workflows/audit.yml/badge.svg)
+![latest version](<https://img.shields.io/crates/v/cosmian_crypto_core.svg>)
 
 This crate implements the cryptographic primitives which are used in many other
 Cosmian resources:
@@ -18,7 +17,23 @@ Cosmian resources:
 
 All these primitives are use pure rust implementations, are secure, and used
 the fastest known algorithms. They offer a great basis on which to build more
-complex softwares.
+complex software.
+
+<!-- toc -->
+
+- [Getting started](#getting-started)
+- [Building and Testing](#building-and-testing)
+  - [Build](#build)
+  - [Use](#use)
+  - [Run tests and benchmarks](#run-tests-and-benchmarks)
+- [Features and Benchmarks](#features-and-benchmarks)
+  - [Asymmetric Crypto](#asymmetric-crypto)
+  - [Symmetric Crypto](#symmetric-crypto)
+  - [Random Number Generator (RNG)](#random-number-generator-rng)
+  - [Key Derivation Function (KDF)](#key-derivation-function-kdf)
+- [Documentation](#documentation)
+
+<!-- tocstop -->
 
 ## Getting started
 
@@ -83,13 +98,13 @@ println!("Message has been privately and successfully transmitted!");
 
 To install and build Cosmian CryptoCore, just clone the repo:
 
-```
+```bash
 git clone https://github.com/Cosmian/crypto_core.git
 ```
 
 and build it with Cargo:
 
-```
+```bash
 cargo build --release
 ```
 
@@ -98,7 +113,7 @@ cargo build --release
 To use Cosmian CryptoCore in another Rust software, just add the dependency
 using Cargo:
 
-```
+```bash
 cargo add cosmian_crypto_core
 ```
 
@@ -108,13 +123,13 @@ and use it in your project!
 
 Tests can be run with:
 
-```
+```bash
 cargo test --release
 ```
 
 Benchmarks can be run with:
 
-```
+```bash
 cargo bench
 ```
 
@@ -133,7 +148,7 @@ implementation, which offers an implementation of the Ristretto technique to
 construct a prime order group on the curve. This group is used to implement
 the public key.
 
-```
+```c
 Bench the Group-Scalar multiplication on which is based the Diffie-Helman key exchange
                         time:   [59.932 µs 60.131 µs 60.364 µs]
 ```
@@ -149,7 +164,7 @@ It uses the [`aes_gcm`](https://docs.rs/aes-gcm/latest/aes_gcm/index.html)
 implementation of the AES GCM algorithm. This implementation makes use of the
 AES instruction set when available, which allows for a high encryption speed.
 
-```
+```c
 Bench the DEM encryption of a 2048-bytes message without additional data
                         time:   [2.7910 µs 2.7911 µs 2.7914 µs]
 
@@ -163,7 +178,7 @@ This crate uses the implementation of the CHACHA algorithm with 12 rounds from
 the [`rand_chacha`](https://rust-random.github.io/rand/rand_chacha/index.html)
 crate to construct our RNG. It is therefore 128-bits secure.
 
-```
+```c
 Bench the generation of a cryptographic RNG
                         time:   [353.84 ns 353.96 ns 354.10 ns]
 ```
@@ -174,7 +189,7 @@ This crate uses the pure rust implementation of the SHAKE128 algorithm from the
 [sha3](https://docs.rs/sha3/latest/sha3) crate. This allows implementing a KDF
 which 128-bits secure for input sizes of at least 256 bits (32 bytes).
 
-```
+```c
 bench the KDF derivation of a 32-bytes IKM into a 64-bytes key
                         time:   [1.1065 µs 1.1067 µs 1.1070 µs]
 ```
@@ -183,7 +198,7 @@ bench the KDF derivation of a 32-bytes IKM into a 64-bytes key
 
 The documentation can be generated using Cargo:
 
-```
+```bash
 cargo docs
 ```
 
