@@ -1,6 +1,6 @@
 [package]
 name = "cosmian_crypto_core"
-version = "5.0.0"
+version = "5.0.1"
 authors = ["Bruno Grieder <bruno.grieder@cosmian.com>", "Théophile BRÉZOT <theophile.brezot@cosmian.com>"]
 edition = "2021"
 license = "MIT/Apache-2.0"
@@ -16,7 +16,7 @@ aes-gcm = "0.10"
 curve25519-dalek = "3.2"
 getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4"
-leb128 = "0.2.5"
+leb128 = "0.2"
 rand_chacha = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 sha3 = "0.10"

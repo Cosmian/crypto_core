@@ -5,15 +5,12 @@
 //! Its security level is 128-bits. It is the fastest curve available at the
 //! time of this implementation.
 
-use crate::{
-    asymmetric_crypto::DhKeyPair, bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore,
-    CryptoCoreError, KeyTrait,
-};
 use core::{
     convert::TryFrom,
     fmt::Display,
     ops::{Add, Div, Mul, Sub},
 };
+
 use curve25519_dalek::{
     constants,
     ristretto::{CompressedRistretto, RistrettoPoint},
@@ -21,6 +18,11 @@ use curve25519_dalek::{
 };
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
+
+use crate::{
+    asymmetric_crypto::DhKeyPair, bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore,
+    CryptoCoreError, KeyTrait,
+};
 
 /// X25519 private key length
 pub const X25519_PRIVATE_KEY_LENGTH: usize = 32;
@@ -352,15 +354,14 @@ pub struct X25519KeyPair {
 }
 
 impl DhKeyPair<X25519_PUBLIC_KEY_LENGTH, X25519_PRIVATE_KEY_LENGTH> for X25519KeyPair {
-    type PublicKey = X25519PublicKey;
-
     type PrivateKey = X25519PrivateKey;
+    type PublicKey = X25519PublicKey;
 
     #[inline]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let sk = X25519PrivateKey::new(rng);
         let pk = X25519PublicKey::from(&sk);
-        Self { sk, pk }
+        Self { pk, sk }
     }
 
     #[inline]
@@ -395,7 +396,12 @@ impl ZeroizeOnDrop for X25519KeyPair {}
 #[cfg(test)]
 mod test {
     use crate::{
-        asymmetric_crypto::curve25519::*, reexport::rand_core::SeedableRng, CsRng, KeyTrait,
+        asymmetric_crypto::curve25519::{
+            DhKeyPair, TryFrom, X25519KeyPair, X25519PrivateKey, X25519PublicKey,
+            X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
+        },
+        reexport::rand_core::SeedableRng,
+        CsRng, KeyTrait,
     };
 
     #[test]
