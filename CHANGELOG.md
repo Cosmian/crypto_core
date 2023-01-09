@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## Unreleased
+
+### Added
+
+### Changed
+
+- Better errors with more information for the user
+
+### Fixed
+
+### Removed
+
+---
+
+---
+
 ## [5.0.0] - 2022-11-15
 
 ### Added
