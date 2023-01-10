@@ -1,10 +1,12 @@
 //! Defines a symmetric key object of variable size.
 
+use core::{convert::TryFrom, fmt::Display, hash::Hash, ops::Deref};
+
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
 use crate::{
     reexport::rand_core::CryptoRngCore, symmetric_crypto::SymKey, CryptoCoreError, KeyTrait,
 };
-use core::{convert::TryFrom, fmt::Display, hash::Hash, ops::Deref};
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Symmetric key of a given size.
 ///

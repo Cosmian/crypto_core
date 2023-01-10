@@ -1,8 +1,10 @@
 //! Implement the `Serializer` and `Deserializer` objects using LEB128.
 
-use crate::CryptoCoreError;
-use leb128;
 use std::io::{Read, Write};
+
+use leb128;
+
+use crate::CryptoCoreError;
 
 /// A `Serializable` object can easily be serialized and derserialized into an
 /// array of bytes.
@@ -59,6 +61,7 @@ impl<'a> Deserializer<'a> {
     ///
     /// - `bytes`   : bytes to deserialize
     #[inline(always)]
+    #[must_use]
     pub const fn new(bytes: &'a [u8]) -> Deserializer<'a> {
         Deserializer { readable: bytes }
     }
@@ -116,12 +119,14 @@ impl<'a> Deserializer<'a> {
 
     /// Returns a pointer to the underlying value.
     #[inline(always)]
+    #[must_use]
     pub fn value(&self) -> &[u8] {
         self.readable
     }
 
     /// Consumes the `Deserializer` and returns the remaining bytes.
     #[inline(always)]
+    #[must_use]
     pub fn finalize(self) -> Vec<u8> {
         self.readable.to_vec()
     }
@@ -134,12 +139,14 @@ pub struct Serializer {
 impl Serializer {
     /// Generates a new `Serializer`.
     #[inline(always)]
+    #[must_use]
     pub const fn new() -> Self {
         Self { writable: vec![] }
     }
 
     /// Generates a new `Serializer` with the given capacity.
     #[inline(always)]
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             writable: Vec::with_capacity(capacity),
@@ -196,6 +203,7 @@ impl Serializer {
 
     /// Consumes the `Serializer` and returns the serialized bytes.
     #[inline(always)]
+    #[must_use]
     pub fn finalize(self) -> Vec<u8> {
         self.writable
     }
@@ -227,6 +235,7 @@ impl Default for Serializer {
 ///
 /// - `n`   : `usize` for which to compute the length of the serialization
 #[inline]
+#[must_use]
 pub fn to_leb128_len(n: usize) -> usize {
     let mut n = n >> 7;
     let mut size = 1;
@@ -247,7 +256,7 @@ mod tests {
     };
 
     /// We don't have a non-fixed size implementation of Serializable inside
-    /// crypto_core so just have a dummy implementation here.
+    /// `crypto_core` so just have a dummy implementation here.
     #[derive(Debug)]
     struct DummyLeb128Serializable {
         bytes: Vec<u8>,
@@ -277,7 +286,7 @@ mod tests {
         let mut ser = Serializer::new();
         for i in 1..1000 {
             let n = rng.next_u32();
-            let length = ser.write_u64(n as u64).unwrap();
+            let length = ser.write_u64(u64::from(n)).unwrap();
             assert_eq!(
                 length,
                 to_leb128_len(n as usize),
