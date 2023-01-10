@@ -2,15 +2,20 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
-use crate::{
-    reexport::rand_core::CryptoRngCore,
-    symmetric_crypto::{key::Key, nonce::Nonce, nonce::NonceTrait, Dem, SymKey},
-    CryptoCoreError,
-};
 use aes_gcm::{
     aead::{Aead, Payload},
     aes::cipher::generic_array::GenericArray,
     AeadInPlace, Aes256Gcm, KeyInit,
+};
+
+use crate::{
+    reexport::rand_core::CryptoRngCore,
+    symmetric_crypto::{
+        key::Key,
+        nonce::{Nonce, NonceTrait},
+        Dem, SymKey,
+    },
+    CryptoCoreError,
 };
 
 /// Use a 256-bit AES key.
@@ -32,13 +37,11 @@ const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 pub struct Aes256GcmCrypto;
 
 impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
-    const ENCRYPTION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
-
-    const MAC_LENGTH: usize = MAC_LENGTH;
-
     type Key = Key<KEY_LENGTH>;
-
     type Nonce = Nonce<NONCE_LENGTH>;
+
+    const ENCRYPTION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
+    const MAC_LENGTH: usize = MAC_LENGTH;
 
     fn encrypt<R: CryptoRngCore>(
         rng: &mut R,

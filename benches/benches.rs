@@ -1,8 +1,7 @@
 use cosmian_crypto_core::{
     asymmetric_crypto::{curve25519::X25519KeyPair, DhKeyPair},
     kdf,
-    reexport::rand_core::RngCore,
-    reexport::rand_core::SeedableRng,
+    reexport::rand_core::{RngCore, SeedableRng},
     symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::Key, Dem},
     CsRng, KeyTrait,
 };
@@ -15,7 +14,7 @@ fn bench_dh(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
     let dh_keypair = X25519KeyPair::new(&mut rng);
     c.bench_function(
-        "Bench the Group-Scalar multiplication on which is based the Diffie-Helman key exchange",
+        "Bench the Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
         |b| b.iter(|| dh_keypair.public_key() * dh_keypair.private_key()),
     );
 }
@@ -29,7 +28,7 @@ fn bench_symmetric_encryption(c: &mut Criterion) {
     let mut msg = [0; MSG_LENGTH];
     rng.fill_bytes(&mut msg);
     c.bench_function(
-        "Bench the DEM encryption of a 2048-bytes message withou additional data",
+        "Bench the DEM encryption of a 2048-bytes message without additional data",
         |b| b.iter(|| Aes256GcmCrypto::encrypt(&mut rng, &key, &msg, None).unwrap()),
     );
 }
@@ -41,7 +40,7 @@ fn bench_symmetric_decryption(c: &mut Criterion) {
     rng.fill_bytes(&mut msg);
     let enc = Aes256GcmCrypto::encrypt(&mut rng, &key, &msg, None).unwrap();
     c.bench_function(
-        "Bench the DEM decryption of a 2048-bytes message withou additional data",
+        "Bench the DEM decryption of a 2048-bytes message without additional data",
         |b| b.iter(|| Aes256GcmCrypto::decrypt(&key, &enc, None).unwrap()),
     );
 }

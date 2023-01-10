@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## Unreleased
+## [6.0.0] - 2023-01-10
 
 ### Added
 
@@ -105,7 +105,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `DhKeyPair` which represents an asymmetric key pair in a space wher the
+- `DhKeyPair` which represents an asymmetric key pair in a space where the
   Computational Diffie-Helman problem is intractable
 
 ### Changed
