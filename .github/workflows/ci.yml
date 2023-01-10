@@ -42,3 +42,4 @@ jobs:
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     with:
       toolchain: stable
+    secrets: inherit
