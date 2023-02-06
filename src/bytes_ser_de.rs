@@ -25,7 +25,6 @@ pub trait Serializable: Sized {
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error>;
 
     /// Serializes the object. Allocates the correct capacity if it is known.
-    #[inline]
     fn try_to_bytes(&self) -> Result<Vec<u8>, Self::Error> {
         let mut ser = Serializer::with_capacity(self.length());
         ser.write(self)?;
@@ -33,7 +32,6 @@ pub trait Serializable: Sized {
     }
 
     /// Deserializes the object.
-    #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.is_empty() {
             return Err(CryptoCoreError::DeserialisationEmptyError.into());
@@ -60,20 +58,17 @@ impl<'a> Deserializer<'a> {
     /// Generates a new `Deserializer` from the given bytes.
     ///
     /// - `bytes`   : bytes to deserialize
-    #[inline(always)]
     #[must_use]
     pub const fn new(bytes: &'a [u8]) -> Deserializer<'a> {
         Deserializer { readable: bytes }
     }
 
     /// Reads a `u64` from the `Deserializer`.
-    #[inline]
     pub fn read_u64(&mut self) -> Result<u64, CryptoCoreError> {
         leb128::read::unsigned(&mut self.readable).map_err(CryptoCoreError::ReadLeb128Error)
     }
 
     /// Reads an array of bytes of length `LENGTH` from the `Deserializer`.
-    #[inline]
     pub fn read_array<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], CryptoCoreError> {
         let mut buf = [0; LENGTH];
         self.readable.read_exact(&mut buf).map_err(|_| {
@@ -112,20 +107,17 @@ impl<'a> Deserializer<'a> {
     }
 
     /// Reads the value of a type which implements `Serializable`.
-    #[inline(always)]
     pub fn read<T: Serializable>(&mut self) -> Result<T, <T as Serializable>::Error> {
         T::read(self)
     }
 
     /// Returns a pointer to the underlying value.
-    #[inline(always)]
     #[must_use]
     pub fn value(&self) -> &[u8] {
         self.readable
     }
 
     /// Consumes the `Deserializer` and returns the remaining bytes.
-    #[inline(always)]
     #[must_use]
     pub fn finalize(self) -> Vec<u8> {
         self.readable.to_vec()
@@ -138,14 +130,12 @@ pub struct Serializer {
 
 impl Serializer {
     /// Generates a new `Serializer`.
-    #[inline(always)]
     #[must_use]
     pub const fn new() -> Self {
         Self { writable: vec![] }
     }
 
     /// Generates a new `Serializer` with the given capacity.
-    #[inline(always)]
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
@@ -156,7 +146,6 @@ impl Serializer {
     /// Writes a `u64` to the `Serializer`.
     ///
     /// - `n`   : `u64` to write
-    #[inline]
     pub fn write_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
         leb128::write::unsigned(&mut self.writable, n)
             .map_err(|error| CryptoCoreError::WriteLeb128Error { value: n, error })
@@ -165,7 +154,6 @@ impl Serializer {
     /// Writes an array of bytes to the `Serializer`.
     ///
     /// - `array`   : array of bytes to write
-    #[inline]
     pub fn write_array(&mut self, array: &[u8]) -> Result<usize, CryptoCoreError> {
         self.writable
             .write(array)
@@ -181,7 +169,6 @@ impl Serializer {
     /// `LEB128()` is the LEB128 serialization function.
     ///
     /// - `vector`  : vector of bytes to write
-    #[inline]
     pub fn write_vec(&mut self, vector: &[u8]) -> Result<usize, CryptoCoreError> {
         // Use the size as prefix. This allows inializing the vector with the
         // correct capacity on deserialization.
@@ -193,7 +180,6 @@ impl Serializer {
     /// Writes an value which type implements `Serializable`.
     ///
     /// - `value`   : value to write
-    #[inline(always)]
     pub fn write<T: Serializable>(
         &mut self,
         value: &T,
@@ -202,7 +188,6 @@ impl Serializer {
     }
 
     /// Consumes the `Serializer` and returns the serialized bytes.
-    #[inline(always)]
     #[must_use]
     pub fn finalize(self) -> Vec<u8> {
         self.writable
@@ -210,7 +195,6 @@ impl Serializer {
 }
 
 impl Default for Serializer {
-    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }
@@ -234,7 +218,6 @@ impl Default for Serializer {
 /// # Parameters
 ///
 /// - `n`   : `usize` for which to compute the length of the serialization
-#[inline]
 #[must_use]
 pub fn to_leb128_len(n: usize) -> usize {
     let mut n = n >> 7;

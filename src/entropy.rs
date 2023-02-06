@@ -10,7 +10,6 @@ pub struct CsRng {
 
 impl CsRng {
     /// Generates a new random number generator.
-    #[inline]
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -19,7 +18,6 @@ impl CsRng {
     }
 
     /// Generates a vector of random bytes with the given length.
-    #[inline]
     #[must_use]
     pub fn generate_random_bytes<const LENGTH: usize>(&mut self) -> [u8; LENGTH] {
         let mut bytes = [0; LENGTH];
@@ -30,29 +28,24 @@ impl CsRng {
 
 impl Default for CsRng {
     #[must_use]
-    #[inline]
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl RngCore for CsRng {
-    #[inline]
     fn next_u32(&mut self) -> u32 {
         self.rng.next_u32()
     }
 
-    #[inline]
     fn next_u64(&mut self) -> u64 {
         self.rng.next_u64()
     }
 
-    #[inline]
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         self.rng.fill_bytes(dest);
     }
 
-    #[inline]
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
         self.rng.try_fill_bytes(dest)
     }
