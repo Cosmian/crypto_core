@@ -37,21 +37,18 @@ pub struct Nonce<const LENGTH: usize>([u8; LENGTH]);
 impl<const LENGTH: usize> NonceTrait for Nonce<LENGTH> {
     const LENGTH: usize = LENGTH;
 
-    #[inline]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; LENGTH];
         rng.fill_bytes(&mut bytes);
         Self(bytes)
     }
 
-    #[inline]
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         let bytes = <[u8; LENGTH]>::try_from(bytes)
             .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
         Ok(Self(bytes))
     }
 
-    #[inline]
     fn xor(&self, b2: &[u8]) -> Self {
         let mut n = self.0;
         for (ni, bi) in n.iter_mut().zip(b2) {
@@ -60,7 +57,6 @@ impl<const LENGTH: usize> NonceTrait for Nonce<LENGTH> {
         Self(n)
     }
 
-    #[inline]
     fn as_bytes(&self) -> &[u8] {
         &self.0
     }
@@ -69,14 +65,12 @@ impl<const LENGTH: usize> NonceTrait for Nonce<LENGTH> {
 impl<'a, const LENGTH: usize> TryFrom<&'a [u8]> for Nonce<LENGTH> {
     type Error = CryptoCoreError;
 
-    #[inline]
     fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
         Self::try_from_bytes(bytes)
     }
 }
 
 impl<const LENGTH: usize> From<[u8; LENGTH]> for Nonce<LENGTH> {
-    #[inline]
     fn from(b: [u8; LENGTH]) -> Self {
         Self(b)
     }
