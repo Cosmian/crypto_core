@@ -1,6 +1,6 @@
 //! Defines a symmetric key object of variable size.
 
-use core::{convert::TryFrom, fmt::Display, hash::Hash, ops::Deref};
+use core::{convert::TryFrom, hash::Hash, ops::Deref};
 
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -55,12 +55,6 @@ impl<const LENGTH: usize> SymKey<LENGTH> for Key<LENGTH> {
     #[inline]
     fn from_bytes(bytes: [u8; LENGTH]) -> Self {
         Self(bytes)
-    }
-}
-
-impl<const LENGTH: usize> Display for Key<LENGTH> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", hex::encode(self.as_bytes()))
     }
 }
 
