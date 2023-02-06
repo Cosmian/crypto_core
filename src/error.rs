@@ -39,7 +39,4 @@ pub enum CryptoCoreError {
     EncryptionError,
     #[error("error during decryption")]
     DecryptionError,
-
-    #[error("Failed to parse")]
-    HexParseError(#[from] hex::FromHexError),
 }

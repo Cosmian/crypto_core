@@ -3,10 +3,7 @@
 //! A nonce, for Number used ONCE, is a randomly generated number used to
 //! ensure a ciphertext cannot be reused, hence avoiding replay attacks.
 
-use core::{
-    convert::TryFrom,
-    fmt::{Debug, Display},
-};
+use core::{convert::TryFrom, fmt::Debug};
 
 use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError};
 
@@ -82,13 +79,6 @@ impl<const LENGTH: usize> From<[u8; LENGTH]> for Nonce<LENGTH> {
     #[inline]
     fn from(b: [u8; LENGTH]) -> Self {
         Self(b)
-    }
-}
-
-impl<const LENGTH: usize> Display for Nonce<LENGTH> {
-    #[inline]
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", hex::encode(self.0))
     }
 }
 

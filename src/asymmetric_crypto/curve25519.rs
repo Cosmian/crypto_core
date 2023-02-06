@@ -7,7 +7,6 @@
 
 use core::{
     convert::TryFrom,
-    fmt::Display,
     ops::{Add, Div, Mul, Sub},
 };
 
@@ -16,7 +15,6 @@ use curve25519_dalek::{
     ristretto::{CompressedRistretto, RistrettoPoint},
     scalar::Scalar,
 };
-use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
@@ -33,8 +31,7 @@ pub const X25519_PUBLIC_KEY_LENGTH: usize = 32;
 /// Asymmetric private key based on Curve25519.
 ///
 /// Internally, a curve scalar is used. It is 128-bits long.
-#[derive(Hash, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(try_from = "&[u8]", into = "[u8; 32]")]
+#[derive(Hash, Clone, PartialEq, Eq, Debug)]
 pub struct X25519PrivateKey(Scalar);
 
 impl X25519PrivateKey {
@@ -118,24 +115,6 @@ impl From<X25519PrivateKey> for [u8; X25519_PRIVATE_KEY_LENGTH] {
     }
 }
 
-/// Parse from an hex encoded String
-impl TryFrom<&str> for X25519PrivateKey {
-    type Error = CryptoCoreError;
-
-    #[inline]
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let bytes = hex::decode(value)?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-/// Display the hex encoded value of the key
-impl Display for X25519PrivateKey {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", hex::encode(self.0.as_bytes()))
-    }
-}
-
 impl<'a> Add<&'a X25519PrivateKey> for &X25519PrivateKey {
     type Output = X25519PrivateKey;
 
@@ -194,8 +173,7 @@ impl ZeroizeOnDrop for X25519PrivateKey {}
 ///
 /// Internally, a Ristretto point is used. It is 256-bits long, but its
 /// compressed form is used for serialization, which makes it 128-bits long.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(try_from = "&[u8]", into = "[u8; 32]")]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct X25519PublicKey(RistrettoPoint);
 
 impl KeyTrait<X25519_PUBLIC_KEY_LENGTH> for X25519PublicKey {
@@ -285,24 +263,6 @@ impl From<X25519PublicKey> for [u8; X25519_PUBLIC_KEY_LENGTH] {
     }
 }
 
-/// Parses an hex encoded String
-impl TryFrom<&str> for X25519PublicKey {
-    type Error = CryptoCoreError;
-
-    #[inline]
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let bytes = hex::decode(value)?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-/// Displays the hex encoded value of the key
-impl Display for X25519PublicKey {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", hex::encode(self.0.compress().to_bytes()))
-    }
-}
-
 impl<'a> Sub<&'a X25519PublicKey> for &X25519PublicKey {
     type Output = X25519PublicKey;
 
@@ -347,7 +307,7 @@ impl Drop for X25519PublicKey {
 
 impl ZeroizeOnDrop for X25519PublicKey {}
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct X25519KeyPair {
     pk: X25519PublicKey,
     sk: X25519PrivateKey,
