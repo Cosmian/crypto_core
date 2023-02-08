@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [7.0.0] - 2023-02-08
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+- `#[inline]` directives
+- `serde`, `thiserror`, `hex` dependencies
+- unused file `entropy.rs`
+
+---
+
+---
+
 ## [6.0.0] - 2023-01-10
 
 ### Added
