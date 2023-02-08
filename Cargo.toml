@@ -17,7 +17,6 @@ curve25519-dalek = "3.2"
 leb128 = "0.2"
 rand_chacha = "0.3"
 sha3 = "0.10"
-thiserror = "1.0"
 zeroize = "1.5"
 
 [dev-dependencies]
