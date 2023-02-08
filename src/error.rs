@@ -1,42 +1,66 @@
-use thiserror::Error;
+use core::fmt::Display;
 
 /// Error type for this crate.
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum CryptoCoreError {
-    #[error("empty input when parsing bytes")]
     DeserialisationEmptyError,
-    #[error("wrong size when parsing bytes: {given} given should be {expected}")]
-    DeserialisationSizeError { given: usize, expected: usize },
-    #[error("when reading LEB128, {0}")]
+    DeserialisationSizeError {
+        given: usize,
+        expected: usize,
+    },
     ReadLeb128Error(leb128::read::Error),
-    #[error("deserialisation error: {0}")]
     GenericDeserialisationError(String),
-
-    #[error("when writing {value} as LEB128 size, IO error {error}")]
-    WriteLeb128Error { value: u64, error: std::io::Error },
-
-    #[error("when writing {bytes_len} bytes, {error}")]
+    WriteLeb128Error {
+        value: u64,
+        error: std::io::Error,
+    },
     SerialisationIoError {
         bytes_len: usize,
         error: std::io::Error,
     },
-
-    #[error("when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} bytes")]
-    PlaintextTooBigError { plaintext_len: usize, max: u64 },
-    #[error(
-        "when decrypting, ciphertext of {ciphertext_len} bytes is too small, min is {min} bytes"
-    )]
-    CiphertextTooSmallError { ciphertext_len: usize, min: u64 },
-    #[error(
-        "when decrypting, ciphertext of {ciphertext_len} bytes is too big, max is {max} bytes"
-    )]
-    CiphertextTooBigError { ciphertext_len: usize, max: u64 },
-
-    #[error("failed to convert: {0}")]
+    PlaintextTooBigError {
+        plaintext_len: usize,
+        max: u64,
+    },
+    CiphertextTooSmallError {
+        ciphertext_len: usize,
+        min: u64,
+    },
+    CiphertextTooBigError {
+        ciphertext_len: usize,
+        max: u64,
+    },
     ConversionError(String),
-
-    #[error("error during encryption")]
     EncryptionError,
-    #[error("error during decryption")]
     DecryptionError,
 }
+
+impl Display for CryptoCoreError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DeserialisationEmptyError => write!(f, "empty input when parsing bytes"),
+            Self::DeserialisationSizeError { given, expected } => write!(
+                f,
+                "wrong size when parsing bytes: {given} given should be {expected}"
+            ),
+            Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
+            Self::GenericDeserialisationError(err) => write!(f, "deserialisation error: {err}"),
+            Self::WriteLeb128Error { value, error } => write!(f, "when writing {value} as LEB128 size, IO error {error}"),
+            Self::SerialisationIoError { bytes_len, error } => write!(f, "when writing {bytes_len} bytes, {error}"),
+            Self::PlaintextTooBigError { plaintext_len, max } => write!(f, "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} bytes"),
+            Self::CiphertextTooSmallError {
+                ciphertext_len,
+                min,
+            } => write!(f, "when decrypting, ciphertext of {ciphertext_len} bytes is too small, min is {min} bytes"),
+            Self::CiphertextTooBigError {
+                ciphertext_len,
+                max,
+            } => write!(f, "when decrypting, ciphertext of {ciphertext_len} bytes is too big, max is {max} bytes"),
+            Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
+            Self::EncryptionError => write!(f, "error during encryption"),
+            Self::DecryptionError => write!(f, "error during decryption"),
+        }
+    }
+}
+
+impl std::error::Error for CryptoCoreError {}

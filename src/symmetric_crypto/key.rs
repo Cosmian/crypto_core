@@ -27,7 +27,7 @@ impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
         self.0.to_owned()
     }
 
-    /// Tries to convert the given bytes into a key. Size must be correct.
+    /// Tries to convert the given bytes into a key.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         let bytes = <[u8; LENGTH]>::try_from(bytes)
             .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
