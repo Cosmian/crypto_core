@@ -64,7 +64,7 @@ impl<'a> Deserializer<'a> {
     }
 
     /// Reads a `u64` from the `Deserializer`.
-    pub fn read_u64(&mut self) -> Result<u64, CryptoCoreError> {
+    pub fn read_leb128_u64(&mut self) -> Result<u64, CryptoCoreError> {
         leb128::read::unsigned(&mut self.readable).map_err(CryptoCoreError::ReadLeb128Error)
     }
 
@@ -87,7 +87,7 @@ impl<'a> Deserializer<'a> {
     pub fn read_vec(&mut self) -> Result<Vec<u8>, CryptoCoreError> {
         // The size of the vector is prefixed to the serialization.
         let original_length = self.readable.len();
-        let len_u64 = self.read_u64()?;
+        let len_u64 = self.read_leb128_u64()?;
         if len_u64 == 0 {
             return Ok(vec![]);
         };
@@ -146,7 +146,7 @@ impl Serializer {
     /// Writes a `u64` to the `Serializer`.
     ///
     /// - `n`   : `u64` to write
-    pub fn write_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
+    pub fn write_leb128_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
         leb128::write::unsigned(&mut self.writable, n)
             .map_err(|error| CryptoCoreError::WriteLeb128Error { value: n, error })
     }
@@ -172,7 +172,7 @@ impl Serializer {
     pub fn write_vec(&mut self, vector: &[u8]) -> Result<usize, CryptoCoreError> {
         // Use the size as prefix. This allows inializing the vector with the
         // correct capacity on deserialization.
-        let mut len = self.write_u64(vector.len() as u64)?;
+        let mut len = self.write_leb128_u64(vector.len() as u64)?;
         len += self.write_array(vector)?;
         Ok(len)
     }
@@ -269,7 +269,7 @@ mod tests {
         let mut ser = Serializer::new();
         for i in 1..1000 {
             let n = rng.next_u32();
-            let length = ser.write_u64(u64::from(n)).unwrap();
+            let length = ser.write_leb128_u64(u64::from(n)).unwrap();
             assert_eq!(
                 length,
                 to_leb128_len(n as usize),
