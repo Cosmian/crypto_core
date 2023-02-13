@@ -1,9 +1,9 @@
 //! Define the `X25519PublicKey` and `X25519PrivateKey` objects, asymmetric
 //! keys based on the Curve25519.
 //!
-//! Curve25519 is an elliptic curve defined by the equation `y^2 = x^3 + 486662x^2 + x`.
-//! Its security level is 128-bits. It is the fastest curve available at the
-//! time of this implementation.
+//! Curve25519 is an elliptic curve defined by the equation `y^2 = x^3 +
+//! 486662x^2 + x`. Its security level is 128-bits. It is the fastest curve
+//! available at the time of this implementation.
 
 use core::{
     convert::TryFrom,

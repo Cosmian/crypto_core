@@ -45,17 +45,33 @@ impl Display for CryptoCoreError {
             ),
             Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
             Self::GenericDeserialisationError(err) => write!(f, "deserialisation error: {err}"),
-            Self::WriteLeb128Error { value, error } => write!(f, "when writing {value} as LEB128 size, IO error {error}"),
-            Self::SerialisationIoError { bytes_len, error } => write!(f, "when writing {bytes_len} bytes, {error}"),
-            Self::PlaintextTooBigError { plaintext_len, max } => write!(f, "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} bytes"),
+            Self::WriteLeb128Error { value, error } => {
+                write!(f, "when writing {value} as LEB128 size, IO error {error}")
+            }
+            Self::SerialisationIoError { bytes_len, error } => {
+                write!(f, "when writing {bytes_len} bytes, {error}")
+            }
+            Self::PlaintextTooBigError { plaintext_len, max } => write!(
+                f,
+                "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
+                 bytes"
+            ),
             Self::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
-            } => write!(f, "when decrypting, ciphertext of {ciphertext_len} bytes is too small, min is {min} bytes"),
+            } => write!(
+                f,
+                "when decrypting, ciphertext of {ciphertext_len} bytes is too small, min is {min} \
+                 bytes"
+            ),
             Self::CiphertextTooBigError {
                 ciphertext_len,
                 max,
-            } => write!(f, "when decrypting, ciphertext of {ciphertext_len} bytes is too big, max is {max} bytes"),
+            } => write!(
+                f,
+                "when decrypting, ciphertext of {ciphertext_len} bytes is too big, max is {max} \
+                 bytes"
+            ),
             Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
             Self::EncryptionError => write!(f, "error during encryption"),
             Self::DecryptionError => write!(f, "error during decryption"),
