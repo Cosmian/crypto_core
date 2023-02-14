@@ -1,7 +1,4 @@
-pub use sha3::{
-    digest::{ExtendableOutput, Update, XofReader},
-    Shake128,
-};
+pub use tiny_keccak::{Hasher, Shake};
 
 /// Key Derivation Function (KDF).
 ///
@@ -41,13 +38,12 @@ pub use sha3::{
 macro_rules! kdf {
     ($length: ident, $($bytes: expr),+) => {
         {
-            let mut hasher = $crate::kdf::Shake128::default();
-            $(
-                <$crate::kdf::Shake128 as $crate::kdf::Update>::update(&mut hasher, $bytes);
-            )*
-            let mut reader = <$crate::kdf::Shake128 as $crate::kdf::ExtendableOutput>::finalize_xof(hasher);
             let mut res = [0; $length];
-            <<$crate::kdf::Shake128 as $crate::kdf::ExtendableOutput>::Reader as $crate::kdf::XofReader>::read(&mut reader, &mut res);
+            let mut hasher = $crate::kdf::Shake::v256();
+            $(
+                <$crate::kdf::Shake as $crate::kdf::Hasher>::update(&mut hasher, $bytes);
+            )*
+            <$crate::kdf::Shake as $crate::kdf::Hasher>::finalize(hasher, &mut res);
             res
         }
     };

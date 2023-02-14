@@ -18,7 +18,7 @@ curve25519-dalek = "3.2"
 getrandom = { version ="0.2", features = ["js"] }
 leb128 = "0.2"
 rand_chacha = "0.3"
-sha3 = "0.10"
+tiny-keccak = { version = "2.0.2", features = ["shake"] }
 zeroize = "1.5"
 
 [dev-dependencies]
