@@ -15,7 +15,7 @@ path = "src/lib.rs"
 aes-gcm = "0.10"
 curve25519-dalek = "3.2"
 # needed to compile into WASM
-getrandom = { version ="0.2", features = ["js"] }
+getrandom = { version = "0.2", features = ["js"] }
 leb128 = "0.2"
 rand_chacha = "0.3"
 tiny-keccak = { version = "2.0.2", features = ["shake"] }
