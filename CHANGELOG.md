@@ -11,8 +11,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - use Shake256 from `tiny_keccak` as KDF
-- `read_u64()`	-> `read_leb128_u64()`
-- `write_u64()`	-> `write_leb128_u64()`
+- `read_u64()` -> `read_leb128_u64()`
+- `write_u64()` -> `write_leb128_u64()`
 
 ### Fixed
 
