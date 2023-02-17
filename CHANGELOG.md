@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [7.0.0] - 2023-02-17
+
+### Added
+
+### Changed
+
+- use Shake256 from `tiny_keccak` as KDF
+- `read_u64()` -> `read_leb128_u64()`
+- `write_u64()` -> `write_leb128_u64()`
+
+### Fixed
+
+### Removed
+
+- `#[inline]` directives
+- `serde`, `thiserror`, `hex` dependencies
+- unused file `entropy.rs`
+
+---
+
+---
+
 ## [6.0.0] - 2023-01-10
 
 ### Added

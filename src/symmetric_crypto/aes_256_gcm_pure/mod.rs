@@ -19,13 +19,13 @@ use crate::{
 };
 
 /// Use a 256-bit AES key.
-const KEY_LENGTH: usize = 32;
+pub const KEY_LENGTH: usize = 32;
 
 /// Use a 96-bit nonce.
-const NONCE_LENGTH: usize = 12;
+pub const NONCE_LENGTH: usize = 12;
 
 /// Use a 128-bit MAC tag.
-const MAC_LENGTH: usize = 16;
+pub const MAC_LENGTH: usize = 16;
 
 /// Plaintext size (in bytes) restriction from the NIST
 /// <https://csrc.nist.gov/publications/detail/sp/800-38d/final>

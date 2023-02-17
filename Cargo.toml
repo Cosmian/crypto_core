@@ -1,10 +1,10 @@
 [package]
 name = "cosmian_crypto_core"
-version = "6.0.0"
+version = "7.0.0"
 authors = ["Bruno Grieder <bruno.grieder@cosmian.com>", "Théophile BRÉZOT <theophile.brezot@cosmian.com>"]
 edition = "2021"
 license = "MIT/Apache-2.0"
-description = "Crypto lib for pure crypto primitives"
+description = "Cosmian base cryptographic library"
 
 [lib]
 crate-type = ["rlib", "staticlib"]
@@ -14,13 +14,11 @@ path = "src/lib.rs"
 [dependencies]
 aes-gcm = "0.10"
 curve25519-dalek = "3.2"
+# needed to compile into WASM
 getrandom = { version = "0.2", features = ["js"] }
-hex = "0.4"
 leb128 = "0.2"
 rand_chacha = "0.3"
-serde = { version = "1.0", features = ["derive"] }
-sha3 = "0.10"
-thiserror = "1.0"
+tiny-keccak = { version = "2.0.2", features = ["shake"] }
 zeroize = "1.5"
 
 [dev-dependencies]
