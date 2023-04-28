@@ -44,7 +44,7 @@ impl Display for CryptoCoreError {
                 "wrong size when parsing bytes: {given} given should be {expected}"
             ),
             Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
-            Self::GenericDeserialisationError(err) => write!(f, "deserialisation error: {err}"),
+            Self::GenericDeserialisationError(err) => write!(f, "deserialization error: {err}"),
             Self::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
