@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.1.0] - 2023-05-02
+
+### Features
+
+- Add ECIES scheme implementation using [Dalek](https://github.com/dalek-cryptography/curve25519-dalek)
+implementation combined to AES256-GCM
+
 ---
 
 ## [7.0.0] - 2023-02-17

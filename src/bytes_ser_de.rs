@@ -170,7 +170,7 @@ impl Serializer {
     ///
     /// - `vector`  : vector of bytes to write
     pub fn write_vec(&mut self, vector: &[u8]) -> Result<usize, CryptoCoreError> {
-        // Use the size as prefix. This allows inializing the vector with the
+        // Use the size as prefix. This allows initializing the vector with the
         // correct capacity on deserialization.
         let mut len = self.write_leb128_u64(vector.len() as u64)?;
         len += self.write_array(vector)?;

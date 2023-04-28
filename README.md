@@ -23,14 +23,14 @@ complex software.
 
 - [Getting started](#getting-started)
 - [Building and Testing](#building-and-testing)
-  - [Build](#build)
-  - [Use](#use)
-  - [Run tests and benchmarks](#run-tests-and-benchmarks)
+  * [Build](#build)
+  * [Use](#use)
+  * [Run tests and benchmarks](#run-tests-and-benchmarks)
 - [Features and Benchmarks](#features-and-benchmarks)
-  - [Asymmetric Crypto](#asymmetric-crypto)
-  - [Symmetric Crypto](#symmetric-crypto)
-  - [Random Number Generator (RNG)](#random-number-generator-rng)
-  - [Key Derivation Function (KDF)](#key-derivation-function-kdf)
+  * [Asymmetric Crypto](#asymmetric-crypto)
+  * [Symmetric Crypto](#symmetric-crypto)
+  * [Random Number Generator (RNG)](#random-number-generator-rng)
+  * [Key Derivation Function (KDF)](#key-derivation-function-kdf)
 - [Documentation](#documentation)
 
 <!-- tocstop -->

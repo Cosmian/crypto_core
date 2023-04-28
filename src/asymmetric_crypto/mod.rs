@@ -8,6 +8,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::{reexport::rand_core::CryptoRngCore, KeyTrait};
 
 pub mod curve25519;
+pub mod ecies;
 
 pub trait DhKeyPair<const PUBLIC_KEY_LENGTH: usize, const PRIVATE_KEY_LENGTH: usize>:
     Debug + PartialEq + Eq + Send + Sync + Sized + Clone + Zeroize + ZeroizeOnDrop
