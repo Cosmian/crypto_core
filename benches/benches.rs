@@ -7,6 +7,8 @@ use cosmian_crypto_core::{
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 
+mod ecies;
+
 /// Bench the Group-Scalar multiplication on which is based the
 /// Diffie-Hellman key exchange. This gives an indication on how fast
 /// asymmetric schemes can be.
@@ -90,12 +92,10 @@ criterion_group!(
     targets = bench_kdf
 );
 
-mod ecies;
-
 criterion_group!(
     name = ecies;
     config = Criterion::default().sample_size(5000);
-    targets = ecies::bench_ecies_r25519_aes256gcm_sha256_xof_decrypt, ecies::bench_ecies_r25519_aes256gcm_sha256_xof_encrypt
+    targets =  ecies::ecies_r25519_aes256gcm_sha256_xof_bench
 );
 
 criterion_main!(asymmetric_crypto, symmetric_crypto, cs_rng, kdf, ecies);
