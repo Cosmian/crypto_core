@@ -1,5 +1,5 @@
 use cosmian_crypto_core::{
-    asymmetric_crypto::{curve25519::X25519KeyPair, DhKeyPair},
+    asymmetric_crypto::{ristretto_25519::R25519KeyPair, DhKeyPair},
     kdf,
     reexport::rand_core::{RngCore, SeedableRng},
     symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::Key, Dem},
@@ -12,7 +12,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 /// asymmetric schemes can be.
 fn bench_dh(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
-    let dh_keypair = X25519KeyPair::new(&mut rng);
+    let dh_keypair = R25519KeyPair::new(&mut rng);
     c.bench_function(
         "Bench the Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
         |b| b.iter(|| dh_keypair.public_key() * dh_keypair.private_key()),

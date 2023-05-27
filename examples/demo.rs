@@ -1,7 +1,7 @@
 //! This demo is used in `README.md`.
 
 use cosmian_crypto_core::{
-    asymmetric_crypto::{curve25519::X25519KeyPair, DhKeyPair},
+    asymmetric_crypto::{ristretto_25519::R25519KeyPair, DhKeyPair},
     kdf,
     reexport::rand_core::SeedableRng,
     symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, Dem, SymKey},
@@ -20,8 +20,8 @@ fn main() {
     let additional_data = Some(b"Some public tag".as_slice());
 
     // Setting of the asymmetric keys
-    let bob_keypair = X25519KeyPair::new(&mut rng);
-    let alice_keypair = X25519KeyPair::new(&mut rng);
+    let bob_keypair = R25519KeyPair::new(&mut rng);
+    let alice_keypair = R25519KeyPair::new(&mut rng);
 
     // In real world applications, DHKEX is often used to derive a symmetric key.
     let shared_secret = bob_keypair.public_key() * alice_keypair.private_key();

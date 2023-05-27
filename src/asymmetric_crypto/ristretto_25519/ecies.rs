@@ -1,7 +1,12 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::{
+    ops::{Add, Div, Mul, Sub},
+    sync::{Arc, Mutex},
+};
+
+use rand_chacha::rand_core::SeedableRng;
 
 use crate::{
-    asymmetric_crypto::DhKeyPair,
+    asymmetric_crypto::{ecies_trait::Ecies, DhKeyPair},
     kdf,
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{
@@ -11,8 +16,68 @@ use crate::{
         nonce::NonceTrait,
         Dem,
     },
-    CryptoCoreError, KeyTrait,
+    CryptoCoreError, CsRng, KeyTrait,
 };
+
+use super::{
+    R25519KeyPair, R25519PrivateKey, R25519PublicKey, R25519_PRIVATE_KEY_LENGTH,
+    R25519_PUBLIC_KEY_LENGTH,
+};
+
+/// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
+///  - the Ristretto group of Curve 25516
+///  - AES 256 GCM
+///  - SHAKE256 (XOF)
+pub struct EciesR25519Aes256gcmSha256Xof {
+    cs_rng: Arc<Mutex<CsRng>>,
+}
+
+impl EciesR25519Aes256gcmSha256Xof {
+    /// Creates a new instance of `EciesR25519Aes256gcmSha256Xof`.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::new_from_rng(Arc::new(Mutex::new(CsRng::from_entropy())))
+    }
+
+    /// Creates a new instance of `EciesR25519Aes256gcmSha256Xof`
+    /// from an existing cryptographic pseudo random generator
+    #[must_use]
+    pub fn new_from_rng(cs_rng: Arc<Mutex<CsRng>>) -> Self {
+        Self { cs_rng }
+    }
+}
+
+impl Ecies<R25519_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH> for EciesR25519Aes256gcmSha256Xof {
+    type PrivateKey = R25519PrivateKey;
+
+    type PublicKey = R25519PublicKey;
+
+    fn encrypt(
+        &self,
+        public_key: &Self::PublicKey,
+        plaintext: &[u8],
+    ) -> Result<Vec<u8>, CryptoCoreError> {
+        let mut rng = self.cs_rng.lock().expect("failed to lock cs_rng");
+        ecies_encrypt::<
+            CsRng,
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
+        >(&mut rng, &public_key, plaintext, None, None)
+    }
+
+    fn decrypt(
+        &self,
+        private_key: &Self::PrivateKey,
+        ciphertext: &[u8],
+    ) -> Result<Vec<u8>, CryptoCoreError> {
+        ecies_decrypt::<
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
+        >(private_key, &ciphertext, None, None)
+    }
+}
 
 /// Encrypts a message using Elliptic Curve Integrated Encryption Scheme
 /// (ECIES). This implementation uses SHAKE256 (XOF) as a KDF and AES256-GCM as
@@ -41,20 +106,20 @@ use crate::{
 ///
 /// ```
 /// use cosmian_crypto_core::{
-///    asymmetric_crypto::{curve25519::X25519KeyPair, DhKeyPair,ecies::ecies_encrypt},
+///    asymmetric_crypto::{curve25519::R25519KeyPair, DhKeyPair,ecies::ecies_encrypt},
 ///    reexport::rand_core::SeedableRng,
 ///    CsRng,
 /// };
 ///
 /// let mut rng = CsRng::from_entropy();
-/// let key_pair = X25519KeyPair::new(&mut rng);
+/// let key_pair = R25519KeyPair::new(&mut rng);
 /// let msg = b"Hello, World!";
 ///
 /// let _encrypted_message = ecies_encrypt::<
 ///         CsRng,
-///         X25519KeyPair,
-///         { X25519KeyPair::PUBLIC_KEY_LENGTH },
-///         { X25519KeyPair::PRIVATE_KEY_LENGTH },
+///         R25519KeyPair,
+///         { R25519KeyPair::PUBLIC_KEY_LENGTH },
+///         { R25519KeyPair::PRIVATE_KEY_LENGTH },
 ///     >(
 ///     &mut rng,
 ///     &key_pair.public_key(),
@@ -146,21 +211,21 @@ pub fn ecies_encrypt_get_overhead_size<const PUBLIC_KEY_LENGTH: usize>() -> usiz
 ///
 /// ```
 /// use cosmian_crypto_core::{
-///     asymmetric_crypto::{curve25519::X25519KeyPair, DhKeyPair, ecies::{ecies_encrypt, ecies_decrypt}},
+///     asymmetric_crypto::{curve25519::R25519KeyPair, DhKeyPair, ecies::{ecies_encrypt, ecies_decrypt}},
 ///     reexport::rand_core::SeedableRng,
 ///     CsRng,
 /// };
 ///
 /// let mut rng = CsRng::from_entropy();
-/// let key_pair = X25519KeyPair::new(&mut rng);
+/// let key_pair = R25519KeyPair::new(&mut rng);
 /// let msg = b"Hello, World!";
 ///
 /// // Encrypt the message
 /// let encrypted_message = ecies_encrypt::<
 ///     CsRng,
-///     X25519KeyPair,
-///     { X25519KeyPair::PUBLIC_KEY_LENGTH },
-///     { X25519KeyPair::PRIVATE_KEY_LENGTH },
+///     R25519KeyPair,
+///     { R25519KeyPair::PUBLIC_KEY_LENGTH },
+///     { R25519KeyPair::PRIVATE_KEY_LENGTH },
 /// >(
 ///     &mut rng,
 ///     &key_pair.public_key(),
@@ -171,9 +236,9 @@ pub fn ecies_encrypt_get_overhead_size<const PUBLIC_KEY_LENGTH: usize>() -> usiz
 ///
 /// // Decrypt the encrypted message
 /// let decrypted_message = ecies_decrypt::<
-///     X25519KeyPair,
-///     { X25519KeyPair::PUBLIC_KEY_LENGTH },
-///     { X25519KeyPair::PRIVATE_KEY_LENGTH },
+///     R25519KeyPair,
+///     { R25519KeyPair::PUBLIC_KEY_LENGTH },
+///     { R25519KeyPair::PRIVATE_KEY_LENGTH },
 /// >(
 ///     &key_pair.private_key(),
 ///     &encrypted_message,
@@ -237,7 +302,7 @@ where
 mod tests {
     use super::{ecies_decrypt, ecies_encrypt, CryptoCoreError};
     use crate::{
-        asymmetric_crypto::{curve25519::X25519KeyPair, DhKeyPair},
+        asymmetric_crypto::{ristretto_25519::R25519KeyPair, DhKeyPair},
         reexport::rand_core::SeedableRng,
         CsRng,
     };
@@ -245,22 +310,22 @@ mod tests {
     #[test]
     fn test_encrypt_decrypt() -> Result<(), CryptoCoreError> {
         let mut rng = CsRng::from_entropy();
-        let key_pair: X25519KeyPair = X25519KeyPair::new(&mut rng);
+        let key_pair: R25519KeyPair = R25519KeyPair::new(&mut rng);
         let msg = b"Hello, World!";
 
         // Encrypt the message
         let encrypted_message = ecies_encrypt::<
             CsRng,
-            X25519KeyPair,
-            { X25519KeyPair::PUBLIC_KEY_LENGTH },
-            { X25519KeyPair::PRIVATE_KEY_LENGTH },
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(&mut rng, key_pair.public_key(), msg, None, None)?;
 
         // Decrypt the message
         let decrypted_message = ecies_decrypt::<
-            X25519KeyPair,
-            { X25519KeyPair::PUBLIC_KEY_LENGTH },
-            { X25519KeyPair::PRIVATE_KEY_LENGTH },
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(key_pair.private_key(), &encrypted_message, None, None)?;
 
         // Check if the decrypted message is the same as the original message
@@ -272,7 +337,7 @@ mod tests {
     #[test]
     fn test_encrypt_decrypt_with_optional_data() -> Result<(), CryptoCoreError> {
         let mut rng = CsRng::from_entropy();
-        let key_pair: X25519KeyPair = X25519KeyPair::new(&mut rng);
+        let key_pair: R25519KeyPair = R25519KeyPair::new(&mut rng);
         let msg = b"Hello, World!";
         let encapsulated_data = b"Optional Encapsulated Data";
         let authentication_data = b"Optional Authentication Data";
@@ -280,9 +345,9 @@ mod tests {
         // Encrypt the message with encapsulated_data and authentication_data
         let encrypted_message = ecies_encrypt::<
             CsRng,
-            X25519KeyPair,
-            { X25519KeyPair::PUBLIC_KEY_LENGTH },
-            { X25519KeyPair::PRIVATE_KEY_LENGTH },
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(
             &mut rng,
             key_pair.public_key(),
@@ -293,9 +358,9 @@ mod tests {
 
         // Decrypt the message with encapsulated_data and authentication_data
         let decrypted_message = ecies_decrypt::<
-            X25519KeyPair,
-            { X25519KeyPair::PUBLIC_KEY_LENGTH },
-            { X25519KeyPair::PRIVATE_KEY_LENGTH },
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(
             key_pair.private_key(),
             &encrypted_message,
@@ -312,7 +377,7 @@ mod tests {
     #[test]
     fn test_encrypt_decrypt_with_optional_data_but_corrupted() -> Result<(), CryptoCoreError> {
         let mut rng = CsRng::from_entropy();
-        let key_pair: X25519KeyPair = X25519KeyPair::new(&mut rng);
+        let key_pair: R25519KeyPair = R25519KeyPair::new(&mut rng);
         let msg = b"Hello, World!";
         let encapsulated_data = b"Optional Encapsulated Data";
         let authentication_data = b"Optional Authentication Data";
@@ -320,9 +385,9 @@ mod tests {
         // Encrypt the message with encapsulated_data and authentication_data
         let encrypted_message = ecies_encrypt::<
             CsRng,
-            X25519KeyPair,
-            { X25519KeyPair::PUBLIC_KEY_LENGTH },
-            { X25519KeyPair::PRIVATE_KEY_LENGTH },
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(
             &mut rng,
             key_pair.public_key(),
@@ -333,9 +398,9 @@ mod tests {
 
         // Try to decrypt the message with encapsulated_data and authentication_data
         let not_decrypted = ecies_decrypt::<
-            X25519KeyPair,
-            { X25519KeyPair::PUBLIC_KEY_LENGTH },
-            { X25519KeyPair::PRIVATE_KEY_LENGTH },
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(
             key_pair.private_key(),
             &encrypted_message,
@@ -349,9 +414,9 @@ mod tests {
 
         // Try to decrypt the message with encapsulated_data and authentication_data
         let not_decrypted = ecies_decrypt::<
-            X25519KeyPair,
-            { X25519KeyPair::PUBLIC_KEY_LENGTH },
-            { X25519KeyPair::PRIVATE_KEY_LENGTH },
+            R25519KeyPair,
+            { R25519KeyPair::PUBLIC_KEY_LENGTH },
+            { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(
             key_pair.private_key(),
             &encrypted_message,

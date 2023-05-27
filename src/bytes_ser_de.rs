@@ -233,7 +233,7 @@ pub fn to_leb128_len(n: usize) -> usize {
 mod tests {
     use super::{to_leb128_len, Deserializer, Serializable, Serializer};
     use crate::{
-        asymmetric_crypto::curve25519::X25519PrivateKey,
+        asymmetric_crypto::ristretto_25519::R25519PrivateKey,
         reexport::rand_core::{RngCore, SeedableRng},
         CryptoCoreError, CsRng,
     };
@@ -299,7 +299,7 @@ mod tests {
         assert_eq!(a3, a3_);
 
         let serialized_key = vec![1; 32];
-        let key = X25519PrivateKey::try_from_bytes(&serialized_key)?;
+        let key = R25519PrivateKey::try_from_bytes(&serialized_key)?;
         let reserialized_key = key.try_to_bytes()?;
 
         assert_eq!(reserialized_key, serialized_key);
@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn test_deserialization_errors() -> Result<(), CryptoCoreError> {
         {
-            let empty_error = X25519PrivateKey::try_from_bytes(&[]);
+            let empty_error = R25519PrivateKey::try_from_bytes(&[]);
 
             dbg!(&empty_error);
             assert!(matches!(
@@ -327,7 +327,7 @@ mod tests {
             ));
         }
         {
-            let too_small_error = X25519PrivateKey::try_from_bytes(&[1, 2, 3]);
+            let too_small_error = R25519PrivateKey::try_from_bytes(&[1, 2, 3]);
 
             dbg!(&too_small_error);
             assert!(matches!(
@@ -339,7 +339,7 @@ mod tests {
             ));
         }
         {
-            let too_big_error = X25519PrivateKey::try_from_bytes(&[1; 34]);
+            let too_big_error = R25519PrivateKey::try_from_bytes(&[1; 34]);
 
             dbg!(&too_big_error);
             assert!(matches!(
