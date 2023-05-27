@@ -77,6 +77,10 @@ impl Ecies<R25519_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH> for EciesR25519A
             { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(private_key, &ciphertext, None, None)
     }
+
+    fn ciphertext_size(&self, plaintext_size: usize) -> usize {
+        return plaintext_size + ecies_encrypt_get_overhead_size::<R25519_PUBLIC_KEY_LENGTH>();
+    }
 }
 
 /// Encrypts a message using Elliptic Curve Integrated Encryption Scheme

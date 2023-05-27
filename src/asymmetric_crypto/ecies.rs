@@ -17,4 +17,7 @@ pub trait Ecies<const PUBLIC_KEY_LENGTH: usize, const PRIVATE_KEY_LENGTH: usize>
         private_key: &Self::PrivateKey,
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError>;
+
+    /// Returns the size of the ciphertext for a given plaintext size.
+    fn ciphertext_size(&self, plaintext_size: usize) -> usize;
 }

@@ -18,6 +18,7 @@ path = "src/lib.rs"
 aes-gcm = "0.10"
 curve25519-dalek = "4.0.0-rc.2"
 x25519-dalek = "2.0.0-rc.2"
+crypto_box = { version = "0.9.0-rc.0", features = ["seal"] }
 # needed to compile into WASM
 getrandom = { version = "0.2", features = ["js"] }
 leb128 = "0.2"
@@ -26,7 +27,9 @@ tiny-keccak = { version = "2.0.2", features = ["shake"] }
 zeroize = "1.5"
 
 [dev-dependencies]
-criterion = "0.4"
+criterion = "0.5"
+libc = "0.2"
+libsodium-sys-stable = "1.19.28"
 
 [[bench]]
 harness = false

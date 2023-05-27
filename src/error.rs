@@ -33,6 +33,7 @@ pub enum CryptoCoreError {
     ConversionError(String),
     EncryptionError,
     DecryptionError,
+    InvalidKeyLength,
 }
 
 impl Display for CryptoCoreError {
@@ -75,6 +76,7 @@ impl Display for CryptoCoreError {
             Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
             Self::EncryptionError => write!(f, "error during encryption"),
             Self::DecryptionError => write!(f, "error during decryption"),
+            Self::InvalidKeyLength => write!(f, "invalid key length"),
         }
     }
 }

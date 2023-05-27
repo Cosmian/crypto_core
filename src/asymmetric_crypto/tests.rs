@@ -2,7 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use rand_chacha::rand_core::SeedableRng;
 
-use crate::CsRng;
+use crate::{
+    asymmetric_crypto::salsa_sealbox::{EciesSalsaSealBox, X25519PrivateKey},
+    CsRng, KeyTrait,
+};
 
 use super::{
     ecies::Ecies,
@@ -22,8 +25,117 @@ fn ecies_r25519_aes256gcm_sha256_xof_test() {
     // encrypt
     let plaintext = b"Hello World!";
     let ciphertext = ecies.encrypt(&keypair.public_key(), plaintext).unwrap();
+    // check the size is the expected size
+    assert_eq!(ciphertext.len(), ecies.ciphertext_size(plaintext.len()));
     // decrypt
-    let plaintext2 = ecies.decrypt(&keypair.private_key(), &ciphertext).unwrap();
+    let plaintext_ = ecies.decrypt(&keypair.private_key(), &ciphertext).unwrap();
     // assert
-    assert_eq!(plaintext, &plaintext2[..]);
+    assert_eq!(plaintext, &plaintext_[..]);
+}
+
+#[test]
+fn ecies_salsa_seal_box() {
+    let arc_rng = Arc::new(Mutex::new(CsRng::from_entropy()));
+    let ecies = EciesSalsaSealBox::new_from_rng(arc_rng.clone());
+    // generate a secret key
+    let private_key = {
+        let mut rng = arc_rng.lock().unwrap();
+        X25519PrivateKey::new(&mut *rng)
+    };
+    let public_key = private_key.public_key();
+    // encrypt
+    let plaintext = b"Hello World!";
+    let ciphertext = ecies.encrypt(&public_key, plaintext).unwrap();
+    // check the size is the expected size
+    assert_eq!(ciphertext.len(), ecies.ciphertext_size(plaintext.len()));
+    // decrypt
+    let plaintext_ = ecies.decrypt(&private_key, &ciphertext).unwrap();
+    // assert
+    assert_eq!(plaintext, &plaintext_[..]);
+}
+
+/*
+
+/* Recipient creates a long-term key pair */
+unsigned char recipient_pk[crypto_box_PUBLICKEYBYTES];
+unsigned char recipient_sk[crypto_box_SECRETKEYBYTES];
+crypto_box_keypair(recipient_pk, recipient_sk);
+
+/* Anonymous sender encrypts a message using an ephemeral key pair
+ * and the recipient's public key */
+unsigned char ciphertext[CIPHERTEXT_LEN];
+crypto_box_seal(ciphertext, MESSAGE, MESSAGE_LEN, recipient_pk);
+
+/* Recipient decrypts the ciphertext */
+unsigned char decrypted[MESSAGE_LEN];
+if (crypto_box_seal_open(decrypted, ciphertext, CIPHERTEXT_LEN,
+                         recipient_pk, recipient_sk) != 0) {
+    /* message corrupted or not intended for this recipient */
+}
+ */
+
+#[test]
+fn libsodium_compat() {
+    let arc_rng = Arc::new(Mutex::new(CsRng::from_entropy()));
+    let ecies = EciesSalsaSealBox::new_from_rng(arc_rng.clone());
+
+    let message = b"Hello World!";
+    let mut ciphertext: Vec<u8> =
+        vec![0; libsodium_sys::crypto_box_SEALBYTES as usize + message.len()];
+
+    let mut public_key_bytes = [0u8; libsodium_sys::crypto_box_PUBLICKEYBYTES as usize];
+    let mut private_key_bytes = [0u8; libsodium_sys::crypto_box_SECRETKEYBYTES as usize];
+
+    // encrypt using libsodium
+    unsafe {
+        // initialize the public and private key
+        let public_key_ptr: *mut libc::c_uchar =
+            public_key_bytes.as_mut_ptr() as *mut libc::c_uchar;
+        let private_key_ptr: *mut libc::c_uchar =
+            private_key_bytes.as_mut_ptr() as *mut libc::c_uchar;
+        libsodium_sys::crypto_box_keypair(public_key_ptr, private_key_ptr);
+
+        // encrypt using libsodium
+        let message_ptr: *const libc::c_uchar = message.as_ptr() as *const libc::c_uchar;
+        let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr() as *mut libc::c_uchar;
+        libsodium_sys::crypto_box_seal(
+            ciphertext_ptr,
+            message_ptr,
+            message.len() as u64,
+            public_key_ptr,
+        );
+    }
+
+    // decrypt using salsa_sealbox
+    let private_key = X25519PrivateKey::try_from_bytes(&private_key_bytes).unwrap();
+    // decrypt
+    let message_ = ecies.decrypt(&private_key, &ciphertext).unwrap();
+    // assert
+    assert_eq!(message, &message_[..]);
+
+    // the other way round:
+    // encrypt using salsa_sealbox
+    let public_key = private_key.public_key();
+    let ciphertext = ecies.encrypt(&public_key, message).unwrap();
+
+    //decrypt using libsodium
+    let mut plaintext_: Vec<u8> = vec![0; message.len()];
+    unsafe {
+        let plaintext_ptr: *mut libc::c_uchar = plaintext_.as_mut_ptr() as *mut libc::c_uchar;
+        let ciphertext_ptr: *const libc::c_uchar = ciphertext.as_ptr() as *const libc::c_uchar;
+        let private_key_ptr: *const libc::c_uchar =
+            private_key_bytes.as_ptr() as *const libc::c_uchar;
+        let public_key_ptr: *const libc::c_uchar =
+            public_key_bytes.as_ptr() as *const libc::c_uchar;
+
+        libsodium_sys::crypto_box_seal_open(
+            plaintext_ptr,
+            ciphertext_ptr,
+            ciphertext.len() as u64,
+            public_key_ptr,
+            private_key_ptr,
+        );
+    }
+
+    assert_eq!(plaintext_, message);
 }

@@ -16,7 +16,7 @@ fn bench_dh(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
     let dh_keypair = R25519KeyPair::new(&mut rng);
     c.bench_function(
-        "Bench the Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
+        "Bench R25519 Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
         |b| b.iter(|| dh_keypair.public_key() * dh_keypair.private_key()),
     );
 }
@@ -95,7 +95,7 @@ criterion_group!(
 criterion_group!(
     name = ecies;
     config = Criterion::default().sample_size(5000);
-    targets =  ecies::ecies_r25519_aes256gcm_sha256_xof_bench
+    targets =  ecies::ecies_r25519_aes256gcm_sha256_xof_bench, ecies::ecies_salsa_seal_box
 );
 
 criterion_main!(asymmetric_crypto, symmetric_crypto, cs_rng, kdf, ecies);
