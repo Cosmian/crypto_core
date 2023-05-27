@@ -6,7 +6,7 @@ use std::{
 use rand_chacha::rand_core::SeedableRng;
 
 use crate::{
-    asymmetric_crypto::{ecies_trait::Ecies, DhKeyPair},
+    asymmetric_crypto::{ecies::Ecies, DhKeyPair},
     kdf,
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{

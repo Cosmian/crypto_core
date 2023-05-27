@@ -90,4 +90,12 @@ criterion_group!(
     targets = bench_kdf
 );
 
-criterion_main!(asymmetric_crypto, symmetric_crypto, cs_rng, kdf);
+mod ecies;
+
+criterion_group!(
+    name = ecies;
+    config = Criterion::default().sample_size(5000);
+    targets = ecies::bench_ecies_r25519_aes256gcm_sha256_xof_decrypt, ecies::bench_ecies_r25519_aes256gcm_sha256_xof_encrypt
+);
+
+criterion_main!(asymmetric_crypto, symmetric_crypto, cs_rng, kdf, ecies);
