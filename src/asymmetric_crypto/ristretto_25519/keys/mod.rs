@@ -5,7 +5,7 @@
 //! 486662x^2 + x`. Its security level is 128-bits. It is the fastest curve
 //! available at the time of this implementation.
 //!
-//! See https://ristretto.group/ristretto.html for more information on Ristretto.
+//! See `<https://ristretto.group/ristretto.html>` for more information on Ristretto.
 
 mod private_key;
 pub use private_key::{R25519PrivateKey, R25519_PRIVATE_KEY_LENGTH};

@@ -54,26 +54,6 @@ fn ecies_salsa_seal_box() {
     assert_eq!(plaintext, &plaintext_[..]);
 }
 
-/*
-
-/* Recipient creates a long-term key pair */
-unsigned char recipient_pk[crypto_box_PUBLICKEYBYTES];
-unsigned char recipient_sk[crypto_box_SECRETKEYBYTES];
-crypto_box_keypair(recipient_pk, recipient_sk);
-
-/* Anonymous sender encrypts a message using an ephemeral key pair
- * and the recipient's public key */
-unsigned char ciphertext[CIPHERTEXT_LEN];
-crypto_box_seal(ciphertext, MESSAGE, MESSAGE_LEN, recipient_pk);
-
-/* Recipient decrypts the ciphertext */
-unsigned char decrypted[MESSAGE_LEN];
-if (crypto_box_seal_open(decrypted, ciphertext, CIPHERTEXT_LEN,
-                         recipient_pk, recipient_sk) != 0) {
-    /* message corrupted or not intended for this recipient */
-}
- */
-
 #[test]
 fn libsodium_compat() {
     let arc_rng = Arc::new(Mutex::new(CsRng::from_entropy()));
@@ -114,6 +94,7 @@ fn libsodium_compat() {
     assert_eq!(message, &message_[..]);
 
     // the other way round:
+    //
     // encrypt using salsa_sealbox
     let public_key = private_key.public_key();
     let ciphertext = ecies.encrypt(&public_key, message).unwrap();
