@@ -3,7 +3,7 @@ use cosmian_crypto_core::{
     kdf,
     reexport::rand_core::{RngCore, SeedableRng},
     symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::Key, Dem},
-    CsRng, KeyTrait,
+    CsRng, SecretKey,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 

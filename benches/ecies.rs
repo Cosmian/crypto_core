@@ -5,7 +5,7 @@ use cosmian_crypto_core::{
         DhKeyPair, Ecies, EciesR25519Aes256gcmSha256Xof, EciesSalsaSealBox, R25519KeyPair,
         X25519PrivateKey,
     },
-    CsRng, KeyTrait,
+    CsRng, SecretKey,
 };
 use criterion::{black_box, Criterion};
 use rand_chacha::rand_core::SeedableRng;

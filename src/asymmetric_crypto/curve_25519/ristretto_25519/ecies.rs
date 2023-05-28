@@ -1,5 +1,5 @@
 use std::{
-    ops::{Add, Div, Mul, Sub},
+    ops::Mul,
     sync::{Arc, Mutex},
 };
 
@@ -136,12 +136,7 @@ where
     for<'a> PublicKey: From<&'a PrivateKey>,
     PrivateKey: SecretKey,
     PublicKey: FixedSizeKey,
-    for<'a, 'b> &'a PublicKey:
-        Add<&'b PublicKey, Output = PublicKey> + Mul<&'b PrivateKey, Output = PublicKey>,
-    for<'a, 'b> &'a PrivateKey: Add<&'b PrivateKey, Output = PrivateKey>
-        + Sub<&'b PrivateKey, Output = PrivateKey>
-        + Mul<&'b PrivateKey, Output = PrivateKey>
-        + Div<&'b PrivateKey, Output = PrivateKey>,
+    for<'a, 'b> &'a PublicKey: Mul<&'b PrivateKey, Output = PublicKey>,
 {
     // Generate an ephemeral key pair (r, R) where R = r.G
     let ephemeral_sk = PrivateKey::new(rng);
@@ -255,12 +250,7 @@ pub fn ecies_decrypt<PrivateKey, PublicKey>(
 where
     PublicKey: From<PrivateKey>,
     PublicKey: FixedSizeKey,
-    for<'a, 'b> &'a PublicKey:
-        Add<&'b PublicKey, Output = PublicKey> + Mul<&'b PrivateKey, Output = PublicKey>,
-    for<'a, 'b> &'a PrivateKey: Add<&'b PrivateKey, Output = PrivateKey>
-        + Sub<&'b PrivateKey, Output = PrivateKey>
-        + Mul<&'b PrivateKey, Output = PrivateKey>
-        + Div<&'b PrivateKey, Output = PrivateKey>,
+    for<'a, 'b> &'a PublicKey: Mul<&'b PrivateKey, Output = PublicKey>,
 {
     // Extract the sender's ephemeral public key R from the ciphertext
     let ephemeral_public_key = &ciphertext[..PublicKey::LENGTH];
