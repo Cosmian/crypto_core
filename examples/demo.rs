@@ -4,8 +4,8 @@ use cosmian_crypto_core::{
     asymmetric_crypto::{DhKeyPair, R25519KeyPair},
     kdf,
     reexport::rand_core::SeedableRng,
-    symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, Dem, SymKey},
-    CsRng, KeyTrait,
+    symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::Key, Dem},
+    CsRng, FixedSizeKey,
 };
 
 fn main() {
@@ -29,11 +29,12 @@ fn main() {
     // Derivation of a secret key from the DHKEX shared secret.
     const KEY_DERIVATION_INFO: &[u8] = b"Curve25519 KDF derivation";
     const KEY_LENGTH: usize = Aes256GcmCrypto::KEY_LENGTH;
-    let symmetric_key = SymKey::<KEY_LENGTH>::from_bytes(kdf!(
+    let symmetric_key = Key::<KEY_LENGTH>::try_from_slice(&kdf!(
         KEY_LENGTH,
         &shared_secret.to_bytes(),
         KEY_DERIVATION_INFO
-    ));
+    ))
+    .expect("invalid KDF length");
 
     // DEM encapsulation using AES256-GCM. In order to prevent nonce reuse,
     // the nonce is managed internally.

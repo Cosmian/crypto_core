@@ -1,12 +1,10 @@
 //! Defines a symmetric key object of variable size.
 
-use core::{convert::TryFrom, hash::Hash, ops::Deref};
+use core::{hash::Hash, ops::Deref};
 
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::{
-    reexport::rand_core::CryptoRngCore, symmetric_crypto::SymKey, CryptoCoreError, KeyTrait,
-};
+use crate::SecretKey;
 
 /// Symmetric key of a given size.
 ///
@@ -14,41 +12,53 @@ use crate::{
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub struct Key<const LENGTH: usize>([u8; LENGTH]);
 
-impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
-    /// Generates a new symmetric random `Key`.
-    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+// impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
+//     /// Generates a new symmetric random `Key`.
+//     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+//         let mut key = [0; LENGTH];
+//         rng.fill_bytes(&mut key);
+//         Self(key)
+//     }
+
+//     /// Converts the given key into bytes.
+//     fn to_bytes(&self) -> [u8; LENGTH] {
+//         self.0.to_owned()
+//     }
+
+//     /// Tries to convert the given bytes into a key.
+//     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
+//         let bytes = <[u8; LENGTH]>::try_from(bytes)
+//             .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
+//         Ok(Self(bytes))
+//     }
+// }
+
+impl<const LENGTH: usize> crate::Key for Key<LENGTH> {}
+
+impl<const LENGTH: usize> crate::FixedSizeKey for Key<LENGTH> {
+    const LENGTH: usize = LENGTH;
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.0.into()
+    }
+
+    fn try_from_slice(slice: &[u8]) -> Result<Self, crate::CryptoCoreError> {
+        slice
+            .try_into()
+            .map(|bytes| Self(bytes))
+            .map_err(|_| crate::CryptoCoreError::InvalidKeyLength)
+    }
+}
+
+impl<const LENGTH: usize> SecretKey for Key<LENGTH> {
+    fn new<R: rand_chacha::rand_core::CryptoRngCore>(rng: &mut R) -> Self {
         let mut key = [0; LENGTH];
         rng.fill_bytes(&mut key);
         Self(key)
     }
 
-    /// Converts the given key into bytes.
-    fn to_bytes(&self) -> [u8; LENGTH] {
-        self.0.to_owned()
-    }
-
-    /// Tries to convert the given bytes into a key.
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        let bytes = <[u8; LENGTH]>::try_from(bytes)
-            .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
-        Ok(Self(bytes))
-    }
-}
-
-impl<const LENGTH: usize> SymKey<LENGTH> for Key<LENGTH> {
-    /// Converts the given key into a byte slice.
-    fn as_bytes(&self) -> &[u8] {
-        &self.0
-    }
-
-    /// Consumes the key to return underlying bytes.
-    fn into_bytes(self) -> [u8; LENGTH] {
-        self.0
-    }
-
-    /// Converts the given bytes with correct size into a key.
-    fn from_bytes(bytes: [u8; LENGTH]) -> Self {
-        Self(bytes)
+    fn as_slice(&self) -> &[u8] {
+        self.as_ref()
     }
 }
 
@@ -78,7 +88,7 @@ impl<const LENGTH: usize> Deref for Key<LENGTH> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{reexport::rand_core::SeedableRng, symmetric_crypto::key::Key, CsRng, KeyTrait};
+    use crate::{reexport::rand_core::SeedableRng, symmetric_crypto::key::Key, CsRng, SecretKey};
 
     const KEY_LENGTH: usize = 32;
 

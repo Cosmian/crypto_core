@@ -6,7 +6,7 @@ use leb128;
 
 use crate::CryptoCoreError;
 
-/// A `Serializable` object can easily be serialized and derserialized into an
+/// A `Serializable` object can easily be serialized and deserialized into an
 /// array of bytes.
 pub trait Serializable: Sized {
     /// Error type returned by the serialization.
@@ -34,13 +34,13 @@ pub trait Serializable: Sized {
     /// Deserializes the object.
     fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.is_empty() {
-            return Err(CryptoCoreError::DeserialisationEmptyError.into());
+            return Err(CryptoCoreError::DeserializationEmptyError.into());
         }
 
         let mut de = Deserializer::new(bytes);
         match de.read::<Self>() {
             Ok(result) if !de.finalize().is_empty() => {
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: bytes.len(),
                     expected: result.length(),
                 })?
@@ -72,7 +72,7 @@ impl<'a> Deserializer<'a> {
     pub fn read_array<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], CryptoCoreError> {
         let mut buf = [0; LENGTH];
         self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::DeserialisationSizeError {
+            CryptoCoreError::DeserializationSizeError {
                 given: self.readable.len(),
                 expected: LENGTH,
             }
@@ -92,13 +92,13 @@ impl<'a> Deserializer<'a> {
             return Ok(vec![]);
         };
         let len = usize::try_from(len_u64).map_err(|_| {
-            CryptoCoreError::GenericDeserialisationError(format!(
+            CryptoCoreError::GenericDeserializationError(format!(
                 "size of vector is too big for architecture: {len_u64} bytes",
             ))
         })?;
         let mut buf = vec![0_u8; len];
         self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::DeserialisationSizeError {
+            CryptoCoreError::DeserializationSizeError {
                 expected: len + to_leb128_len(len),
                 given: original_length,
             }
@@ -157,7 +157,7 @@ impl Serializer {
     pub fn write_array(&mut self, array: &[u8]) -> Result<usize, CryptoCoreError> {
         self.writable
             .write(array)
-            .map_err(|error| CryptoCoreError::SerialisationIoError {
+            .map_err(|error| CryptoCoreError::SerializationIoError {
                 bytes_len: array.len(),
                 error,
             })
@@ -300,9 +300,9 @@ mod tests {
 
         let serialized_key = vec![1; 32];
         let key = R25519PrivateKey::try_from_bytes(&serialized_key)?;
-        let reserialized_key = key.try_to_bytes()?;
+        let re_serialized_key = key.try_to_bytes()?;
 
-        assert_eq!(reserialized_key, serialized_key);
+        assert_eq!(re_serialized_key, serialized_key);
 
         let dummy = DummyLeb128Serializable {
             bytes: vec![1; 512],
@@ -323,7 +323,7 @@ mod tests {
             dbg!(&empty_error);
             assert!(matches!(
                 empty_error,
-                Err(CryptoCoreError::DeserialisationEmptyError)
+                Err(CryptoCoreError::DeserializationEmptyError)
             ));
         }
         {
@@ -332,7 +332,7 @@ mod tests {
             dbg!(&too_small_error);
             assert!(matches!(
                 too_small_error,
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: 3,
                     expected: 32
                 })
@@ -344,7 +344,7 @@ mod tests {
             dbg!(&too_big_error);
             assert!(matches!(
                 too_big_error,
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: 34,
                     expected: 32
                 })
@@ -357,7 +357,7 @@ mod tests {
             dbg!(&empty_error);
             assert!(matches!(
                 empty_error,
-                Err(CryptoCoreError::DeserialisationEmptyError)
+                Err(CryptoCoreError::DeserializationEmptyError)
             ));
         }
 
@@ -373,7 +373,7 @@ mod tests {
             dbg!(&too_small_error);
             assert!(matches!(
                 too_small_error,
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: 513,
                     expected: 514
                 })
@@ -387,7 +387,7 @@ mod tests {
             dbg!(&too_big_error);
             assert!(matches!(
                 too_big_error,
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: 515,
                     expected: 514
                 })

@@ -3,9 +3,12 @@ use std::sync::{Arc, Mutex};
 use crypto_box::{PublicKey, SecretKey};
 use rand_chacha::rand_core::SeedableRng;
 
-use crate::{asymmetric_crypto::ecies::Ecies, CsRng};
+use crate::{
+    asymmetric_crypto::{ecies::Ecies, X25519PrivateKey},
+    CsRng,
+};
 
-use super::{X25519PrivateKey, X25519PublicKey};
+use super::X25519PublicKey;
 
 /// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption Scheme (ECIES) functionality
 /// utilizing Salsa20 as its encryption mechanism.
@@ -78,16 +81,12 @@ impl EciesSalsaSealBox {
     }
 }
 
-impl Ecies<{ crypto_box::KEY_SIZE }, { crypto_box::KEY_SIZE }> for EciesSalsaSealBox {
-    type PrivateKey = X25519PrivateKey;
-
-    type PublicKey = X25519PublicKey;
-
+impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
     const ENCRYPTION_OVERHEAD: usize = crypto_box::SEALBYTES;
 
     fn encrypt(
         &self,
-        public_key: &Self::PublicKey,
+        public_key: &X25519PublicKey,
         plaintext: &[u8],
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
         let mut rng = self.cs_rng.lock().expect("failed to lock cs_rng");
@@ -99,7 +98,7 @@ impl Ecies<{ crypto_box::KEY_SIZE }, { crypto_box::KEY_SIZE }> for EciesSalsaSea
 
     fn decrypt(
         &self,
-        private_key: &Self::PrivateKey,
+        private_key: &X25519PrivateKey,
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
         let secret_key: SecretKey = private_key.0.into();

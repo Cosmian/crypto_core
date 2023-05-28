@@ -5,27 +5,12 @@ pub mod aes_256_gcm_pure;
 pub mod key;
 pub mod nonce;
 
-use core::{fmt::Debug, hash::Hash};
+use core::fmt::Debug;
 use std::vec::Vec;
 
 use nonce::NonceTrait;
 
-use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, KeyTrait};
-
-/// Defines a symmetric encryption key.
-pub trait SymKey<const LENGTH: usize>: KeyTrait<LENGTH> + Hash {
-    /// Converts the given key into a byte slice.
-    #[must_use]
-    fn as_bytes(&self) -> &[u8];
-
-    /// Consumes the key to return the underlying bytes.
-    #[must_use]
-    fn into_bytes(self) -> [u8; LENGTH];
-
-    /// Converts the given bytes into a key.
-    #[must_use]
-    fn from_bytes(bytes: [u8; LENGTH]) -> Self;
-}
+use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, SecretKey};
 
 /// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
 /// [ISO 2004](https://www.shoup.net/iso/std6.pdf).
@@ -43,7 +28,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     type Nonce: NonceTrait;
 
     /// Associated key type
-    type Key: SymKey<KEY_LENGTH>;
+    type Key: SecretKey;
 
     /// Encrypts data using the given symmetric key.
     ///

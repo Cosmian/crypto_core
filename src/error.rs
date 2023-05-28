@@ -3,18 +3,18 @@ use core::fmt::Display;
 /// Error type for this crate.
 #[derive(Debug)]
 pub enum CryptoCoreError {
-    DeserialisationEmptyError,
-    DeserialisationSizeError {
+    DeserializationEmptyError,
+    DeserializationSizeError {
         given: usize,
         expected: usize,
     },
     ReadLeb128Error(leb128::read::Error),
-    GenericDeserialisationError(String),
+    GenericDeserializationError(String),
     WriteLeb128Error {
         value: u64,
         error: std::io::Error,
     },
-    SerialisationIoError {
+    SerializationIoError {
         bytes_len: usize,
         error: std::io::Error,
     },
@@ -39,17 +39,17 @@ pub enum CryptoCoreError {
 impl Display for CryptoCoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::DeserialisationEmptyError => write!(f, "empty input when parsing bytes"),
-            Self::DeserialisationSizeError { given, expected } => write!(
+            Self::DeserializationEmptyError => write!(f, "empty input when parsing bytes"),
+            Self::DeserializationSizeError { given, expected } => write!(
                 f,
                 "wrong size when parsing bytes: {given} given should be {expected}"
             ),
             Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
-            Self::GenericDeserialisationError(err) => write!(f, "deserialization error: {err}"),
+            Self::GenericDeserializationError(err) => write!(f, "deserialization error: {err}"),
             Self::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
-            Self::SerialisationIoError { bytes_len, error } => {
+            Self::SerializationIoError { bytes_len, error } => {
                 write!(f, "when writing {bytes_len} bytes, {error}")
             }
             Self::PlaintextTooBigError { plaintext_len, max } => write!(

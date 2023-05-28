@@ -1,7 +1,4 @@
-use core::{
-    convert::TryFrom,
-    ops::{Add, Mul, Sub},
-};
+use core::ops::{Add, Mul, Sub};
 
 use curve25519_dalek::{
     constants,
@@ -9,14 +6,9 @@ use curve25519_dalek::{
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::{
-    bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore, CryptoCoreError, KeyTrait,
-};
+use crate::{bytes_ser_de::Serializable, CryptoCoreError, FixedSizeKey, Key};
 
 use super::R25519PrivateKey;
-
-/// R25519 public key length
-pub const R25519_PUBLIC_KEY_LENGTH: usize = 32;
 
 /// Asymmetric public key based on the Ristretto Curve25519.
 ///
@@ -25,24 +17,58 @@ pub const R25519_PUBLIC_KEY_LENGTH: usize = 32;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct R25519PublicKey(pub(crate) RistrettoPoint);
 
-impl KeyTrait<R25519_PUBLIC_KEY_LENGTH> for R25519PublicKey {
-    /// Generates a new random public key.
-    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-        let mut uniform_bytes = [0u8; 64];
-        rng.fill_bytes(&mut uniform_bytes);
-        Self(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
+impl Key for R25519PublicKey {}
+
+impl FixedSizeKey for R25519PublicKey {
+    const LENGTH: usize = 32;
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.0.compress().to_bytes().into()
     }
 
-    /// Converts the given public key into an array of bytes.
-    fn to_bytes(&self) -> [u8; Self::LENGTH] {
-        self.0.compress().to_bytes()
-    }
-
-    /// Converts the given bytes into key.
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        Self::try_from(bytes)
+    fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
+        Ok(Self(
+            CompressedRistretto(
+                slice
+                    .try_into()
+                    .map_err(|_| CryptoCoreError::InvalidKeyLength)?,
+            )
+            .decompress()
+            .ok_or_else(|| {
+                CryptoCoreError::ConversionError(
+                    "Cannot decompress given bytes into a valid curve point!".to_string(),
+                )
+            })?,
+        ))
     }
 }
+
+// impl KeyTrait<R25519_PUBLIC_KEY_LENGTH> for R25519PublicKey {
+//     /// Generates a new random public key.
+//     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+//         let mut uniform_bytes = [0u8; 64];
+//         rng.fill_bytes(&mut uniform_bytes);
+//         Self(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
+//     }
+
+//     /// Converts the given public key into an array of bytes.
+//     fn to_bytes(&self) -> [u8; R25519_PUBLIC_KEY_LENGTH] {
+//         self.0.compress().to_bytes()
+//     }
+
+//     /// Converts the given bytes into key.
+//     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
+//         Self::try_from(bytes)
+//     }
+
+//     fn as_slice(&self) -> &[u8] {
+//         self.0.as_slice()
+//     }
+
+//     fn from_bytes(bytes: [u8; R25519_PUBLIC_KEY_LENGTH]) -> Self {
+//         Self(RistrettoPoint::from(bytes))
+//     }
+// }
 
 impl Serializable for R25519PublicKey {
     type Error = CryptoCoreError;
@@ -52,11 +78,11 @@ impl Serializable for R25519PublicKey {
     }
 
     fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(&self.to_bytes())
+        ser.write_array(&self.0.compress().to_bytes())
     }
 
     fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
-        Self::try_from(de.read_array::<{ Self::LENGTH }>()?)
+        Self::try_from_slice(&de.read_array::<{ Self::LENGTH }>()?)
     }
 }
 
@@ -72,37 +98,23 @@ impl From<&R25519PrivateKey> for R25519PublicKey {
     }
 }
 
-impl TryFrom<[u8; Self::LENGTH]> for R25519PublicKey {
-    type Error = CryptoCoreError;
+// impl TryFrom<&[u8]> for R25519PublicKey {
+//     type Error = CryptoCoreError;
 
-    fn try_from(bytes: [u8; Self::LENGTH]) -> Result<Self, Self::Error> {
-        Ok(Self(CompressedRistretto(bytes).decompress().ok_or_else(
-            || {
-                CryptoCoreError::ConversionError(
-                    "Cannot decompress given bytes into a valid curve point!".to_string(),
-                )
-            },
-        )?))
-    }
-}
+//     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+//         let bytes = <[u8; Self::LENGTH]>::try_from(bytes)
+//             .map_err(|e| Self::Error::ConversionError(e.to_string()))?;
+//         Self::try_from(bytes)
+//     }
+// }
 
-impl TryFrom<&[u8]> for R25519PublicKey {
-    type Error = CryptoCoreError;
-
-    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let bytes = <[u8; Self::LENGTH]>::try_from(bytes)
-            .map_err(|e| Self::Error::ConversionError(e.to_string()))?;
-        Self::try_from(bytes)
-    }
-}
-
-// Needed by serde to derive `Deserialize`. Do not use otherwise since there
-// is a copy anyway.
-impl From<R25519PublicKey> for [u8; R25519_PUBLIC_KEY_LENGTH] {
-    fn from(key: R25519PublicKey) -> Self {
-        key.to_bytes()
-    }
-}
+// // Needed by serde to derive `Deserialize`. Do not use otherwise since there
+// // is a copy anyway.
+// impl From<R25519PublicKey> for [u8; Self::LENGTH] {
+//     fn from(key: R25519PublicKey) -> Self {
+//         key.0.compress().to_bytes()
+//     }
+// }
 
 impl<'a> Sub<&'a R25519PublicKey> for &R25519PublicKey {
     type Output = R25519PublicKey;

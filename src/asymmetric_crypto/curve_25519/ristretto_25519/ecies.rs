@@ -6,7 +6,7 @@ use std::{
 use rand_chacha::rand_core::SeedableRng;
 
 use crate::{
-    asymmetric_crypto::{ecies::Ecies, DhKeyPair},
+    asymmetric_crypto::ecies::Ecies,
     kdf,
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{
@@ -16,13 +16,10 @@ use crate::{
         nonce::NonceTrait,
         Dem,
     },
-    CryptoCoreError, CsRng, KeyTrait,
+    CryptoCoreError, CsRng, FixedSizeKey, SecretKey,
 };
 
-use super::{
-    R25519KeyPair, R25519PrivateKey, R25519PublicKey, R25519_PRIVATE_KEY_LENGTH,
-    R25519_PUBLIC_KEY_LENGTH,
-};
+use super::{R25519PrivateKey, R25519PublicKey};
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
 ///  - the Ristretto group of Curve 25516
@@ -47,38 +44,31 @@ impl EciesR25519Aes256gcmSha256Xof {
     }
 }
 
-impl Ecies<R25519_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH> for EciesR25519Aes256gcmSha256Xof {
-    type PrivateKey = R25519PrivateKey;
-
-    type PublicKey = R25519PublicKey;
-
+impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes256gcmSha256Xof {
     const ENCRYPTION_OVERHEAD: usize =
-        R25519_PUBLIC_KEY_LENGTH + Aes256GcmCrypto::ENCRYPTION_OVERHEAD;
+        R25519PublicKey::LENGTH + Aes256GcmCrypto::ENCRYPTION_OVERHEAD;
 
     fn encrypt(
         &self,
-        public_key: &Self::PublicKey,
+        public_key: &R25519PublicKey,
         plaintext: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError> {
         let mut rng = self.cs_rng.lock().expect("failed to lock cs_rng");
-        ecies_encrypt::<
-            CsRng,
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(&mut rng, &public_key, plaintext, None, None)
+        ecies_encrypt::<CsRng, R25519PrivateKey, R25519PublicKey>(
+            &mut rng,
+            &public_key,
+            plaintext,
+            None,
+            None,
+        )
     }
 
     fn decrypt(
         &self,
-        private_key: &Self::PrivateKey,
+        private_key: &R25519PrivateKey,
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        ecies_decrypt::<
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(private_key, &ciphertext, None, None)
+        ecies_decrypt::<R25519PrivateKey, R25519PublicKey>(private_key, &ciphertext, None, None)
     }
 }
 
@@ -134,29 +124,31 @@ impl Ecies<R25519_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH> for EciesR25519A
 ///     None
 /// ).unwrap();
 /// ```
-pub fn ecies_encrypt<R, DH, const PUBLIC_KEY_LENGTH: usize, const PRIVATE_KEY_LENGTH: usize>(
+pub fn ecies_encrypt<R, PrivateKey, PublicKey>(
     rng: &mut R,
-    receiver_public_key: &DH::PublicKey,
+    receiver_public_key: &PublicKey,
     msg: &[u8],
     shared_encapsulation_data: Option<&[u8]>,
     shared_authentication_data: Option<&[u8]>,
 ) -> Result<Vec<u8>, CryptoCoreError>
 where
     R: CryptoRngCore,
-    DH: DhKeyPair<PUBLIC_KEY_LENGTH, PRIVATE_KEY_LENGTH>,
-    DH::PublicKey: From<DH::PrivateKey>,
-    for<'a, 'b> &'a DH::PublicKey: Add<&'b DH::PublicKey, Output = DH::PublicKey>
-        + Mul<&'b DH::PrivateKey, Output = DH::PublicKey>,
-    for<'a, 'b> &'a DH::PrivateKey: Add<&'b DH::PrivateKey, Output = DH::PrivateKey>
-        + Sub<&'b DH::PrivateKey, Output = DH::PrivateKey>
-        + Mul<&'b DH::PrivateKey, Output = DH::PrivateKey>
-        + Div<&'b DH::PrivateKey, Output = DH::PrivateKey>,
+    for<'a> PublicKey: From<&'a PrivateKey>,
+    PrivateKey: SecretKey,
+    PublicKey: FixedSizeKey,
+    for<'a, 'b> &'a PublicKey:
+        Add<&'b PublicKey, Output = PublicKey> + Mul<&'b PrivateKey, Output = PublicKey>,
+    for<'a, 'b> &'a PrivateKey: Add<&'b PrivateKey, Output = PrivateKey>
+        + Sub<&'b PrivateKey, Output = PrivateKey>
+        + Mul<&'b PrivateKey, Output = PrivateKey>
+        + Div<&'b PrivateKey, Output = PrivateKey>,
 {
     // Generate an ephemeral key pair (r, R) where R = r.G
-    let ephemeral_key_pair = DH::new(rng);
+    let ephemeral_sk = PrivateKey::new(rng);
+    let ephemeral_pk = PublicKey::from(&ephemeral_sk);
 
     // Calculate the shared secret point (Px, Py) = P = r.Y
-    let shared_point = receiver_public_key * ephemeral_key_pair.private_key();
+    let shared_point = receiver_public_key * &ephemeral_sk;
 
     // Generate the 256-bit symmetric encryption key k, derived using SHAKE256 eXtendable-Output-Function (XOF)
     // such as: k = kdf(S || S1) where:
@@ -177,9 +169,10 @@ where
         encrypt_combined(&key, msg, nonce.as_bytes(), shared_authentication_data)?;
 
     // Assemble the final encrypted message: R || nonce || c || d
-    let mut res =
-        Vec::with_capacity(PUBLIC_KEY_LENGTH + Aes256GcmCrypto::ENCRYPTION_OVERHEAD + msg.len());
-    res.extend(ephemeral_key_pair.public_key().to_bytes().to_vec());
+    let mut res = Vec::with_capacity(
+        R25519PublicKey::LENGTH + Aes256GcmCrypto::ENCRYPTION_OVERHEAD + msg.len(),
+    );
+    res.extend(ephemeral_pk.to_bytes());
     res.extend(nonce.as_bytes());
     res.extend(&ciphertext_plus_tag);
 
@@ -253,25 +246,25 @@ where
 /// // Check if the decrypted message is the same as the original message
 /// assert_eq!(msg, &decrypted_message[..]);
 /// ```
-pub fn ecies_decrypt<DH, const PUBLIC_KEY_LENGTH: usize, const PRIVATE_KEY_LENGTH: usize>(
-    receiver_private_key: &DH::PrivateKey,
+pub fn ecies_decrypt<PrivateKey, PublicKey>(
+    receiver_private_key: &PrivateKey,
     ciphertext: &[u8],
     shared_encapsulation_data: Option<&[u8]>,
     shared_authentication_data: Option<&[u8]>,
 ) -> Result<Vec<u8>, CryptoCoreError>
 where
-    DH: DhKeyPair<PUBLIC_KEY_LENGTH, PRIVATE_KEY_LENGTH>,
-    DH::PublicKey: From<DH::PrivateKey>,
-    for<'a, 'b> &'a DH::PublicKey: Add<&'b DH::PublicKey, Output = DH::PublicKey>
-        + Mul<&'b DH::PrivateKey, Output = DH::PublicKey>,
-    for<'a, 'b> &'a DH::PrivateKey: Add<&'b DH::PrivateKey, Output = DH::PrivateKey>
-        + Sub<&'b DH::PrivateKey, Output = DH::PrivateKey>
-        + Mul<&'b DH::PrivateKey, Output = DH::PrivateKey>
-        + Div<&'b DH::PrivateKey, Output = DH::PrivateKey>,
+    PublicKey: From<PrivateKey>,
+    PublicKey: FixedSizeKey,
+    for<'a, 'b> &'a PublicKey:
+        Add<&'b PublicKey, Output = PublicKey> + Mul<&'b PrivateKey, Output = PublicKey>,
+    for<'a, 'b> &'a PrivateKey: Add<&'b PrivateKey, Output = PrivateKey>
+        + Sub<&'b PrivateKey, Output = PrivateKey>
+        + Mul<&'b PrivateKey, Output = PrivateKey>
+        + Div<&'b PrivateKey, Output = PrivateKey>,
 {
     // Extract the sender's ephemeral public key R from the ciphertext
-    let ephemeral_public_key = &ciphertext[..PUBLIC_KEY_LENGTH];
-    let sender_public_key = DH::PublicKey::try_from_bytes(ephemeral_public_key)?;
+    let ephemeral_public_key = &ciphertext[..PublicKey::LENGTH];
+    let sender_public_key = PublicKey::try_from_slice(ephemeral_public_key)?;
 
     // Calculate the shared secret point (Px, Py) = P = R.y = r.G.y = r.Y
     let shared_point = &sender_public_key * receiver_private_key;
@@ -288,7 +281,7 @@ where
     };
 
     // Extract the nonce from the ciphertext
-    let nonce_start = PUBLIC_KEY_LENGTH;
+    let nonce_start = PublicKey::LENGTH;
     let nonce_end = nonce_start + <Aes256GcmCrypto as Dem<SYMMETRIC_KEY_LENGTH>>::Nonce::LENGTH;
     let nonce = &ciphertext[nonce_start..nonce_end];
 
@@ -306,7 +299,7 @@ where
 mod tests {
     use super::{ecies_decrypt, ecies_encrypt, CryptoCoreError};
     use crate::{
-        asymmetric_crypto::{DhKeyPair, R25519KeyPair},
+        asymmetric_crypto::{DhKeyPair, R25519KeyPair, R25519PrivateKey, R25519PublicKey},
         reexport::rand_core::SeedableRng,
         CsRng,
     };
@@ -318,19 +311,21 @@ mod tests {
         let msg = b"Hello, World!";
 
         // Encrypt the message
-        let encrypted_message = ecies_encrypt::<
-            CsRng,
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(&mut rng, key_pair.public_key(), msg, None, None)?;
+        let encrypted_message = ecies_encrypt::<CsRng, R25519PrivateKey, R25519PublicKey>(
+            &mut rng,
+            key_pair.public_key(),
+            msg,
+            None,
+            None,
+        )?;
 
         // Decrypt the message
-        let decrypted_message = ecies_decrypt::<
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(key_pair.private_key(), &encrypted_message, None, None)?;
+        let decrypted_message = ecies_decrypt::<R25519PrivateKey, R25519PublicKey>(
+            key_pair.private_key(),
+            &encrypted_message,
+            None,
+            None,
+        )?;
 
         // Check if the decrypted message is the same as the original message
         assert_eq!(msg, &decrypted_message[..]);
@@ -347,12 +342,7 @@ mod tests {
         let authentication_data = b"Optional Authentication Data";
 
         // Encrypt the message with encapsulated_data and authentication_data
-        let encrypted_message = ecies_encrypt::<
-            CsRng,
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(
+        let encrypted_message = ecies_encrypt::<CsRng, R25519PrivateKey, R25519PublicKey>(
             &mut rng,
             key_pair.public_key(),
             msg,
@@ -361,11 +351,7 @@ mod tests {
         )?;
 
         // Decrypt the message with encapsulated_data and authentication_data
-        let decrypted_message = ecies_decrypt::<
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(
+        let decrypted_message = ecies_decrypt::<R25519PrivateKey, R25519PublicKey>(
             key_pair.private_key(),
             &encrypted_message,
             Some(encapsulated_data),
@@ -387,12 +373,7 @@ mod tests {
         let authentication_data = b"Optional Authentication Data";
 
         // Encrypt the message with encapsulated_data and authentication_data
-        let encrypted_message = ecies_encrypt::<
-            CsRng,
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(
+        let encrypted_message = ecies_encrypt::<CsRng, R25519PrivateKey, R25519PublicKey>(
             &mut rng,
             key_pair.public_key(),
             msg,
@@ -401,11 +382,7 @@ mod tests {
         )?;
 
         // Try to decrypt the message with encapsulated_data and authentication_data
-        let not_decrypted = ecies_decrypt::<
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(
+        let not_decrypted = ecies_decrypt::<R25519PrivateKey, R25519PublicKey>(
             key_pair.private_key(),
             &encrypted_message,
             Some(b"Other Optional Encapsulated Data"),
@@ -417,11 +394,7 @@ mod tests {
         ));
 
         // Try to decrypt the message with encapsulated_data and authentication_data
-        let not_decrypted = ecies_decrypt::<
-            R25519KeyPair,
-            { R25519KeyPair::PUBLIC_KEY_LENGTH },
-            { R25519KeyPair::PRIVATE_KEY_LENGTH },
-        >(
+        let not_decrypted = ecies_decrypt::<R25519PrivateKey, R25519PublicKey>(
             key_pair.private_key(),
             &encrypted_message,
             Some(encapsulated_data),

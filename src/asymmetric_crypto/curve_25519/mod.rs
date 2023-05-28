@@ -1,3 +1,4 @@
+mod private_key;
 mod ristretto_25519;
 mod salsa_sealbox;
 
