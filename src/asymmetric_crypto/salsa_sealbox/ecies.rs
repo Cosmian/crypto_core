@@ -1,15 +1,16 @@
 use std::sync::{Arc, Mutex};
 
+use crypto_box::{PublicKey, SecretKey};
 use rand_chacha::rand_core::SeedableRng;
 
 use crate::{asymmetric_crypto::ecies::Ecies, CsRng};
 
-use super::keypair::{X25519PrivateKey, X25519PublicKey};
+use super::{X25519PrivateKey, X25519PublicKey};
 
 /// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption Scheme (ECIES) functionality
 /// utilizing Salsa20 as its encryption mechanism.
 ///
-/// It is compatible with the `libsodium` sealed box: `<https://doc.libsodium.org/public-key_cryptography/sealed_boxe>`
+/// This implementation is compatible with `libsodium` sealed box: `<https://doc.libsodium.org/public-key_cryptography/sealed_boxe>`
 ///
 /// This struct is used for public-key encryption and decryption where the `X25519PrivateKey` and `X25519PublicKey` types are used.
 ///
@@ -90,8 +91,8 @@ impl Ecies<{ crypto_box::KEY_SIZE }, { crypto_box::KEY_SIZE }> for EciesSalsaSea
         plaintext: &[u8],
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
         let mut rng = self.cs_rng.lock().expect("failed to lock cs_rng");
+        let public_key: PublicKey = public_key.0.into();
         public_key
-            .0
             .seal(&mut *rng, plaintext)
             .map_err(|_| crate::CryptoCoreError::EncryptionError)
     }
@@ -101,8 +102,8 @@ impl Ecies<{ crypto_box::KEY_SIZE }, { crypto_box::KEY_SIZE }> for EciesSalsaSea
         private_key: &Self::PrivateKey,
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
-        private_key
-            .0
+        let secret_key: SecretKey = private_key.0.into();
+        secret_key
             .unseal(ciphertext)
             .map_err(|_| crate::CryptoCoreError::DecryptionError)
     }
