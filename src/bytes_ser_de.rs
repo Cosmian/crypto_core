@@ -233,7 +233,7 @@ pub fn to_leb128_len(n: usize) -> usize {
 mod tests {
     use super::{to_leb128_len, Deserializer, Serializable, Serializer};
     use crate::{
-        asymmetric_crypto::ristretto_25519::R25519PrivateKey,
+        asymmetric_crypto::R25519PrivateKey,
         reexport::rand_core::{RngCore, SeedableRng},
         CryptoCoreError, CsRng,
     };

@@ -3,15 +3,11 @@ use std::sync::{Arc, Mutex};
 use rand_chacha::rand_core::SeedableRng;
 
 use crate::{
-    asymmetric_crypto::salsa_sealbox::{EciesSalsaSealBox, X25519PrivateKey},
+    asymmetric_crypto::{EciesSalsaSealBox, X25519PrivateKey},
     CsRng, KeyTrait,
 };
 
-use super::{
-    ecies::Ecies,
-    ristretto_25519::{EciesR25519Aes256gcmSha256Xof, R25519KeyPair},
-    DhKeyPair,
-};
+use super::{ecies::Ecies, DhKeyPair, EciesR25519Aes256gcmSha256Xof, R25519KeyPair};
 
 #[test]
 fn ecies_r25519_aes256gcm_sha256_xof_test() {

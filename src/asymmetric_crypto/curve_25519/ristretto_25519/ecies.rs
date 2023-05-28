@@ -111,7 +111,7 @@ impl Ecies<R25519_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH> for EciesR25519A
 /// use cosmian_crypto_core::{
 ///    asymmetric_crypto::{
 ///         DhKeyPair,
-///         ristretto_25519::{R25519KeyPair, ecies_encrypt},
+///         R25519KeyPair, ecies_encrypt,
 ///     },
 ///    reexport::rand_core::SeedableRng,
 ///    CsRng,
@@ -214,7 +214,7 @@ where
 /// use cosmian_crypto_core::{
 ///     asymmetric_crypto::{
 ///         DhKeyPair,
-///         ristretto_25519::{R25519KeyPair,ecies_encrypt, ecies_decrypt}
+///         R25519KeyPair,ecies_encrypt, ecies_decrypt
 ///     },
 ///     reexport::rand_core::SeedableRng,
 ///     CsRng,
@@ -306,7 +306,7 @@ where
 mod tests {
     use super::{ecies_decrypt, ecies_encrypt, CryptoCoreError};
     use crate::{
-        asymmetric_crypto::{ristretto_25519::R25519KeyPair, DhKeyPair},
+        asymmetric_crypto::{DhKeyPair, R25519KeyPair},
         reexport::rand_core::SeedableRng,
         CsRng,
     };

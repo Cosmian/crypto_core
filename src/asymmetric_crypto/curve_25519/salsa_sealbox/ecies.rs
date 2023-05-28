@@ -24,7 +24,7 @@ use super::{X25519PrivateKey, X25519PublicKey};
 /// use cosmian_crypto_core::{
 ///     asymmetric_crypto:: {
 ///         Ecies,
-///         salsa_sealbox::{EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey},
+///         EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey,
 ///     },
 ///    CsRng, KeyTrait,
 ///};

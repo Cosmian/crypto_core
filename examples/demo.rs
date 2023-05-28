@@ -1,7 +1,7 @@
 //! This demo is used in `README.md`.
 
 use cosmian_crypto_core::{
-    asymmetric_crypto::{ristretto_25519::R25519KeyPair, DhKeyPair},
+    asymmetric_crypto::{DhKeyPair, R25519KeyPair},
     kdf,
     reexport::rand_core::SeedableRng,
     symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, Dem, SymKey},

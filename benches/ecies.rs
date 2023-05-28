@@ -2,9 +2,8 @@ use std::sync::{Arc, Mutex};
 
 use cosmian_crypto_core::{
     asymmetric_crypto::{
-        ristretto_25519::{EciesR25519Aes256gcmSha256Xof, R25519KeyPair},
-        salsa_sealbox::{EciesSalsaSealBox, X25519PrivateKey},
-        DhKeyPair, Ecies,
+        DhKeyPair, Ecies, EciesR25519Aes256gcmSha256Xof, EciesSalsaSealBox, R25519KeyPair,
+        X25519PrivateKey,
     },
     CsRng, KeyTrait,
 };
