@@ -52,6 +52,9 @@ impl Ecies<R25519_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH> for EciesR25519A
 
     type PublicKey = R25519PublicKey;
 
+    const ENCRYPTION_OVERHEAD: usize =
+        R25519_PUBLIC_KEY_LENGTH + Aes256GcmCrypto::ENCRYPTION_OVERHEAD;
+
     fn encrypt(
         &self,
         public_key: &Self::PublicKey,
@@ -76,10 +79,6 @@ impl Ecies<R25519_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH> for EciesR25519A
             { R25519KeyPair::PUBLIC_KEY_LENGTH },
             { R25519KeyPair::PRIVATE_KEY_LENGTH },
         >(private_key, &ciphertext, None, None)
-    }
-
-    fn ciphertext_size(&self, plaintext_size: usize) -> usize {
-        return plaintext_size + ecies_encrypt_get_overhead_size::<R25519_PUBLIC_KEY_LENGTH>();
     }
 }
 
@@ -110,7 +109,10 @@ impl Ecies<R25519_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH> for EciesR25519A
 ///
 /// ```
 /// use cosmian_crypto_core::{
-///    asymmetric_crypto::{curve25519::R25519KeyPair, DhKeyPair,ecies::ecies_encrypt},
+///    asymmetric_crypto::{
+///         DhKeyPair,
+///         ristretto_25519::{R25519KeyPair, ecies_encrypt},
+///     },
 ///    reexport::rand_core::SeedableRng,
 ///    CsRng,
 /// };
@@ -184,11 +186,6 @@ where
     Ok(res)
 }
 
-#[must_use]
-pub fn ecies_encrypt_get_overhead_size<const PUBLIC_KEY_LENGTH: usize>() -> usize {
-    PUBLIC_KEY_LENGTH + Aes256GcmCrypto::ENCRYPTION_OVERHEAD
-}
-
 /// Decrypts a message using Elliptic Curve Integrated Encryption Scheme
 /// (ECIES). This implementation uses SHAKE256 (XOF) as a KDF and AES256-GCM as
 /// a symmetric cipher.
@@ -215,7 +212,10 @@ pub fn ecies_encrypt_get_overhead_size<const PUBLIC_KEY_LENGTH: usize>() -> usiz
 ///
 /// ```
 /// use cosmian_crypto_core::{
-///     asymmetric_crypto::{curve25519::R25519KeyPair, DhKeyPair, ecies::{ecies_encrypt, ecies_decrypt}},
+///     asymmetric_crypto::{
+///         DhKeyPair,
+///         ristretto_25519::{R25519KeyPair,ecies_encrypt, ecies_decrypt}
+///     },
 ///     reexport::rand_core::SeedableRng,
 ///     CsRng,
 /// };

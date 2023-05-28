@@ -26,7 +26,10 @@ fn ecies_r25519_aes256gcm_sha256_xof_test() {
     let plaintext = b"Hello World!";
     let ciphertext = ecies.encrypt(&keypair.public_key(), plaintext).unwrap();
     // check the size is the expected size
-    assert_eq!(ciphertext.len(), ecies.ciphertext_size(plaintext.len()));
+    assert_eq!(
+        ciphertext.len(),
+        plaintext.len() + EciesR25519Aes256gcmSha256Xof::ENCRYPTION_OVERHEAD
+    );
     // decrypt
     let plaintext_ = ecies.decrypt(&keypair.private_key(), &ciphertext).unwrap();
     // assert
@@ -47,7 +50,10 @@ fn ecies_salsa_seal_box() {
     let plaintext = b"Hello World!";
     let ciphertext = ecies.encrypt(&public_key, plaintext).unwrap();
     // check the size is the expected size
-    assert_eq!(ciphertext.len(), ecies.ciphertext_size(plaintext.len()));
+    assert_eq!(
+        ciphertext.len(),
+        plaintext.len() + EciesSalsaSealBox::ENCRYPTION_OVERHEAD
+    );
     // decrypt
     let plaintext_ = ecies.decrypt(&private_key, &ciphertext).unwrap();
     // assert

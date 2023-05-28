@@ -20,9 +20,11 @@ use super::keypair::{X25519PrivateKey, X25519PublicKey};
 /// ```
 /// use std::sync::{Arc, Mutex};
 /// use rand_chacha::rand_core::SeedableRng;
-/// use crate::{asymmetric_crypto::ecies::Ecies, CsRng};
-/// use crate::{
-///    asymmetric_crypto::salsa_sealbox::{EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey},
+/// use cosmian_crypto_core::{
+///     asymmetric_crypto:: {
+///         Ecies,
+///         salsa_sealbox::{EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey},
+///     },
 ///    CsRng, KeyTrait,
 ///};
 ///
@@ -46,7 +48,7 @@ use super::keypair::{X25519PrivateKey, X25519PublicKey};
 /// let ciphertext = ecies.encrypt(&public_key, plaintext).unwrap();
 ///
 /// // Verify that the size of the ciphertext is as expected
-/// assert_eq!(ciphertext.len(), ecies.ciphertext_size(plaintext.len()));
+/// assert_eq!(ciphertext.len(), plaintext.len() + EciesSalsaSealBox::ENCRYPTION_OVERHEAD);
 ///
 /// // Decrypt the ciphertext back into plaintext with the private key
 /// let plaintext_ = ecies.decrypt(&private_key, &ciphertext).unwrap();
@@ -80,6 +82,8 @@ impl Ecies<{ crypto_box::KEY_SIZE }, { crypto_box::KEY_SIZE }> for EciesSalsaSea
 
     type PublicKey = X25519PublicKey;
 
+    const ENCRYPTION_OVERHEAD: usize = crypto_box::SEALBYTES;
+
     fn encrypt(
         &self,
         public_key: &Self::PublicKey,
@@ -101,9 +105,5 @@ impl Ecies<{ crypto_box::KEY_SIZE }, { crypto_box::KEY_SIZE }> for EciesSalsaSea
             .0
             .unseal(ciphertext)
             .map_err(|_| crate::CryptoCoreError::DecryptionError)
-    }
-
-    fn ciphertext_size(&self, plaintext_size: usize) -> usize {
-        plaintext_size + crypto_box::SEALBYTES
     }
 }

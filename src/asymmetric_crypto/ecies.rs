@@ -4,6 +4,9 @@ pub trait Ecies<const PUBLIC_KEY_LENGTH: usize, const PRIVATE_KEY_LENGTH: usize>
     type PrivateKey: KeyTrait<PRIVATE_KEY_LENGTH>;
     type PublicKey: KeyTrait<PUBLIC_KEY_LENGTH>;
 
+    /// The size of the overhead added by the encryption process.
+    const ENCRYPTION_OVERHEAD: usize;
+
     /// Encrypts a message using the given public key.
     fn encrypt(
         &self,
@@ -17,7 +20,4 @@ pub trait Ecies<const PUBLIC_KEY_LENGTH: usize, const PRIVATE_KEY_LENGTH: usize>
         private_key: &Self::PrivateKey,
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, CryptoCoreError>;
-
-    /// Returns the size of the ciphertext for a given plaintext size.
-    fn ciphertext_size(&self, plaintext_size: usize) -> usize;
 }
