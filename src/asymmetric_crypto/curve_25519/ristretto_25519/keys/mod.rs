@@ -30,7 +30,7 @@ mod test {
         let mut rng = CsRng::from_entropy();
         let sk = R25519PrivateKey::new(&mut rng);
         let bytes = sk.to_bytes();
-        let recovered = R25519PrivateKey::try_from_slice(&bytes).unwrap();
+        let recovered = R25519PrivateKey::try_from_bytes(bytes).unwrap();
         assert_eq!(sk, recovered);
     }
 
@@ -40,7 +40,7 @@ mod test {
         let sk = R25519PrivateKey::new(&mut rng);
         let pk = R25519PublicKey::from(&sk);
         let bytes = pk.to_bytes();
-        let recovered = R25519PublicKey::try_from_slice(&bytes).unwrap();
+        let recovered = R25519PublicKey::try_from_bytes(bytes).unwrap();
         assert_eq!(pk, recovered);
     }
 

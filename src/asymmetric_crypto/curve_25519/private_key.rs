@@ -45,16 +45,12 @@ impl Eq for Curve25519PrivateKey {}
 impl Key for Curve25519PrivateKey {}
 
 impl FixedSizeKey<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().into()
+    fn to_bytes(&self) -> [u8; Self::LENGTH] {
+        self.0.to_bytes()
     }
 
-    fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
-        slice
-            .try_into()
-            .map(Scalar::from_bits_clamped)
-            .map(Self)
-            .map_err(|_| crate::CryptoCoreError::InvalidKeyLength)
+    fn try_from_bytes(slice: [u8; Self::LENGTH]) -> Result<Self, CryptoCoreError> {
+        Ok(Self(Scalar::from_bits_clamped(slice)))
     }
 }
 
@@ -84,7 +80,7 @@ impl Serializable for Curve25519PrivateKey {
 
     fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
         let bytes = de.read_array::<{ Self::LENGTH }>()?;
-        Self::try_from_slice(&bytes)
+        Self::try_from_bytes(bytes)
     }
 }
 

@@ -15,15 +15,12 @@ pub struct SymmetricKey<const LENGTH: usize>([u8; LENGTH]);
 impl<const LENGTH: usize> crate::Key for SymmetricKey<LENGTH> {}
 
 impl<const LENGTH: usize> crate::FixedSizeKey<LENGTH> for SymmetricKey<LENGTH> {
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.into()
+    fn to_bytes(&self) -> [u8; LENGTH] {
+        self.0
     }
 
-    fn try_from_slice(slice: &[u8]) -> Result<Self, crate::CryptoCoreError> {
-        slice
-            .try_into()
-            .map(|bytes| Self(bytes))
-            .map_err(|_| crate::CryptoCoreError::InvalidKeyLength)
+    fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, crate::CryptoCoreError> {
+        Ok(Self(bytes))
     }
 }
 

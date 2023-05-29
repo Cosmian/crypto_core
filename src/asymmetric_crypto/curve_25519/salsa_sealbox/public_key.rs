@@ -12,16 +12,12 @@ pub struct X25519PublicKey(pub(crate) MontgomeryPoint);
 impl Key for X25519PublicKey {}
 
 impl FixedSizeKey<{ crypto_box::KEY_SIZE }> for X25519PublicKey {
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().into()
+    fn to_bytes(&self) -> [u8; Self::LENGTH] {
+        self.0.to_bytes()
     }
 
-    fn try_from_slice(slice: &[u8]) -> Result<Self, crate::CryptoCoreError> {
-        slice
-            .try_into()
-            .map(MontgomeryPoint)
-            .map(Self)
-            .map_err(|_| crate::CryptoCoreError::InvalidKeyLength)
+    fn try_from_bytes(slice: [u8; crypto_box::KEY_SIZE]) -> Result<Self, crate::CryptoCoreError> {
+        Ok(Self(MontgomeryPoint(slice)))
     }
 }
 

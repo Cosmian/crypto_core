@@ -35,10 +35,18 @@ pub trait FixedSizeKey<const LENGTH: usize>: Key + Sized {
 
     /// Converts the given key into a vector of LENGTH bytes.
     #[must_use]
-    fn to_bytes(&self) -> Vec<u8>;
+    fn to_bytes(&self) -> [u8; LENGTH];
 
     /// Tries to create a key from the given slice of bytes into a key.
-    fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError>;
+    fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
+        slice
+            .try_into()
+            .map_err(|_| CryptoCoreError::InvalidKeyLength)
+            .and_then(Self::try_from_bytes)
+    }
+
+    /// Tries to create a key from the given bytes into a key.
+    fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError>;
 }
 
 /// A secret key such as a symmetric key or an elliptic curve private key.

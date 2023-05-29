@@ -81,6 +81,12 @@ impl EciesSalsaSealBox {
     }
 }
 
+impl Default for EciesSalsaSealBox {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
     const ENCRYPTION_OVERHEAD: usize = crypto_box::SEALBYTES;
 

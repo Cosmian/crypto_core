@@ -118,6 +118,12 @@ impl EciesR25519Aes256gcmSha256Xof {
     }
 }
 
+impl Default for EciesR25519Aes256gcmSha256Xof {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn get_seal_nonce<const NONCE_LENGTH: usize>(
     ephemeral_pk: &R25519PublicKey,
     recipient_pk: &R25519PublicKey,

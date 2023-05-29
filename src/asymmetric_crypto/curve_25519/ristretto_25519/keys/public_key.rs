@@ -20,24 +20,18 @@ pub struct R25519PublicKey(pub(crate) RistrettoPoint);
 impl Key for R25519PublicKey {}
 
 impl FixedSizeKey<32> for R25519PublicKey {
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.compress().to_bytes().into()
+    fn to_bytes(&self) -> [u8; Self::LENGTH] {
+        self.0.compress().to_bytes()
     }
 
-    fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
-        Ok(Self(
-            CompressedRistretto(
-                slice
-                    .try_into()
-                    .map_err(|_| CryptoCoreError::InvalidKeyLength)?,
-            )
-            .decompress()
-            .ok_or_else(|| {
+    fn try_from_bytes(bytes: [u8; 32]) -> Result<Self, crate::CryptoCoreError> {
+        Ok(Self(CompressedRistretto(bytes).decompress().ok_or_else(
+            || {
                 CryptoCoreError::ConversionError(
                     "Cannot decompress given bytes into a valid curve point!".to_string(),
                 )
-            })?,
-        ))
+            },
+        )?))
     }
 }
 
@@ -59,7 +53,7 @@ impl Serializable for R25519PublicKey {
     }
 
     fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
-        Self::try_from_slice(&de.read_array::<{ Self::LENGTH }>()?)
+        Self::try_from_bytes(de.read_array::<{ Self::LENGTH }>()?)
     }
 }
 

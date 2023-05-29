@@ -89,7 +89,7 @@ fn libsodium_compat() {
     }
 
     // decrypt using salsa_sealbox
-    let private_key = X25519PrivateKey::try_from_slice(&private_key_bytes).unwrap();
+    let private_key = X25519PrivateKey::try_from_bytes(private_key_bytes).unwrap();
     // decrypt
     let message_ = ecies.decrypt(&private_key, &ciphertext).unwrap();
     // assert

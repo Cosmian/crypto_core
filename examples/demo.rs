@@ -29,7 +29,7 @@ fn main() {
     // Derivation of a secret key from the DHKEX shared secret.
     const KEY_DERIVATION_INFO: &[u8] = b"Curve25519 KDF derivation";
     const KEY_LENGTH: usize = Aes256GcmCrypto::KEY_LENGTH;
-    let symmetric_key = SymmetricKey::<KEY_LENGTH>::try_from_slice(&kdf!(
+    let symmetric_key = SymmetricKey::<KEY_LENGTH>::try_from_bytes(kdf!(
         KEY_LENGTH,
         &shared_secret.to_bytes(),
         KEY_DERIVATION_INFO
