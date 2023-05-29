@@ -32,7 +32,7 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
 ///
 /// Internally, it uses an array of bytes of the given size.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Nonce<const LENGTH: usize>([u8; LENGTH]);
+pub struct Nonce<const LENGTH: usize>(pub [u8; LENGTH]);
 
 impl<const LENGTH: usize> NonceTrait for Nonce<LENGTH> {
     const LENGTH: usize = LENGTH;

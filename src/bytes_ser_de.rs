@@ -25,14 +25,14 @@ pub trait Serializable: Sized {
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error>;
 
     /// Serializes the object. Allocates the correct capacity if it is known.
-    fn try_to_bytes(&self) -> Result<Vec<u8>, Self::Error> {
+    fn serialize(&self) -> Result<Vec<u8>, Self::Error> {
         let mut ser = Serializer::with_capacity(self.length());
         ser.write(self)?;
         Ok(ser.finalize())
     }
 
     /// Deserializes the object.
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
+    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.is_empty() {
             return Err(CryptoCoreError::DeserializationEmptyError.into());
         }
@@ -299,16 +299,16 @@ mod tests {
         assert_eq!(a3, a3_);
 
         let serialized_key = vec![1; 32];
-        let key = R25519PrivateKey::try_from_bytes(&serialized_key)?;
-        let re_serialized_key = key.try_to_bytes()?;
+        let key = R25519PrivateKey::deserialize(&serialized_key)?;
+        let re_serialized_key = key.serialize()?;
 
         assert_eq!(re_serialized_key, serialized_key);
 
         let dummy = DummyLeb128Serializable {
             bytes: vec![1; 512],
         };
-        let serialized_dummy = dummy.try_to_bytes()?;
-        let deserialized_dummy = DummyLeb128Serializable::try_from_bytes(&serialized_dummy)?;
+        let serialized_dummy = dummy.serialize()?;
+        let deserialized_dummy = DummyLeb128Serializable::deserialize(&serialized_dummy)?;
 
         assert_eq!(deserialized_dummy.bytes, dummy.bytes);
 
@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn test_deserialization_errors() -> Result<(), CryptoCoreError> {
         {
-            let empty_error = R25519PrivateKey::try_from_bytes(&[]);
+            let empty_error = R25519PrivateKey::deserialize(&[]);
 
             dbg!(&empty_error);
             assert!(matches!(
@@ -327,7 +327,7 @@ mod tests {
             ));
         }
         {
-            let too_small_error = R25519PrivateKey::try_from_bytes(&[1, 2, 3]);
+            let too_small_error = R25519PrivateKey::deserialize(&[1, 2, 3]);
 
             dbg!(&too_small_error);
             assert!(matches!(
@@ -339,7 +339,7 @@ mod tests {
             ));
         }
         {
-            let too_big_error = R25519PrivateKey::try_from_bytes(&[1; 34]);
+            let too_big_error = R25519PrivateKey::deserialize(&[1; 34]);
 
             dbg!(&too_big_error);
             assert!(matches!(
@@ -352,7 +352,7 @@ mod tests {
         }
 
         {
-            let empty_error = DummyLeb128Serializable::try_from_bytes(&[]);
+            let empty_error = DummyLeb128Serializable::deserialize(&[]);
 
             dbg!(&empty_error);
             assert!(matches!(
@@ -366,9 +366,9 @@ mod tests {
         };
 
         {
-            let mut bytes = dummy.try_to_bytes()?;
+            let mut bytes = dummy.serialize()?;
             bytes.pop();
-            let too_small_error = DummyLeb128Serializable::try_from_bytes(&bytes);
+            let too_small_error = DummyLeb128Serializable::deserialize(&bytes);
 
             dbg!(&too_small_error);
             assert!(matches!(
@@ -380,9 +380,9 @@ mod tests {
             ));
         }
         {
-            let mut bytes = dummy.try_to_bytes()?;
+            let mut bytes = dummy.serialize()?;
             bytes.push(42);
-            let too_big_error = DummyLeb128Serializable::try_from_bytes(&bytes);
+            let too_big_error = DummyLeb128Serializable::deserialize(&bytes);
 
             dbg!(&too_big_error);
             assert!(matches!(

@@ -11,7 +11,7 @@ use aes_gcm::{
 use crate::{
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{
-        key::Key,
+        key::SymmetricKey,
         nonce::{Nonce, NonceTrait},
         Dem,
     },
@@ -37,7 +37,7 @@ const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 pub struct Aes256GcmCrypto;
 
 impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
-    type Key = Key<KEY_LENGTH>;
+    type SymmetricKey = SymmetricKey<KEY_LENGTH>;
     type Nonce = Nonce<NONCE_LENGTH>;
 
     const ENCRYPTION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
@@ -45,7 +45,7 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
 
     fn encrypt<R: CryptoRngCore>(
         rng: &mut R,
-        secret_key: &Self::Key,
+        secret_key: &Self::SymmetricKey,
         plaintext: &[u8],
         additional_data: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
@@ -69,7 +69,7 @@ impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
     }
 
     fn decrypt(
-        secret_key: &Self::Key,
+        secret_key: &Self::SymmetricKey,
         ciphertext: &[u8],
         additional_data: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
@@ -187,7 +187,7 @@ mod tests {
                 encrypt_in_place_detached, Aes256GcmCrypto, Nonce, KEY_LENGTH, MAC_LENGTH,
                 NONCE_LENGTH,
             },
-            key::Key,
+            key::SymmetricKey,
             nonce::NonceTrait,
             Dem,
         },
@@ -197,7 +197,7 @@ mod tests {
     #[test]
     fn test_encryption_decryption_combined() -> Result<(), CryptoCoreError> {
         let mut cs_rng = CsRng::from_entropy();
-        let key = Key::<KEY_LENGTH>::new(&mut cs_rng);
+        let key = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
         let mut bytes = [0; 8192];
         cs_rng.fill_bytes(&mut bytes);
         let iv = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
@@ -221,7 +221,7 @@ mod tests {
         let recovered = decrypt_combined(&key, &encrypted_result, iv.as_bytes(), Some(&aad));
         assert!(matches!(recovered, Err(CryptoCoreError::DecryptionError)));
         // data should not be recovered if the key is modified
-        let new_key = Key::<KEY_LENGTH>::new(&mut cs_rng);
+        let new_key = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
         let recovered = decrypt_combined(&new_key, &encrypted_result, iv.as_bytes(), Some(&aad));
         assert!(matches!(recovered, Err(CryptoCoreError::DecryptionError)));
         Ok(())
@@ -230,7 +230,7 @@ mod tests {
     #[test]
     fn test_encryption_decryption_detached() -> Result<(), CryptoCoreError> {
         let mut cs_rng = CsRng::from_entropy();
-        let key = Key::<KEY_LENGTH>::new(&mut cs_rng);
+        let key = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
         let mut bytes = [0; 1024];
         cs_rng.fill_bytes(&mut bytes);
         let iv = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
@@ -260,7 +260,7 @@ mod tests {
         let m = b"my secret message";
         let additional_data = Some(b"public tag".as_slice());
         let mut rng = CsRng::from_entropy();
-        let secret_key = Key::new(&mut rng);
+        let secret_key = SymmetricKey::new(&mut rng);
         let c = Aes256GcmCrypto::encrypt(&mut rng, &secret_key, m, additional_data)?;
         let res = Aes256GcmCrypto::decrypt(&secret_key, &c, additional_data)?;
         assert_eq!(res, m, "Decryption failed");

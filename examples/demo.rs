@@ -4,7 +4,7 @@ use cosmian_crypto_core::{
     asymmetric_crypto::{DhKeyPair, R25519KeyPair},
     kdf,
     reexport::rand_core::SeedableRng,
-    symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::Key, Dem},
+    symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::SymmetricKey, Dem},
     CsRng, FixedSizeKey,
 };
 
@@ -29,7 +29,7 @@ fn main() {
     // Derivation of a secret key from the DHKEX shared secret.
     const KEY_DERIVATION_INFO: &[u8] = b"Curve25519 KDF derivation";
     const KEY_LENGTH: usize = Aes256GcmCrypto::KEY_LENGTH;
-    let symmetric_key = Key::<KEY_LENGTH>::try_from_slice(&kdf!(
+    let symmetric_key = SymmetricKey::<KEY_LENGTH>::try_from_slice(&kdf!(
         KEY_LENGTH,
         &shared_secret.to_bytes(),
         KEY_DERIVATION_INFO

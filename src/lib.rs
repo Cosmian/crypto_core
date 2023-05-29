@@ -29,9 +29,9 @@ pub trait Key: Clone + Eq + PartialEq + Send + Sync + Zeroize + ZeroizeOnDrop {}
 /// A Fixed Size Key
 ///
 /// This may be the compressed form of a public key when using elliptic curves
-pub trait FixedSizeKey: Key + Sized {
+pub trait FixedSizeKey<const LENGTH: usize>: Key + Sized {
     /// Key length
-    const LENGTH: usize;
+    const LENGTH: usize = LENGTH;
 
     /// Converts the given key into a vector of LENGTH bytes.
     #[must_use]
@@ -42,7 +42,7 @@ pub trait FixedSizeKey: Key + Sized {
 }
 
 /// A secret key such as a symmetric key or an elliptic curve private key.
-pub trait SecretKey: FixedSizeKey {
+pub trait SecretKey<const LENGTH: usize>: FixedSizeKey<LENGTH> {
     /// Generates a new random key.
     #[must_use]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self;

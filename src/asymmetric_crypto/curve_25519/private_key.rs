@@ -20,6 +20,13 @@ impl Zeroize for Curve25519PrivateKey {
     }
 }
 
+// Implements `Drop` trait to follow R23.
+impl Drop for Curve25519PrivateKey {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
 /// Zeroizes the private key on drop.
 impl ZeroizeOnDrop for Curve25519PrivateKey {}
 
@@ -33,11 +40,11 @@ impl PartialEq for Curve25519PrivateKey {
 /// Compares two private keys.
 impl Eq for Curve25519PrivateKey {}
 
+// Key traits implementations
+
 impl Key for Curve25519PrivateKey {}
 
-impl FixedSizeKey for Curve25519PrivateKey {
-    const LENGTH: usize = crypto_box::KEY_SIZE;
-
+impl FixedSizeKey<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     fn to_bytes(&self) -> Vec<u8> {
         self.0.to_bytes().into()
     }
@@ -51,7 +58,7 @@ impl FixedSizeKey for Curve25519PrivateKey {
     }
 }
 
-impl SecretKey for Curve25519PrivateKey {
+impl SecretKey<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; Self::LENGTH];
         rng.fill_bytes(&mut bytes);
@@ -63,6 +70,7 @@ impl SecretKey for Curve25519PrivateKey {
     }
 }
 
+/// Key Serialization framework
 impl Serializable for Curve25519PrivateKey {
     type Error = CryptoCoreError;
 

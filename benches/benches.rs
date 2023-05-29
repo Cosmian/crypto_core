@@ -2,7 +2,7 @@ use cosmian_crypto_core::{
     asymmetric_crypto::{DhKeyPair, R25519KeyPair},
     kdf,
     reexport::rand_core::{RngCore, SeedableRng},
-    symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::Key, Dem},
+    symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::SymmetricKey, Dem},
     CsRng, SecretKey,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -26,7 +26,7 @@ const MSG_LENGTH: usize = 2048;
 
 fn bench_symmetric_encryption(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
-    let key = Key::new(&mut rng);
+    let key = SymmetricKey::new(&mut rng);
     let mut msg = [0; MSG_LENGTH];
     rng.fill_bytes(&mut msg);
     c.bench_function(
@@ -37,7 +37,7 @@ fn bench_symmetric_encryption(c: &mut Criterion) {
 
 fn bench_symmetric_decryption(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
-    let key = Key::new(&mut rng);
+    let key = SymmetricKey::new(&mut rng);
     let mut msg = [0; MSG_LENGTH];
     rng.fill_bytes(&mut msg);
     let enc = Aes256GcmCrypto::encrypt(&mut rng, &key, &msg, None).unwrap();

@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use rand_chacha::rand_core::SeedableRng;
 
 use crate::{
-    asymmetric_crypto::{EciesSalsaSealBox, X25519PrivateKey},
+    asymmetric_crypto::{EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey},
     CsRng, FixedSizeKey, SecretKey,
 };
 
@@ -41,7 +41,7 @@ fn ecies_salsa_seal_box() {
         let mut rng = arc_rng.lock().unwrap();
         X25519PrivateKey::new(&mut *rng)
     };
-    let public_key = private_key.public_key();
+    let public_key = X25519PublicKey::from(&private_key);
     // encrypt
     let plaintext = b"Hello World!";
     let ciphertext = ecies.encrypt(&public_key, plaintext).unwrap();
@@ -98,7 +98,7 @@ fn libsodium_compat() {
     // the other way round:
     //
     // encrypt using salsa_sealbox
-    let public_key = private_key.public_key();
+    let public_key = X25519PublicKey::from(&private_key);
     let ciphertext = ecies.encrypt(&public_key, message).unwrap();
 
     //decrypt using libsodium

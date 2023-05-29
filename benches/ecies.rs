@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use cosmian_crypto_core::{
     asymmetric_crypto::{
         DhKeyPair, Ecies, EciesR25519Aes256gcmSha256Xof, EciesSalsaSealBox, R25519KeyPair,
-        X25519PrivateKey,
+        X25519PrivateKey, X25519PublicKey,
     },
     CsRng, SecretKey,
 };
@@ -47,7 +47,7 @@ pub fn ecies_salsa_seal_box(c: &mut Criterion) {
         let mut rng = arc_rng.lock().unwrap();
         X25519PrivateKey::new(&mut *rng)
     };
-    let public_key = private_key.public_key();
+    let public_key = X25519PublicKey::from(&private_key);
     // encrypt
     let plaintext = b"Hello World!";
 

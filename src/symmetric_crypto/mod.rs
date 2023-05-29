@@ -28,7 +28,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     type Nonce: NonceTrait;
 
     /// Associated key type
-    type Key: SecretKey;
+    type SymmetricKey: SecretKey<KEY_LENGTH>;
 
     /// Encrypts data using the given symmetric key.
     ///
@@ -39,7 +39,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     /// must use the same for decryption
     fn encrypt<R: CryptoRngCore>(
         rng: &mut R,
-        secret_key: &Self::Key,
+        secret_key: &Self::SymmetricKey,
         plaintext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError>;
@@ -51,7 +51,7 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     /// - `aad`         : optional data to use in the authentication method,
     /// must use the same for encryption
     fn decrypt(
-        secret_key: &Self::Key,
+        secret_key: &Self::SymmetricKey,
         ciphertext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError>;

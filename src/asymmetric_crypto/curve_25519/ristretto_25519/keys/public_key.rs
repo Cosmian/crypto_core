@@ -19,9 +19,7 @@ pub struct R25519PublicKey(pub(crate) RistrettoPoint);
 
 impl Key for R25519PublicKey {}
 
-impl FixedSizeKey for R25519PublicKey {
-    const LENGTH: usize = 32;
-
+impl FixedSizeKey<32> for R25519PublicKey {
     fn to_bytes(&self) -> Vec<u8> {
         self.0.compress().to_bytes().into()
     }
@@ -43,32 +41,11 @@ impl FixedSizeKey for R25519PublicKey {
     }
 }
 
-// impl KeyTrait<R25519_PUBLIC_KEY_LENGTH> for R25519PublicKey {
-//     /// Generates a new random public key.
-//     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-//         let mut uniform_bytes = [0u8; 64];
-//         rng.fill_bytes(&mut uniform_bytes);
-//         Self(RistrettoPoint::from_uniform_bytes(&uniform_bytes))
-//     }
-
-//     /// Converts the given public key into an array of bytes.
-//     fn to_bytes(&self) -> [u8; R25519_PUBLIC_KEY_LENGTH] {
-//         self.0.compress().to_bytes()
-//     }
-
-//     /// Converts the given bytes into key.
-//     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-//         Self::try_from(bytes)
-//     }
-
-//     fn as_slice(&self) -> &[u8] {
-//         self.0.as_slice()
-//     }
-
-//     fn from_bytes(bytes: [u8; R25519_PUBLIC_KEY_LENGTH]) -> Self {
-//         Self(RistrettoPoint::from(bytes))
-//     }
-// }
+impl From<&R25519PrivateKey> for R25519PublicKey {
+    fn from(private_key: &R25519PrivateKey) -> Self {
+        R25519PublicKey(RistrettoPoint::mul_base(&private_key.0))
+    }
+}
 
 impl Serializable for R25519PublicKey {
     type Error = CryptoCoreError;
@@ -88,12 +65,6 @@ impl Serializable for R25519PublicKey {
 
 impl From<R25519PrivateKey> for R25519PublicKey {
     fn from(private_key: R25519PrivateKey) -> Self {
-        Self(&private_key.0 * constants::RISTRETTO_BASEPOINT_TABLE)
-    }
-}
-
-impl From<&R25519PrivateKey> for R25519PublicKey {
-    fn from(private_key: &R25519PrivateKey) -> Self {
         Self(&private_key.0 * constants::RISTRETTO_BASEPOINT_TABLE)
     }
 }

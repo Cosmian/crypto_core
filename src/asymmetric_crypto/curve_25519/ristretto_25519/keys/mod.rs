@@ -7,14 +7,15 @@
 //!
 //! See `<https://ristretto.group/ristretto.html>` for more information on Ristretto.
 
-mod private_key;
-pub use private_key::R25519PrivateKey;
-
 mod public_key;
 pub use public_key::R25519PublicKey;
 
 mod dh_keypair;
 pub use dh_keypair::R25519KeyPair;
+
+use crate::asymmetric_crypto::curve_25519::private_key::Curve25519PrivateKey;
+
+pub type R25519PrivateKey = Curve25519PrivateKey;
 
 #[cfg(test)]
 mod test {
@@ -37,7 +38,7 @@ mod test {
     fn test_public_key_serialization() {
         let mut rng = CsRng::from_entropy();
         let sk = R25519PrivateKey::new(&mut rng);
-        let pk = sk.r25519_public_key();
+        let pk = R25519PublicKey::from(&sk);
         let bytes = pk.to_bytes();
         let recovered = R25519PublicKey::try_from_slice(&bytes).unwrap();
         assert_eq!(pk, recovered);
