@@ -4,11 +4,9 @@ use crypto_box::{PublicKey, SecretKey};
 use rand_chacha::rand_core::SeedableRng;
 
 use crate::{
-    asymmetric_crypto::{ecies::Ecies, X25519PrivateKey},
-    CsRng,
+    asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
+    CsRng, Ecies,
 };
-
-use super::X25519PublicKey;
 
 /// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption Scheme (ECIES) functionality
 /// utilizing Salsa20 as its encryption mechanism.
@@ -49,13 +47,13 @@ use super::X25519PublicKey;
 /// let plaintext = b"Hello World!";
 ///
 /// // Encrypt the plaintext message with the public key
-/// let ciphertext = ecies.encrypt(&public_key, plaintext).unwrap();
+/// let ciphertext = ecies.encrypt(&public_key, plaintext, None).unwrap();
 ///
 /// // Verify that the size of the ciphertext is as expected
 /// assert_eq!(ciphertext.len(), plaintext.len() + EciesSalsaSealBox::ENCRYPTION_OVERHEAD);
 ///
 /// // Decrypt the ciphertext back into plaintext with the private key
-/// let plaintext_ = ecies.decrypt(&private_key, &ciphertext).unwrap();
+/// let plaintext_ = ecies.decrypt(&private_key, &ciphertext, None).unwrap();
 ///
 /// // Check that the decrypted text matches the original plaintext
 /// assert_eq!(plaintext, &plaintext_[..]);
@@ -90,10 +88,16 @@ impl Default for EciesSalsaSealBox {
 impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
     const ENCRYPTION_OVERHEAD: usize = crypto_box::SEALBYTES;
 
+    /// Encrypts a message using the given public key
+    /// using a Salsa sealed box which is compatible with the
+    /// libsodium sealed box: `<https://doc.libsodium.org/public-key_cryptography/sealed_boxe>`
+    ///
+    /// Note: the authentication data is not used by this algorithm and is ignored
     fn encrypt(
         &self,
         public_key: &X25519PublicKey,
         plaintext: &[u8],
+        _authentication_data: Option<&[u8]>,
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
         let mut rng = self.cs_rng.lock().expect("failed to lock cs_rng");
         let public_key: PublicKey = public_key.0.into();
@@ -102,10 +106,16 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
             .map_err(|_| crate::CryptoCoreError::EncryptionError)
     }
 
+    /// Decrypts a message using the given private key
+    /// using a Salsa sealed box which is compatible with the
+    /// libsodium sealed box: `<https://doc.libsodium.org/public-key_cryptography/sealed_boxe>`
+    ///
+    /// Note: the authentication data is not used by this algorithm and is ignored
     fn decrypt(
         &self,
         private_key: &X25519PrivateKey,
         ciphertext: &[u8],
+        _authentication_data: Option<&[u8]>,
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
         let secret_key: SecretKey = private_key.0.into();
         secret_key

@@ -1,10 +1,10 @@
 //! This crate implements crypto primitives which are used in many other
 //! Cosmian cryptographic resources.
 
-mod error;
-
 pub mod asymmetric_crypto;
 pub mod bytes_ser_de;
+pub mod ecies;
+mod error;
 pub mod kdf;
 pub mod reexport {
     // reexport `rand_core` so that the PRNGs implement the correct version of
@@ -17,6 +17,7 @@ use reexport::rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use crate::error::CryptoCoreError;
+pub use ecies::Ecies;
 
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
 pub type CsRng = rand_chacha::ChaCha12Rng;

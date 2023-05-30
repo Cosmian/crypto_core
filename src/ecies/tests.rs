@@ -3,31 +3,34 @@ use std::sync::{Arc, Mutex};
 use rand_chacha::rand_core::SeedableRng;
 
 use crate::{
-    asymmetric_crypto::{EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey},
-    CsRng, FixedSizeKey, SecretKey,
+    asymmetric_crypto::{R25519PrivateKey, R25519PublicKey, X25519PrivateKey, X25519PublicKey},
+    ecies::{
+        ecies_ristretto_25519::EciesR25519Aes256gcmSha256Xof,
+        ecies_salsa_sealed_box::EciesSalsaSealBox,
+    },
+    CsRng, Ecies, FixedSizeKey, SecretKey,
 };
-
-use super::{ecies::Ecies, DhKeyPair, EciesR25519Aes256gcmSha256Xof, R25519KeyPair};
 
 #[test]
 fn ecies_r25519_aes256gcm_sha256_xof_test() {
     let arc_rng = Arc::new(Mutex::new(CsRng::from_entropy()));
     let ecies = EciesR25519Aes256gcmSha256Xof::new_from_rng(arc_rng.clone());
     // generate a key pair
-    let keypair = {
+    let private_key = {
         let mut rng = arc_rng.lock().unwrap();
-        R25519KeyPair::new(&mut *rng)
+        R25519PrivateKey::new(&mut *rng)
     };
+    let public_key = R25519PublicKey::from(&private_key);
     // encrypt
     let plaintext = b"Hello World!";
-    let ciphertext = ecies.encrypt(&keypair.public_key(), plaintext).unwrap();
+    let ciphertext = ecies.encrypt(&public_key, plaintext, None).unwrap();
     // check the size is the expected size
     assert_eq!(
         ciphertext.len(),
         plaintext.len() + EciesR25519Aes256gcmSha256Xof::ENCRYPTION_OVERHEAD
     );
     // decrypt
-    let plaintext_ = ecies.decrypt(&keypair.private_key(), &ciphertext).unwrap();
+    let plaintext_ = ecies.decrypt(&private_key, &ciphertext, None).unwrap();
     // assert
     assert_eq!(plaintext, &plaintext_[..]);
 }
@@ -44,14 +47,14 @@ fn ecies_salsa_seal_box() {
     let public_key = X25519PublicKey::from(&private_key);
     // encrypt
     let plaintext = b"Hello World!";
-    let ciphertext = ecies.encrypt(&public_key, plaintext).unwrap();
+    let ciphertext = ecies.encrypt(&public_key, plaintext, None).unwrap();
     // check the size is the expected size
     assert_eq!(
         ciphertext.len(),
         plaintext.len() + EciesSalsaSealBox::ENCRYPTION_OVERHEAD
     );
     // decrypt
-    let plaintext_ = ecies.decrypt(&private_key, &ciphertext).unwrap();
+    let plaintext_ = ecies.decrypt(&private_key, &ciphertext, None).unwrap();
     // assert
     assert_eq!(plaintext, &plaintext_[..]);
 }
@@ -91,7 +94,7 @@ fn libsodium_compat() {
     // decrypt using salsa_sealbox
     let private_key = X25519PrivateKey::try_from_bytes(private_key_bytes).unwrap();
     // decrypt
-    let message_ = ecies.decrypt(&private_key, &ciphertext).unwrap();
+    let message_ = ecies.decrypt(&private_key, &ciphertext, None).unwrap();
     // assert
     assert_eq!(message, &message_[..]);
 
@@ -99,7 +102,7 @@ fn libsodium_compat() {
     //
     // encrypt using salsa_sealbox
     let public_key = X25519PublicKey::from(&private_key);
-    let ciphertext = ecies.encrypt(&public_key, message).unwrap();
+    let ciphertext = ecies.encrypt(&public_key, message, None).unwrap();
 
     //decrypt using libsodium
     let mut plaintext_: Vec<u8> = vec![0; message.len()];

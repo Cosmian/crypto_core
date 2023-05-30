@@ -63,24 +63,6 @@ impl From<R25519PrivateKey> for R25519PublicKey {
     }
 }
 
-// impl TryFrom<&[u8]> for R25519PublicKey {
-//     type Error = CryptoCoreError;
-
-//     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-//         let bytes = <[u8; Self::LENGTH]>::try_from(bytes)
-//             .map_err(|e| Self::Error::ConversionError(e.to_string()))?;
-//         Self::try_from(bytes)
-//     }
-// }
-
-// // Needed by serde to derive `Deserialize`. Do not use otherwise since there
-// // is a copy anyway.
-// impl From<R25519PublicKey> for [u8; Self::LENGTH] {
-//     fn from(key: R25519PublicKey) -> Self {
-//         key.0.compress().to_bytes()
-//     }
-// }
-
 impl<'a> Sub<&'a R25519PublicKey> for &R25519PublicKey {
     type Output = R25519PublicKey;
 
@@ -119,3 +101,28 @@ impl Drop for R25519PublicKey {
 }
 
 impl ZeroizeOnDrop for R25519PublicKey {}
+
+#[cfg(test)]
+mod test {
+    use super::{R25519PrivateKey, R25519PublicKey};
+    use crate::{reexport::rand_core::SeedableRng, CsRng, FixedSizeKey, SecretKey};
+
+    #[test]
+    fn test_private_key_serialization() {
+        let mut rng = CsRng::from_entropy();
+        let sk = R25519PrivateKey::new(&mut rng);
+        let bytes = sk.to_bytes();
+        let recovered = R25519PrivateKey::try_from_bytes(bytes).unwrap();
+        assert_eq!(sk, recovered);
+    }
+
+    #[test]
+    fn test_public_key_serialization() {
+        let mut rng = CsRng::from_entropy();
+        let sk = R25519PrivateKey::new(&mut rng);
+        let pk = R25519PublicKey::from(&sk);
+        let bytes = pk.to_bytes();
+        let recovered = R25519PublicKey::try_from_bytes(bytes).unwrap();
+        assert_eq!(pk, recovered);
+    }
+}

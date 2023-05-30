@@ -4,7 +4,7 @@ use rand_chacha::rand_core::SeedableRng;
 use tiny_keccak::Hasher;
 
 use crate::{
-    asymmetric_crypto::ecies::{Ecies, EciesWithAuthenticationData},
+    asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
     kdf,
     symmetric_crypto::{
         aes_256_gcm_pure::{
@@ -13,10 +13,8 @@ use crate::{
         nonce::NonceTrait,
         Dem,
     },
-    CryptoCoreError, CsRng, FixedSizeKey, SecretKey,
+    CryptoCoreError, CsRng, Ecies, FixedSizeKey, SecretKey,
 };
-
-use super::{R25519PrivateKey, R25519PublicKey};
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
 ///  - the Ristretto group of Curve 25516
@@ -39,8 +37,38 @@ impl EciesR25519Aes256gcmSha256Xof {
     pub fn new_from_rng(cs_rng: Arc<Mutex<CsRng>>) -> Self {
         Self { cs_rng }
     }
+}
 
-    fn ecies_encrypt(
+impl Default for EciesR25519Aes256gcmSha256Xof {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+fn get_seal_nonce<const NONCE_LENGTH: usize>(
+    ephemeral_pk: &R25519PublicKey,
+    recipient_pk: &R25519PublicKey,
+) -> [u8; NONCE_LENGTH] {
+    let mut buffer = [0u8; NONCE_LENGTH];
+    let mut hasher = kdf::Shake::v256();
+    hasher.update(&ephemeral_pk.to_bytes());
+    hasher.update(&recipient_pk.to_bytes());
+    hasher.finalize(&mut buffer);
+    buffer
+}
+
+fn get_ephemeral_key<const KEY_LENGTH: usize>(shared_point: &R25519PublicKey) -> [u8; KEY_LENGTH] {
+    let mut buffer = [0u8; KEY_LENGTH];
+    let mut hasher = kdf::Shake::v256();
+    hasher.update(&shared_point.to_bytes());
+    hasher.finalize(&mut buffer);
+    buffer
+}
+
+impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes256gcmSha256Xof {
+    const ENCRYPTION_OVERHEAD: usize = R25519PublicKey::LENGTH + Aes256GcmCrypto::MAC_LENGTH;
+
+    fn encrypt(
         &self,
         recipient_pk: &R25519PublicKey,
         plaintext: &[u8],
@@ -82,7 +110,7 @@ impl EciesR25519Aes256gcmSha256Xof {
         Ok(res)
     }
 
-    fn ecies_decrypt(
+    fn decrypt(
         &self,
         recipient_sk: &R25519PrivateKey,
         ciphertext: &[u8],
@@ -118,86 +146,14 @@ impl EciesR25519Aes256gcmSha256Xof {
     }
 }
 
-impl Default for EciesR25519Aes256gcmSha256Xof {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-fn get_seal_nonce<const NONCE_LENGTH: usize>(
-    ephemeral_pk: &R25519PublicKey,
-    recipient_pk: &R25519PublicKey,
-) -> [u8; NONCE_LENGTH] {
-    let mut buffer = [0u8; NONCE_LENGTH];
-    let mut hasher = kdf::Shake::v256();
-    hasher.update(&ephemeral_pk.to_bytes());
-    hasher.update(&recipient_pk.to_bytes());
-    hasher.finalize(&mut buffer);
-    buffer
-}
-
-fn get_ephemeral_key<const KEY_LENGTH: usize>(shared_point: &R25519PublicKey) -> [u8; KEY_LENGTH] {
-    let mut buffer = [0u8; KEY_LENGTH];
-    let mut hasher = kdf::Shake::v256();
-    hasher.update(&shared_point.to_bytes());
-    hasher.finalize(&mut buffer);
-    buffer
-}
-
-impl EciesWithAuthenticationData<R25519PrivateKey, R25519PublicKey>
-    for EciesR25519Aes256gcmSha256Xof
-{
-    const ENCRYPTION_OVERHEAD: usize = R25519PublicKey::LENGTH + Aes256GcmCrypto::MAC_LENGTH;
-
-    fn encrypt_with_authentication_data(
-        &self,
-        public_key: &R25519PublicKey,
-        plaintext: &[u8],
-        authentication_data: &[u8],
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        self.ecies_encrypt(public_key, plaintext, Some(authentication_data))
-    }
-
-    fn decrypt_with_authentication_data(
-        &self,
-        private_key: &R25519PrivateKey,
-        ciphertext: &[u8],
-        authentication_data: &[u8],
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        self.ecies_decrypt(private_key, ciphertext, Some(authentication_data))
-    }
-}
-
-impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes256gcmSha256Xof {
-    const ENCRYPTION_OVERHEAD: usize = R25519PublicKey::LENGTH + Aes256GcmCrypto::MAC_LENGTH;
-
-    fn encrypt(
-        &self,
-        public_key: &R25519PublicKey,
-        plaintext: &[u8],
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        self.ecies_encrypt(public_key, plaintext, None)
-    }
-
-    fn decrypt(
-        &self,
-        private_key: &R25519PrivateKey,
-        ciphertext: &[u8],
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        self.ecies_decrypt(private_key, ciphertext, None)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::CryptoCoreError;
     use crate::{
-        asymmetric_crypto::{
-            ecies::EciesWithAuthenticationData, Ecies, EciesR25519Aes256gcmSha256Xof,
-            R25519PrivateKey, R25519PublicKey,
-        },
+        asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
+        ecies::ecies_ristretto_25519::EciesR25519Aes256gcmSha256Xof,
         reexport::rand_core::SeedableRng,
-        CsRng, SecretKey,
+        CsRng, Ecies, SecretKey,
     };
 
     #[test]
@@ -210,10 +166,10 @@ mod tests {
         let ecies = EciesR25519Aes256gcmSha256Xof::new();
 
         // Encrypt the message
-        let ciphertext = ecies.encrypt(&public_key, plaintext)?;
+        let ciphertext = ecies.encrypt(&public_key, plaintext, None)?;
 
         // Decrypt the message
-        let plaintext_ = ecies.decrypt(&private_key, &ciphertext)?;
+        let plaintext_ = ecies.decrypt(&private_key, &ciphertext, None)?;
 
         // Check if the decrypted message is the same as the original message
         assert_eq!(plaintext, &plaintext_[..]);
@@ -232,15 +188,10 @@ mod tests {
         let ecies = EciesR25519Aes256gcmSha256Xof::new();
 
         // Encrypt the message
-        let ciphertext =
-            ecies.encrypt_with_authentication_data(&public_key, plaintext, authenticated_data)?;
+        let ciphertext = ecies.encrypt(&public_key, plaintext, Some(authenticated_data))?;
 
         // Decrypt the message
-        let plaintext_ = ecies.decrypt_with_authentication_data(
-            &private_key,
-            &ciphertext,
-            authenticated_data,
-        )?;
+        let plaintext_ = ecies.decrypt(&private_key, &ciphertext, Some(authenticated_data))?;
 
         // Check if the decrypted message is the same as the original message
         assert_eq!(plaintext, &plaintext_[..]);
@@ -259,14 +210,13 @@ mod tests {
         let ecies = EciesR25519Aes256gcmSha256Xof::new();
 
         // Encrypt the message
-        let ciphertext =
-            ecies.encrypt_with_authentication_data(&public_key, plaintext, authenticated_data)?;
+        let ciphertext = ecies.encrypt(&public_key, plaintext, Some(authenticated_data))?;
 
         // Decrypt the message
-        let not_decrypted = ecies.decrypt_with_authentication_data(
+        let not_decrypted = ecies.decrypt(
             &private_key,
             &ciphertext,
-            b"Corrupted authenticated data",
+            Some(&b"Corrupted authenticated data"[..]),
         );
 
         assert!(matches!(

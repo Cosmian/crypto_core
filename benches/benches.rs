@@ -1,6 +1,6 @@
 use cosmian_crypto_core::{
-    asymmetric_crypto::{DhKeyPair, R25519KeyPair},
-    kdf,
+    asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
+    kdf128, kdf256,
     reexport::rand_core::{RngCore, SeedableRng},
     symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::SymmetricKey, Dem},
     CsRng, SecretKey,
@@ -12,12 +12,15 @@ mod ecies;
 /// Bench the Group-Scalar multiplication on which is based the
 /// Diffie-Hellman key exchange. This gives an indication on how fast
 /// asymmetric schemes can be.
-fn bench_dh(c: &mut Criterion) {
-    let mut rng = CsRng::from_entropy();
-    let dh_keypair = R25519KeyPair::new(&mut rng);
+fn bench_dh_r25519(c: &mut Criterion) {
+    let private_key = {
+        let mut rng = CsRng::from_entropy();
+        R25519PrivateKey::new(&mut rng)
+    };
+    let public_key = R25519PublicKey::from(&private_key);
     c.bench_function(
         "Bench R25519 Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
-        |b| b.iter(|| dh_keypair.public_key() * dh_keypair.private_key()),
+        |b| b.iter(|| &public_key * &private_key),
     );
 }
 
@@ -58,20 +61,25 @@ fn bench_rng_generation(c: &mut Criterion) {
 }
 
 fn bench_kdf(c: &mut Criterion) {
-    const LENGTH: usize = 64;
     let mut rng = CsRng::from_entropy();
-    let mut ikm = [0; 32];
-    rng.fill_bytes(&mut ikm);
+    let mut ikm_32 = [0; 32];
+    rng.fill_bytes(&mut ikm_32);
+    let mut ikm_64 = [0; 64];
+    rng.fill_bytes(&mut ikm_64);
     c.bench_function(
-        "Bench the KDF derivation of a 32-bytes IKM into a 64-bytes key",
-        |b| b.iter(|| kdf!(LENGTH, &ikm, b"KDF derivation")),
+        "Bench the KDF 128bit derivation of a 32-byte IKM into a 16-bytes key",
+        |b| b.iter(|| kdf128!(16, &ikm_32, b"KDF derivation")),
+    );
+    c.bench_function(
+        "Bench the KDF 256bit derivation of a 64-byte IKM into a 32-bytes key",
+        |b| b.iter(|| kdf256!(32, &ikm_64, b"KDF derivation")),
     );
 }
 
 criterion_group!(
     name = asymmetric_crypto;
     config = Criterion::default().sample_size(5000);
-    targets = bench_dh
+    targets = bench_dh_r25519
 );
 
 criterion_group!(

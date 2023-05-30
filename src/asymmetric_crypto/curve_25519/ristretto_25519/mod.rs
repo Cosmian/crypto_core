@@ -1,5 +1,6 @@
-mod ecies;
-mod keys;
+mod public_key;
 
-pub use ecies::EciesR25519Aes256gcmSha256Xof;
-pub use keys::{R25519KeyPair, R25519PrivateKey, R25519PublicKey};
+use super::private_key::Curve25519PrivateKey;
+
+pub type R25519PrivateKey = Curve25519PrivateKey;
+pub use public_key::R25519PublicKey;
