@@ -1,19 +1,16 @@
-use std::sync::{Arc, Mutex};
-
-use rand_chacha::rand_core::SeedableRng;
-
+use crate::symmetric_crypto::DemExtra;
 use crate::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
     kdf128,
     symmetric_crypto::{
-        aes_128_gcm::{
-            decrypt_combined, encrypt_combined, Aes128Gcm, KEY_LENGTH as SYMMETRIC_KEY_LENGTH,
-        },
+        aes_128_gcm::{Aes128Gcm, KEY_LENGTH as SYMMETRIC_KEY_LENGTH},
         nonce::NonceTrait,
         Dem,
     },
     CryptoCoreError, CsRng, Ecies, FixedSizeKey, SecretKey,
 };
+use rand_chacha::rand_core::SeedableRng;
+use std::sync::{Arc, Mutex};
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
 ///  - the Ristretto group of Curve 25516
@@ -95,7 +92,8 @@ impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes128 {
         );
 
         // Encrypt and authenticate the message, returning the ciphertext and MAC
-        let ciphertext_plus_tag = encrypt_combined(&key, plaintext, &nonce, authentication_data)?;
+        let ciphertext_plus_tag =
+            Aes128Gcm::encrypt_combined(&key, plaintext, &nonce, authentication_data)?;
 
         // Assemble the final encrypted message: R || nonce || c || d
         let mut res =
@@ -137,7 +135,7 @@ impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes128 {
 
         // Decrypt and verify the message using AES-128-GCM
         let decrypted_message =
-            decrypt_combined(&key, ciphertext_plus_tag, &nonce, authentication_data)?;
+            Aes128Gcm::decrypt_combined(&key, ciphertext_plus_tag, &nonce, authentication_data)?;
 
         Ok(decrypted_message)
     }

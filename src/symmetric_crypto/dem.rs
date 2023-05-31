@@ -1,6 +1,8 @@
 use core::fmt::Debug;
 use std::vec::Vec;
 
+use aead::{generic_array::GenericArray, Aead, AeadInPlace, KeyInit, Payload};
+
 use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, SecretKey};
 
 use super::nonce::NonceTrait;
@@ -48,4 +50,183 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
         ciphertext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError>;
+}
+
+pub trait DemExtra<ALGO>
+where
+    ALGO: AeadInPlace + Aead + KeyInit,
+{
+    /// Encrypts a message using a secret key and a public nonce in combined mode:
+    /// the encrypted message, as well as a tag authenticating both the confidential
+    /// message and non-confidential data, are put into the encrypted result.
+    ///
+    /// The total length of the encrypted data is the message length + `MAC_LENGTH`
+    fn encrypt_combined(
+        key: &[u8],
+        plaintext: &[u8],
+        nonce: &[u8],
+        aad: Option<&[u8]>,
+    ) -> Result<Vec<u8>, CryptoCoreError> {
+        ALGO::new(GenericArray::from_slice(key))
+            .encrypt(
+                GenericArray::from_slice(nonce),
+                Payload {
+                    msg: plaintext,
+                    aad: aad.unwrap_or_default(),
+                },
+            )
+            .map_err(|_| CryptoCoreError::EncryptionError)
+    }
+
+    /// Decrypts a message in combined mode: the MAC is appended to the cipher text
+    ///
+    /// The provided additional data must match those provided during encryption for
+    /// the MAC to verify.
+    ///
+    /// Decryption will never be performed, even partially, before verification.
+    fn decrypt_combined(
+        key: &[u8],
+        ciphertext: &[u8],
+        nonce: &[u8],
+        aad: Option<&[u8]>,
+    ) -> Result<Vec<u8>, CryptoCoreError> {
+        ALGO::new(GenericArray::from_slice(key))
+            .decrypt(
+                GenericArray::from_slice(nonce),
+                Payload {
+                    msg: ciphertext,
+                    aad: aad.unwrap_or_default(),
+                },
+            )
+            .map_err(|_| CryptoCoreError::DecryptionError)
+    }
+
+    /// Encrypts a message in place using a secret key and a public nonce in
+    /// detached mode: the tag authenticating both the confidential
+    /// message and non-confidential data, are returned separately
+    ///
+    /// The tag length is `MAC_LENGTH`
+    fn encrypt_in_place_detached(
+        key: &[u8],
+        bytes: &mut [u8],
+        nonce: &[u8],
+        aad: Option<&[u8]>,
+    ) -> Result<Vec<u8>, CryptoCoreError> {
+        let key = GenericArray::from_slice(key);
+        let nonce = GenericArray::from_slice(nonce);
+        ALGO::new(key)
+            .encrypt_in_place_detached(nonce, aad.unwrap_or_default(), bytes)
+            .map_err(|_| CryptoCoreError::DecryptionError)
+            .map(|tag| tag.to_vec())
+    }
+
+    /// Decrypts a message in pace in detached mode.
+    /// The bytes should not contain the authentication tag.
+    ///
+    /// The provided additional data must match those provided during encryption for
+    /// the MAC to verify.
+    ///
+    /// Decryption will never be performed, even partially, before verification.
+    fn decrypt_in_place_detached(
+        key: &[u8],
+        bytes: &mut [u8],
+        tag: &[u8],
+        nonce: &[u8],
+        aad: Option<&[u8]>,
+    ) -> Result<(), CryptoCoreError> {
+        ALGO::new(GenericArray::from_slice(key))
+            .decrypt_in_place_detached(
+                GenericArray::from_slice(nonce),
+                aad.unwrap_or_default(),
+                bytes,
+                GenericArray::from_slice(tag),
+            )
+            .map_err(|_| CryptoCoreError::DecryptionError)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::{
+        reexport::rand_core::{RngCore, SeedableRng},
+        symmetric_crypto::{
+            aes_256_gcm::{Aes256Gcm, KEY_LENGTH, MAC_LENGTH, NONCE_LENGTH},
+            dem::DemExtra,
+            key::SymmetricKey,
+            nonce::{Nonce, NonceTrait},
+        },
+        CryptoCoreError, CsRng, SecretKey,
+    };
+
+    #[test]
+    fn test_encryption_decryption_combined() -> Result<(), CryptoCoreError> {
+        let mut cs_rng = CsRng::from_entropy();
+        let key = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
+        let mut bytes = [0; 8192];
+        cs_rng.fill_bytes(&mut bytes);
+        let iv = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
+        // no additional data
+        let encrypted_result = Aes256Gcm::encrypt_combined(&key, &bytes, iv.as_bytes(), None)?;
+        assert_ne!(encrypted_result, bytes.to_vec());
+        assert_eq!(bytes.len() + MAC_LENGTH, encrypted_result.len());
+        let recovered = Aes256Gcm::decrypt_combined(&key, &encrypted_result, iv.as_bytes(), None)?;
+        assert_eq!(bytes.to_vec(), recovered);
+        // additional data
+        let mut aad = [0; 42];
+        cs_rng.fill_bytes(&mut aad);
+        let encrypted_result =
+            Aes256Gcm::encrypt_combined(&key, &bytes, iv.as_bytes(), Some(&aad))?;
+        assert_ne!(encrypted_result, bytes.to_vec());
+        assert_eq!(bytes.len() + MAC_LENGTH, encrypted_result.len());
+        let recovered =
+            Aes256Gcm::decrypt_combined(&key, &encrypted_result, iv.as_bytes(), Some(&aad))?;
+        assert_eq!(bytes.to_vec(), recovered);
+        // data should not be recovered if the AAD is modified
+        let mut aad = [0; 42];
+        cs_rng.fill_bytes(&mut aad);
+        let recovered =
+            Aes256Gcm::decrypt_combined(&key, &encrypted_result, iv.as_bytes(), Some(&aad));
+        assert!(matches!(recovered, Err(CryptoCoreError::DecryptionError)));
+        // data should not be recovered if the key is modified
+        let new_key = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
+        let recovered =
+            Aes256Gcm::decrypt_combined(&new_key, &encrypted_result, iv.as_bytes(), Some(&aad));
+        assert!(matches!(recovered, Err(CryptoCoreError::DecryptionError)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_encryption_decryption_detached() -> Result<(), CryptoCoreError> {
+        let mut cs_rng = CsRng::from_entropy();
+        let key = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
+        let mut bytes = [0; 1024];
+        cs_rng.fill_bytes(&mut bytes);
+        let iv = Nonce::<NONCE_LENGTH>::new(&mut cs_rng);
+        // no additional data
+        let mut data = bytes;
+        let tag = Aes256Gcm::encrypt_in_place_detached(&key, &mut data, iv.as_bytes(), None)?;
+        assert_ne!(bytes, data);
+        assert_eq!(bytes.len(), data.len());
+        assert_eq!(MAC_LENGTH, tag.len());
+        Aes256Gcm::decrypt_in_place_detached(&key, &mut data, &tag, iv.as_bytes(), None)?;
+        assert_eq!(bytes, data);
+        // // additional data
+        let mut ad = [0; 42];
+        cs_rng.fill_bytes(&mut ad);
+        let mut data = bytes;
+        let tag = Aes256Gcm::encrypt_in_place_detached(&key, &mut data, iv.as_bytes(), Some(&ad))?;
+        assert_ne!(bytes, data);
+        assert_eq!(bytes.len(), data.len());
+        assert_eq!(MAC_LENGTH, tag.len());
+        Aes256Gcm::decrypt_in_place_detached(
+            key.as_bytes(),
+            &mut data,
+            &tag,
+            iv.as_bytes(),
+            Some(&ad),
+        )?;
+        assert_eq!(bytes, data);
+        Ok(())
+    }
 }

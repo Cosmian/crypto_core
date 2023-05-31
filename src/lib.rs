@@ -60,29 +60,3 @@ pub trait SecretKey<const LENGTH: usize>: FixedSizeKey<LENGTH> {
     #[must_use]
     fn as_bytes(&self) -> &[u8];
 }
-
-// /// Cryptographic key.
-// pub trait KeyTrait<const LENGTH: usize>:
-//     Clone + Eq + PartialEq + Send + Sized + Sync + Zeroize + ZeroizeOnDrop
-// {
-//     /// Key length
-//     const LENGTH: usize = LENGTH;
-
-//     /// Generates a new random key.
-//     #[must_use]
-//     fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
-
-//     /// Converts the given key into a vector of bytes.
-//     #[must_use]
-//     fn to_bytes(&self) -> [u8; LENGTH];
-
-//     /// Converts to a slice of bytes without copy.
-//     #[must_use]
-//     fn as_slice(&self) -> &[u8];
-
-//     /// Tries to create a key from the given slice bytes into a key.
-//     fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
-
-//     /// Create a key from the given array of bytes
-//     fn from_bytes(bytes: [u8; LENGTH]) -> Self;
-// }

@@ -3,9 +3,9 @@
 
 pub mod aes_128_gcm;
 pub mod aes_256_gcm;
-pub mod chacha20_poly1305;
 mod dem;
+// pub mod chacha20_poly1305;
 pub mod key;
 pub mod nonce;
 
-pub use dem::Dem;
+pub use dem::{Dem, DemExtra};

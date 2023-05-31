@@ -1,12 +1,12 @@
 //! This file exposes the Chacha20 Poly1305 implemented
 //! in RustCrypto (https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305)
 
-use chacha20poly1305::ChaCha20Poly1305 as ChaCha20Poly1305Lib;
+use crate::symmetric_crypto::nonce::NonceTrait;
+use crate::{CryptoCoreError, SecretKey};
 use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::aead::{Aead, AeadInPlace, KeyInit, Payload};
+use chacha20poly1305::ChaCha20Poly1305 as ChaCha20Poly1305Lib;
 use chacha20poly1305::XChaCha20Poly1305;
-use crate::SecretKey;
-use crate::symmetric_crypto::nonce::NonceTrait;
 
 /// Use a 256-bit AES key.
 pub const KEY_LENGTH: usize = 32;
@@ -20,10 +20,9 @@ pub const MAC_LENGTH: usize = 16;
 #[derive(Debug, PartialEq, Eq)]
 struct ChaCha20Poly1305;
 
-use super::{Dem, key::SymmetricKey, nonce::Nonce};
+use super::{key::SymmetricKey, nonce::Nonce, Dem};
 
 impl Dem<32> for ChaCha20Poly1305 {
-
     type SymmetricKey = SymmetricKey<KEY_LENGTH>;
     type Nonce = Nonce<NONCE_LENGTH>;
 
@@ -36,18 +35,7 @@ impl Dem<32> for ChaCha20Poly1305 {
         plaintext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
-                    let key = GenericArray::from_slice(secret_key.as_bytes());
-            let nonce = GenericArray::from_slice($nonce);
-            let payload = Payload {
-                msg: $plaintext,
-                aad: $aad,
-            };
-
-            let ciphertext = ChaCha20Poly1305Lib::new(key).encrypt_in_place_detached(nonce, payload).unwrap();
-
-            let tag_begins = ciphertext.len() - 16;
-
-            Ok(())
+        Ok(())
     }
 
     fn decrypt(
@@ -59,9 +47,7 @@ impl Dem<32> for ChaCha20Poly1305 {
     }
 }
 
-
-see https://github.com/RustCrypto/AEADs/blob/master/chacha20poly1305/tests/lib.rs
-
+// see https://github.com/RustCrypto/AEADs/blob/master/chacha20poly1305/tests/lib.rs
 
 /// Encrypts a message using a secret key and a public nonce in combined mode:
 /// the encrypted message, as well as a tag authenticating both the confidential
