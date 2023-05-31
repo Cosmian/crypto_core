@@ -58,7 +58,7 @@ pub trait SecretKey<const LENGTH: usize>: FixedSizeKey<LENGTH> {
 
     /// Access the underlying slice of bytes (avoid copy).
     #[must_use]
-    fn as_slice(&self) -> &[u8];
+    fn as_bytes(&self) -> &[u8];
 }
 
 // /// Cryptographic key.

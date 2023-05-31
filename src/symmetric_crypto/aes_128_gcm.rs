@@ -60,7 +60,7 @@ impl Dem<KEY_LENGTH> for Aes128Gcm {
         let mut res: Vec<u8> = Vec::with_capacity(plaintext.len() + Self::ENCRYPTION_OVERHEAD);
         res.extend_from_slice(nonce.as_bytes());
         res.append(&mut encrypt_combined(
-            secret_key.as_slice(),
+            secret_key.as_bytes(),
             plaintext,
             nonce.as_bytes(),
             additional_data,
@@ -87,7 +87,7 @@ impl Dem<KEY_LENGTH> for Aes128Gcm {
         }
         // The ciphertext is of the form: nonce || AEAD ciphertext
         decrypt_combined(
-            secret_key.as_slice(),
+            secret_key.as_bytes(),
             &ciphertext[Self::Nonce::LENGTH..],
             &ciphertext[..Self::Nonce::LENGTH],
             additional_data,
@@ -249,7 +249,7 @@ mod tests {
         assert_ne!(bytes, data);
         assert_eq!(bytes.len(), data.len());
         assert_eq!(MAC_LENGTH, tag.len());
-        decrypt_in_place_detached(key.as_slice(), &mut data, &tag, iv.as_bytes(), Some(&ad))?;
+        decrypt_in_place_detached(key.as_bytes(), &mut data, &tag, iv.as_bytes(), Some(&ad))?;
         assert_eq!(bytes, data);
         Ok(())
     }

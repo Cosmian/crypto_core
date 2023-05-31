@@ -31,7 +31,7 @@ impl<const LENGTH: usize> SecretKey<LENGTH> for SymmetricKey<LENGTH> {
         Self(key)
     }
 
-    fn as_slice(&self) -> &[u8] {
+    fn as_bytes(&self) -> &[u8] {
         self.as_ref()
     }
 }

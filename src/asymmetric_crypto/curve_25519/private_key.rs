@@ -61,7 +61,7 @@ impl SecretKey<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
         Self(Scalar::from_bits_clamped(bytes))
     }
 
-    fn as_slice(&self) -> &[u8] {
+    fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
 }
@@ -75,7 +75,7 @@ impl Serializable for Curve25519PrivateKey {
     }
 
     fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(self.as_slice())
+        ser.write_array(self.as_bytes())
     }
 
     fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
