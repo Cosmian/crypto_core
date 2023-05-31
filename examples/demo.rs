@@ -4,7 +4,7 @@ use cosmian_crypto_core::{
     asymmetric_crypto::DhKeyPair,
     kdf,
     reexport::rand_core::SeedableRng,
-    symmetric_crypto::{aes_256_gcm_pure::Aes256GcmCrypto, key::SymmetricKey, Dem},
+    symmetric_crypto::{aes_256_gcm::Aes256Gcm, key::SymmetricKey, Dem},
     CsRng, FixedSizeKey,
 };
 

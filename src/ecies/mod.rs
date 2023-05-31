@@ -1,7 +1,7 @@
 use crate::CryptoCoreError;
 
 mod ecies_ristretto_25519;
-pub use ecies_ristretto_25519::EciesR25519Aes256gcmSha256Xof;
+pub use ecies_ristretto_25519::EciesR25519Aes128;
 
 mod ecies_salsa_sealed_box;
 pub use ecies_salsa_sealed_box::EciesSalsaSealBox;

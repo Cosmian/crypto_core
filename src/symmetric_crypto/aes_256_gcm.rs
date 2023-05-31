@@ -5,7 +5,7 @@
 use aes_gcm::{
     aead::{Aead, Payload},
     aes::cipher::generic_array::GenericArray,
-    AeadInPlace, Aes256Gcm, KeyInit,
+    AeadInPlace, Aes256Gcm as Aes256GcmLib, KeyInit,
 };
 
 use crate::{
@@ -34,9 +34,9 @@ const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 256 GCM.
 #[derive(Debug, PartialEq, Eq)]
-pub struct Aes256GcmCrypto;
+pub struct Aes256Gcm;
 
-impl Dem<KEY_LENGTH> for Aes256GcmCrypto {
+impl Dem<KEY_LENGTH> for Aes256Gcm {
     type SymmetricKey = SymmetricKey<KEY_LENGTH>;
     type Nonce = Nonce<NONCE_LENGTH>;
 
@@ -108,7 +108,7 @@ pub fn encrypt_combined(
 ) -> Result<Vec<u8>, CryptoCoreError> {
     let payload =
         additional_data.map_or_else(|| Payload::from(bytes), |aad| Payload { msg: bytes, aad });
-    Aes256Gcm::new(GenericArray::from_slice(key))
+    Aes256GcmLib::new(GenericArray::from_slice(key))
         .encrypt(GenericArray::from_slice(nonce), payload)
         .map_err(|_| CryptoCoreError::EncryptionError)
 }
@@ -124,7 +124,7 @@ pub fn encrypt_in_place_detached(
     nonce: &[u8],
     additional_data: Option<&[u8]>,
 ) -> Result<Vec<u8>, CryptoCoreError> {
-    Aes256Gcm::new(GenericArray::from_slice(key))
+    Aes256GcmLib::new(GenericArray::from_slice(key))
         .encrypt_in_place_detached(
             GenericArray::from_slice(nonce),
             additional_data.unwrap_or_default(),
@@ -147,7 +147,7 @@ pub fn decrypt_combined(
     additional_data: Option<&[u8]>,
 ) -> Result<Vec<u8>, CryptoCoreError> {
     let payload = additional_data.map_or_else(|| Payload::from(msg), |aad| Payload { msg, aad });
-    Aes256Gcm::new(GenericArray::from_slice(key))
+    Aes256GcmLib::new(GenericArray::from_slice(key))
         .decrypt(GenericArray::from_slice(nonce), payload)
         .map_err(|_| CryptoCoreError::DecryptionError)
 }
@@ -166,7 +166,7 @@ pub fn decrypt_in_place_detached(
     nonce: &[u8],
     additional_data: Option<&[u8]>,
 ) -> Result<(), CryptoCoreError> {
-    Aes256Gcm::new(GenericArray::from_slice(key))
+    Aes256GcmLib::new(GenericArray::from_slice(key))
         .decrypt_in_place_detached(
             GenericArray::from_slice(nonce),
             additional_data.unwrap_or_default(),
@@ -182,10 +182,9 @@ mod tests {
     use crate::{
         reexport::rand_core::{RngCore, SeedableRng},
         symmetric_crypto::{
-            aes_256_gcm_pure::{
+            aes_256_gcm::{
                 decrypt_combined, decrypt_in_place_detached, encrypt_combined,
-                encrypt_in_place_detached, Aes256GcmCrypto, Nonce, KEY_LENGTH, MAC_LENGTH,
-                NONCE_LENGTH,
+                encrypt_in_place_detached, Aes256Gcm, Nonce, KEY_LENGTH, MAC_LENGTH, NONCE_LENGTH,
             },
             key::SymmetricKey,
             nonce::NonceTrait,
@@ -261,8 +260,8 @@ mod tests {
         let additional_data = Some(b"public tag".as_slice());
         let mut rng = CsRng::from_entropy();
         let secret_key = SymmetricKey::new(&mut rng);
-        let c = Aes256GcmCrypto::encrypt(&mut rng, &secret_key, m, additional_data)?;
-        let res = Aes256GcmCrypto::decrypt(&secret_key, &c, additional_data)?;
+        let c = Aes256Gcm::encrypt(&mut rng, &secret_key, m, additional_data)?;
+        let res = Aes256Gcm::decrypt(&secret_key, &c, additional_data)?;
         assert_eq!(res, m, "Decryption failed");
         Ok(())
     }

@@ -4,17 +4,14 @@ use rand_chacha::rand_core::SeedableRng;
 
 use crate::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey, X25519PrivateKey, X25519PublicKey},
-    ecies::{
-        ecies_ristretto_25519::EciesR25519Aes256gcmSha256Xof,
-        ecies_salsa_sealed_box::EciesSalsaSealBox,
-    },
+    ecies::{ecies_ristretto_25519::EciesR25519Aes128, ecies_salsa_sealed_box::EciesSalsaSealBox},
     CsRng, Ecies, FixedSizeKey, SecretKey,
 };
 
 #[test]
 fn ecies_r25519_aes256gcm_sha256_xof_test() {
     let arc_rng = Arc::new(Mutex::new(CsRng::from_entropy()));
-    let ecies = EciesR25519Aes256gcmSha256Xof::new_from_rng(arc_rng.clone());
+    let ecies = EciesR25519Aes128::new_from_rng(arc_rng.clone());
     // generate a key pair
     let private_key = {
         let mut rng = arc_rng.lock().unwrap();
@@ -27,7 +24,7 @@ fn ecies_r25519_aes256gcm_sha256_xof_test() {
     // check the size is the expected size
     assert_eq!(
         ciphertext.len(),
-        plaintext.len() + EciesR25519Aes256gcmSha256Xof::ENCRYPTION_OVERHEAD
+        plaintext.len() + EciesR25519Aes128::ENCRYPTION_OVERHEAD
     );
     // decrypt
     let plaintext_ = ecies.decrypt(&private_key, &ciphertext, None).unwrap();

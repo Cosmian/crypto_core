@@ -1,14 +1,13 @@
 use std::sync::{Arc, Mutex};
 
 use rand_chacha::rand_core::SeedableRng;
-use tiny_keccak::Hasher;
 
 use crate::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
-    kdf,
+    kdf128,
     symmetric_crypto::{
-        aes_256_gcm_pure::{
-            decrypt_combined, encrypt_combined, Aes256GcmCrypto, KEY_LENGTH as SYMMETRIC_KEY_LENGTH,
+        aes_128_gcm::{
+            decrypt_combined, encrypt_combined, Aes128Gcm, KEY_LENGTH as SYMMETRIC_KEY_LENGTH,
         },
         nonce::NonceTrait,
         Dem,
@@ -18,13 +17,13 @@ use crate::{
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
 ///  - the Ristretto group of Curve 25516
-///  - AES 256 GCM
+///  - AES 128 GCM
 ///  - SHAKE256 (XOF)
-pub struct EciesR25519Aes256gcmSha256Xof {
+pub struct EciesR25519Aes128 {
     cs_rng: Arc<Mutex<CsRng>>,
 }
 
-impl EciesR25519Aes256gcmSha256Xof {
+impl EciesR25519Aes128 {
     /// Creates a new instance of `EciesR25519Aes256gcmSha256Xof`.
     #[must_use]
     pub fn new() -> Self {
@@ -39,34 +38,31 @@ impl EciesR25519Aes256gcmSha256Xof {
     }
 }
 
-impl Default for EciesR25519Aes256gcmSha256Xof {
+impl Default for EciesR25519Aes128 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-fn get_seal_nonce<const NONCE_LENGTH: usize>(
+#[inline]
+fn get_nonce<const NONCE_LENGTH: usize>(
     ephemeral_pk: &R25519PublicKey,
     recipient_pk: &R25519PublicKey,
 ) -> [u8; NONCE_LENGTH] {
-    let mut buffer = [0u8; NONCE_LENGTH];
-    let mut hasher = kdf::Shake::v256();
-    hasher.update(&ephemeral_pk.to_bytes());
-    hasher.update(&recipient_pk.to_bytes());
-    hasher.finalize(&mut buffer);
-    buffer
+    kdf128!(
+        NONCE_LENGTH,
+        &ephemeral_pk.to_bytes(),
+        &recipient_pk.to_bytes()
+    )
 }
 
+#[inline]
 fn get_ephemeral_key<const KEY_LENGTH: usize>(shared_point: &R25519PublicKey) -> [u8; KEY_LENGTH] {
-    let mut buffer = [0u8; KEY_LENGTH];
-    let mut hasher = kdf::Shake::v256();
-    hasher.update(&shared_point.to_bytes());
-    hasher.finalize(&mut buffer);
-    buffer
+    kdf128!(KEY_LENGTH, &shared_point.to_bytes())
 }
 
-impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes256gcmSha256Xof {
-    const ENCRYPTION_OVERHEAD: usize = R25519PublicKey::LENGTH + Aes256GcmCrypto::MAC_LENGTH;
+impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes128 {
+    const ENCRYPTION_OVERHEAD: usize = R25519PublicKey::LENGTH + Aes128Gcm::MAC_LENGTH;
 
     fn encrypt(
         &self,
@@ -84,7 +80,7 @@ impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes256gcmSha256Xof 
         // Calculate the shared secret point (Px, Py) = P = r.Y
         let shared_point = recipient_pk * &ephemeral_sk;
 
-        // Generate the 256-bit symmetric encryption key k, derived using SHAKE256 eXtendable-Output-Function (XOF)
+        // Generate the 128-bit symmetric encryption key k, derived using SHAKE256 eXtendable-Output-Function (XOF)
         // such as: k = kdf(S || S1) where:
         // - S = Px. Note: ECIES formally uses S = Px rather than the serialization of P
         // - S1: if the user provided shared_encapsulation_data S1, then we append it to
@@ -93,17 +89,17 @@ impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes256gcmSha256Xof 
         let key = get_ephemeral_key::<SYMMETRIC_KEY_LENGTH>(&shared_point);
 
         // Calculate the nonce based on the 2 public keys
-        let nonce = get_seal_nonce::<
-            { <Aes256GcmCrypto as Dem<SYMMETRIC_KEY_LENGTH>>::Nonce::LENGTH },
-        >(&ephemeral_pk, recipient_pk);
+        let nonce = get_nonce::<{ <Aes128Gcm as Dem<SYMMETRIC_KEY_LENGTH>>::Nonce::LENGTH }>(
+            &ephemeral_pk,
+            recipient_pk,
+        );
 
         // Encrypt and authenticate the message, returning the ciphertext and MAC
         let ciphertext_plus_tag = encrypt_combined(&key, plaintext, &nonce, authentication_data)?;
 
         // Assemble the final encrypted message: R || nonce || c || d
-        let mut res = Vec::with_capacity(
-            R25519PublicKey::LENGTH + plaintext.len() + Aes256GcmCrypto::MAC_LENGTH,
-        );
+        let mut res =
+            Vec::with_capacity(R25519PublicKey::LENGTH + plaintext.len() + Aes128Gcm::MAC_LENGTH);
         res.extend(ephemeral_pk.to_bytes());
         res.extend(&ciphertext_plus_tag);
 
@@ -122,7 +118,7 @@ impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes256gcmSha256Xof 
         // Calculate the shared secret point (Px, Py) = P = R.y = r.G.y = r.Y
         let shared_point = &ephemeral_pk * recipient_sk;
 
-        // Generate the 256-bit symmetric encryption key k, derived using SHAKE256 XOF
+        // Generate the 128-bit symmetric encryption key k, derived using SHAKE256 XOF
         // such as: k = kdf(S || S1) where:
         // - S = Px. Note: ECIES formally uses S = Px rather than the serialization of P
         // - S1: if the user provided shared_encapsulation_data S1, then we append it to
@@ -131,14 +127,15 @@ impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes256gcmSha256Xof 
         let key = get_ephemeral_key::<SYMMETRIC_KEY_LENGTH>(&shared_point);
 
         // Recompute the nonce
-        let nonce = get_seal_nonce::<
-            { <Aes256GcmCrypto as Dem<SYMMETRIC_KEY_LENGTH>>::Nonce::LENGTH },
-        >(&ephemeral_pk, &R25519PublicKey::from(recipient_sk));
+        let nonce = get_nonce::<{ <Aes128Gcm as Dem<SYMMETRIC_KEY_LENGTH>>::Nonce::LENGTH }>(
+            &ephemeral_pk,
+            &R25519PublicKey::from(recipient_sk),
+        );
 
         // Separate the encrypted message and MAC from the ciphertext
         let ciphertext_plus_tag = &ciphertext[R25519PublicKey::LENGTH..];
 
-        // Decrypt and verify the message using AES-256-GCM
+        // Decrypt and verify the message using AES-128-GCM
         let decrypted_message =
             decrypt_combined(&key, ciphertext_plus_tag, &nonce, authentication_data)?;
 
@@ -151,7 +148,7 @@ mod tests {
     use super::CryptoCoreError;
     use crate::{
         asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
-        ecies::ecies_ristretto_25519::EciesR25519Aes256gcmSha256Xof,
+        ecies::ecies_ristretto_25519::EciesR25519Aes128,
         reexport::rand_core::SeedableRng,
         CsRng, Ecies, SecretKey,
     };
@@ -163,7 +160,7 @@ mod tests {
         let public_key = R25519PublicKey::from(&private_key);
         let plaintext = b"Hello, World!";
 
-        let ecies = EciesR25519Aes256gcmSha256Xof::new();
+        let ecies = EciesR25519Aes128::new();
 
         // Encrypt the message
         let ciphertext = ecies.encrypt(&public_key, plaintext, None)?;
@@ -185,7 +182,7 @@ mod tests {
         let plaintext = b"Hello, World!";
         let authenticated_data = b"Optional authenticated data";
 
-        let ecies = EciesR25519Aes256gcmSha256Xof::new();
+        let ecies = EciesR25519Aes128::new();
 
         // Encrypt the message
         let ciphertext = ecies.encrypt(&public_key, plaintext, Some(authenticated_data))?;
@@ -207,7 +204,7 @@ mod tests {
         let plaintext = b"Hello, World!";
         let authenticated_data = b"Optional authenticated data";
 
-        let ecies = EciesR25519Aes256gcmSha256Xof::new();
+        let ecies = EciesR25519Aes128::new();
 
         // Encrypt the message
         let ciphertext = ecies.encrypt(&public_key, plaintext, Some(authenticated_data))?;
