@@ -1,11 +1,10 @@
-use crate::symmetric_crypto::DemExtra;
 use crate::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
     kdf128,
     symmetric_crypto::{
         aes_128_gcm::{Aes128Gcm, KEY_LENGTH as SYMMETRIC_KEY_LENGTH},
         nonce::NonceTrait,
-        Dem,
+        AeadExtra, Dem,
     },
     CryptoCoreError, CsRng, Ecies, FixedSizeKey, SecretKey,
 };

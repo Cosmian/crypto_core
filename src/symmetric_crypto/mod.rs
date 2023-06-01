@@ -8,4 +8,4 @@ mod dem;
 pub mod key;
 pub mod nonce;
 
-pub use dem::{Dem, DemExtra};
+pub use dem::{AeadExtra, Dem};

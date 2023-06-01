@@ -2,7 +2,7 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
-use super::dem::DemExtra;
+use super::dem::AeadExtra;
 use crate::{
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{
@@ -91,7 +91,9 @@ impl Dem<KEY_LENGTH> for Aes256Gcm {
     }
 }
 
-impl DemExtra<Aes256GcmLib> for Aes256Gcm {}
+impl AeadExtra for Aes256Gcm {
+    type Algo = Aes256GcmLib;
+}
 
 #[cfg(test)]
 mod tests {

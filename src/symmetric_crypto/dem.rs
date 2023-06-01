@@ -52,10 +52,9 @@ pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
     ) -> Result<Vec<u8>, CryptoCoreError>;
 }
 
-pub trait DemExtra<ALGO>
-where
-    ALGO: AeadInPlace + Aead + KeyInit,
-{
+pub trait AeadExtra {
+    type Algo: AeadInPlace + Aead + KeyInit;
+
     /// Encrypts a message using a secret key and a public nonce in combined mode:
     /// the encrypted message, as well as a tag authenticating both the confidential
     /// message and non-confidential data, are put into the encrypted result.
@@ -67,7 +66,7 @@ where
         nonce: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        ALGO::new(GenericArray::from_slice(key))
+        Self::Algo::new(GenericArray::from_slice(key))
             .encrypt(
                 GenericArray::from_slice(nonce),
                 Payload {
@@ -90,7 +89,7 @@ where
         nonce: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        ALGO::new(GenericArray::from_slice(key))
+        Self::Algo::new(GenericArray::from_slice(key))
             .decrypt(
                 GenericArray::from_slice(nonce),
                 Payload {
@@ -114,7 +113,7 @@ where
     ) -> Result<Vec<u8>, CryptoCoreError> {
         let key = GenericArray::from_slice(key);
         let nonce = GenericArray::from_slice(nonce);
-        ALGO::new(key)
+        Self::Algo::new(key)
             .encrypt_in_place_detached(nonce, aad.unwrap_or_default(), bytes)
             .map_err(|_| CryptoCoreError::DecryptionError)
             .map(|tag| tag.to_vec())
@@ -134,7 +133,7 @@ where
         nonce: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<(), CryptoCoreError> {
-        ALGO::new(GenericArray::from_slice(key))
+        Self::Algo::new(GenericArray::from_slice(key))
             .decrypt_in_place_detached(
                 GenericArray::from_slice(nonce),
                 aad.unwrap_or_default(),
@@ -151,8 +150,9 @@ mod tests {
     use crate::{
         reexport::rand_core::{RngCore, SeedableRng},
         symmetric_crypto::{
+            aes_128_gcm::Aes128Gcm,
             aes_256_gcm::{Aes256Gcm, KEY_LENGTH, MAC_LENGTH, NONCE_LENGTH},
-            dem::DemExtra,
+            dem::AeadExtra,
             key::SymmetricKey,
             nonce::{Nonce, NonceTrait},
         },
@@ -160,7 +160,17 @@ mod tests {
     };
 
     #[test]
-    fn test_encryption_decryption_combined() -> Result<(), CryptoCoreError> {
+    fn test_encryption_decryption_combined_aes_256_gcm() -> Result<(), CryptoCoreError> {
+        test_encryption_decryption_combined::<Aes256Gcm>()
+    }
+    #[test]
+    fn test_encryption_decryption_combined_aes_128_gcm() -> Result<(), CryptoCoreError> {
+        test_encryption_decryption_combined::<Aes128Gcm>()
+    }
+    fn test_encryption_decryption_combined<T>() -> Result<(), CryptoCoreError>
+    where
+        T: AeadExtra,
+    {
         let mut cs_rng = CsRng::from_entropy();
         let key = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
         let mut bytes = [0; 8192];
@@ -197,7 +207,18 @@ mod tests {
     }
 
     #[test]
-    fn test_encryption_decryption_detached() -> Result<(), CryptoCoreError> {
+    fn test_encryption_decryption_detached_aes_128_gcm() -> Result<(), CryptoCoreError> {
+        test_encryption_decryption_detached::<Aes128Gcm>()
+    }
+    #[test]
+    fn test_encryption_decryption_detached_aes_256_gcm() -> Result<(), CryptoCoreError> {
+        test_encryption_decryption_detached::<Aes256Gcm>()
+    }
+
+    fn test_encryption_decryption_detached<T>() -> Result<(), CryptoCoreError>
+    where
+        T: AeadExtra,
+    {
         let mut cs_rng = CsRng::from_entropy();
         let key = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
         let mut bytes = [0; 1024];
