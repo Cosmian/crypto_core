@@ -1,10 +1,12 @@
 {
   "cSpell.words": [
+    "chacha",
     "ciphertext",
     "ecies",
     "Ecies",
     "keypair",
     "libsodium",
+    "Seedable",
     "zeroize"
   ]
 }

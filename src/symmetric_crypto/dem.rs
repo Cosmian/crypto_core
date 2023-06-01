@@ -152,6 +152,7 @@ mod tests {
         symmetric_crypto::{
             aes_128_gcm::Aes128Gcm,
             aes_256_gcm::{Aes256Gcm, KEY_LENGTH, MAC_LENGTH, NONCE_LENGTH},
+            chacha20_poly1305::ChaCha20Poly1305,
             dem::AeadExtra,
             key::SymmetricKey,
             nonce::{Nonce, NonceTrait},
@@ -167,6 +168,11 @@ mod tests {
     fn test_encryption_decryption_combined_aes_128_gcm() -> Result<(), CryptoCoreError> {
         test_encryption_decryption_combined::<Aes128Gcm>()
     }
+    #[test]
+    fn test_encryption_decryption_combined_chacha20_poly1305() -> Result<(), CryptoCoreError> {
+        test_encryption_decryption_combined::<ChaCha20Poly1305>()
+    }
+
     fn test_encryption_decryption_combined<T>() -> Result<(), CryptoCoreError>
     where
         T: AeadExtra,
@@ -213,6 +219,10 @@ mod tests {
     #[test]
     fn test_encryption_decryption_detached_aes_256_gcm() -> Result<(), CryptoCoreError> {
         test_encryption_decryption_detached::<Aes256Gcm>()
+    }
+    #[test]
+    fn test_encryption_decryption_detached_chacha20_poly1306() -> Result<(), CryptoCoreError> {
+        test_encryption_decryption_detached::<ChaCha20Poly1305>()
     }
 
     fn test_encryption_decryption_detached<T>() -> Result<(), CryptoCoreError>

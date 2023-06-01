@@ -3,10 +3,7 @@
 
 use crate::symmetric_crypto::nonce::NonceTrait;
 use crate::{CryptoCoreError, SecretKey};
-use chacha20poly1305::aead::generic_array::GenericArray;
-use chacha20poly1305::aead::{Aead, AeadInPlace, KeyInit, Payload};
 use chacha20poly1305::ChaCha20Poly1305 as ChaCha20Poly1305Lib;
-use chacha20poly1305::XChaCha20Poly1305;
 
 /// Use a 256-bit AES key.
 pub const KEY_LENGTH: usize = 32;
@@ -18,9 +15,14 @@ pub const NONCE_LENGTH: usize = 12;
 pub const MAC_LENGTH: usize = 16;
 
 #[derive(Debug, PartialEq, Eq)]
-struct ChaCha20Poly1305;
+pub struct ChaCha20Poly1305;
 
+use super::AeadExtra;
 use super::{key::SymmetricKey, nonce::Nonce, Dem};
+
+impl AeadExtra for ChaCha20Poly1305 {
+    type Algo = ChaCha20Poly1305Lib;
+}
 
 impl Dem<32> for ChaCha20Poly1305 {
     type SymmetricKey = SymmetricKey<KEY_LENGTH>;
@@ -35,7 +37,17 @@ impl Dem<32> for ChaCha20Poly1305 {
         plaintext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
-        Ok(())
+        let nonce = Self::Nonce::new(rng);
+        // allocate correct byte number
+        let mut res: Vec<u8> = Vec::with_capacity(plaintext.len() + Self::ENCRYPTION_OVERHEAD);
+        res.extend_from_slice(nonce.as_bytes());
+        res.append(&mut ChaCha20Poly1305::encrypt_combined(
+            secret_key.as_bytes(),
+            plaintext,
+            nonce.as_bytes(),
+            aad,
+        )?);
+        Ok(res)
     }
 
     fn decrypt(
@@ -43,89 +55,19 @@ impl Dem<32> for ChaCha20Poly1305 {
         ciphertext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, crate::CryptoCoreError> {
-        todo!()
+        if ciphertext.len() < Self::ENCRYPTION_OVERHEAD {
+            return Err(CryptoCoreError::CiphertextTooSmallError {
+                ciphertext_len: ciphertext.len(),
+                min: Self::ENCRYPTION_OVERHEAD as u64,
+            });
+        }
+
+        // The ciphertext is of the form: nonce || AEAD ciphertext
+        ChaCha20Poly1305::decrypt_combined(
+            secret_key.as_bytes(),
+            &ciphertext[Self::Nonce::LENGTH..],
+            &ciphertext[..Self::Nonce::LENGTH],
+            aad,
+        )
     }
-}
-
-// see https://github.com/RustCrypto/AEADs/blob/master/chacha20poly1305/tests/lib.rs
-
-/// Encrypts a message using a secret key and a public nonce in combined mode:
-/// the encrypted message, as well as a tag authenticating both the confidential
-/// message and non-confidential data, are put into the encrypted result.
-///
-/// The total length of the encrypted data is the message length + `MAC_LENGTH`
-pub fn encrypt_combined(
-    key: &[u8],
-    bytes: &[u8],
-    nonce: &[u8],
-    additional_data: Option<&[u8]>,
-) -> Result<Vec<u8>, CryptoCoreError> {
-    let payload =
-        additional_data.map_or_else(|| Payload::from(bytes), |aad| Payload { msg: bytes, aad });
-    ChaCha20Poly1305Lib::new(GenericArray::from_slice(key))
-        .encrypt(GenericArray::from_slice(nonce), payload)
-        .map_err(|_| CryptoCoreError::EncryptionError)
-}
-
-/// Encrypts a message in place using a secret key and a public nonce in
-/// detached mode: the tag authenticating both the confidential
-/// message and non-confidential data, are returned separately
-///
-/// The tag length is `MAC_LENGTH`
-pub fn encrypt_in_place_detached(
-    key: &[u8],
-    bytes: &mut [u8],
-    nonce: &[u8],
-    additional_data: Option<&[u8]>,
-) -> Result<Vec<u8>, CryptoCoreError> {
-    ChaCha20Poly1305Lib::new(GenericArray::from_slice(key))
-        .encrypt_in_place_detached(
-            GenericArray::from_slice(nonce),
-            additional_data.unwrap_or_default(),
-            bytes,
-        )
-        .map_err(|_| CryptoCoreError::DecryptionError)
-        .map(|t| t.to_vec())
-}
-
-/// Decrypts a message in combined mode: the MAC is appended to the cipher text
-///
-/// The provided additional data must match those provided during encryption for
-/// the MAC to verify.
-///
-/// Decryption will never be performed, even partially, before verification.
-pub fn decrypt_combined(
-    key: &[u8],
-    msg: &[u8],
-    nonce: &[u8],
-    additional_data: Option<&[u8]>,
-) -> Result<Vec<u8>, CryptoCoreError> {
-    let payload = additional_data.map_or_else(|| Payload::from(msg), |aad| Payload { msg, aad });
-    ChaCha20Poly1305Lib::new(GenericArray::from_slice(key))
-        .decrypt(GenericArray::from_slice(nonce), payload)
-        .map_err(|_| CryptoCoreError::DecryptionError)
-}
-
-/// Decrypts a message in pace in detached mode.
-/// The bytes should not contain the authentication tag.
-///
-/// The provided additional data must match those provided during encryption for
-/// the MAC to verify.
-///
-/// Decryption will never be performed, even partially, before verification.
-pub fn decrypt_in_place_detached(
-    key: &[u8],
-    bytes: &mut [u8],
-    tag: &[u8],
-    nonce: &[u8],
-    additional_data: Option<&[u8]>,
-) -> Result<(), CryptoCoreError> {
-    ChaCha20Poly1305Lib::new(GenericArray::from_slice(key))
-        .decrypt_in_place_detached(
-            GenericArray::from_slice(nonce),
-            additional_data.unwrap_or_default(),
-            bytes,
-            GenericArray::from_slice(tag),
-        )
-        .map_err(|_| CryptoCoreError::DecryptionError)
 }

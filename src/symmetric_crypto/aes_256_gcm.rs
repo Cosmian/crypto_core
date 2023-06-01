@@ -43,7 +43,7 @@ impl Dem<KEY_LENGTH> for Aes256Gcm {
         rng: &mut R,
         secret_key: &Self::SymmetricKey,
         plaintext: &[u8],
-        additional_data: Option<&[u8]>,
+        aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
         if plaintext.len() as u64 > MAX_PLAINTEXT_LENGTH {
             return Err(CryptoCoreError::PlaintextTooBigError {
@@ -59,7 +59,7 @@ impl Dem<KEY_LENGTH> for Aes256Gcm {
             secret_key.as_bytes(),
             plaintext,
             nonce.as_bytes(),
-            additional_data,
+            aad,
         )?);
         Ok(res)
     }
@@ -67,7 +67,7 @@ impl Dem<KEY_LENGTH> for Aes256Gcm {
     fn decrypt(
         secret_key: &Self::SymmetricKey,
         ciphertext: &[u8],
-        additional_data: Option<&[u8]>,
+        aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
         if ciphertext.len() < Self::ENCRYPTION_OVERHEAD {
             return Err(CryptoCoreError::CiphertextTooSmallError {
@@ -86,7 +86,7 @@ impl Dem<KEY_LENGTH> for Aes256Gcm {
             secret_key.as_bytes(),
             &ciphertext[Self::Nonce::LENGTH..],
             &ciphertext[..Self::Nonce::LENGTH],
-            additional_data,
+            aad,
         )
     }
 }
@@ -100,8 +100,12 @@ mod tests {
 
     use crate::{
         reexport::rand_core::SeedableRng,
-        symmetric_crypto::{aes_256_gcm::Aes256Gcm, key::SymmetricKey, Dem},
-        CryptoCoreError, CsRng, SecretKey,
+        symmetric_crypto::{
+            aes_256_gcm::{self, Aes256Gcm},
+            key::SymmetricKey,
+            Dem,
+        },
+        CryptoCoreError, CsRng, FixedSizeKey, SecretKey,
     };
 
     #[test]
@@ -114,5 +118,68 @@ mod tests {
         let res = Aes256Gcm::decrypt(&secret_key, &c, additional_data)?;
         assert_eq!(res, m, "Decryption failed");
         Ok(())
+    }
+
+    #[test]
+    fn libsodium_compat() {
+        // let mut rng = CsRng::from_entropy();
+
+        let message = b"Hello, World!";
+
+        // the shared secret key
+        let mut secret_key_bytes = [0u8; libsodium_sys::crypto_box_PUBLICKEYBYTES as usize];
+
+        // the public nonce
+        let mut nonce_bytes = [0u8; libsodium_sys::crypto_aead_aes256gcm_NPUBBYTES as usize];
+
+        //  the cipher text buffer (does not contain the nonce)
+        let mut ciphertext: Vec<u8> =
+            vec![0; message.len() + libsodium_sys::crypto_aead_aes256gcm_ABYTES as usize];
+
+        // encrypt using libsodium
+        let secret_key_ptr = unsafe {
+            // initialize the secret key
+            let secret_key_ptr: *mut libc::c_uchar =
+                secret_key_bytes.as_mut_ptr() as *mut libc::c_uchar;
+            libsodium_sys::crypto_aead_aes256gcm_keygen(secret_key_ptr);
+            secret_key_ptr
+        };
+
+        let mut ciphertext_len: u64 = 0;
+        unsafe {
+            // generate the nonce
+            let nonce_ptr: *mut libc::c_uchar = nonce_bytes.as_mut_ptr() as *mut libc::c_uchar;
+            libsodium_sys::randombytes_buf(nonce_ptr as *mut libc::c_void, nonce_bytes.len());
+
+            // encrypt using libsodium
+            let message_ptr: *const libc::c_uchar = message.as_ptr() as *const libc::c_uchar;
+            let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr() as *mut libc::c_uchar;
+            let ciphertext_len_ptr: *mut libc::c_ulonglong = &mut ciphertext_len;
+            libsodium_sys::crypto_aead_aes256gcm_encrypt(
+                ciphertext_ptr,
+                ciphertext_len_ptr,
+                message_ptr,
+                message.len() as libc::c_ulonglong,
+                std::ptr::null(),
+                0,
+                std::ptr::null(),
+                nonce_ptr,
+                secret_key_ptr,
+            );
+        }
+
+        assert_eq!(
+            ciphertext_len as usize + aes_256_gcm::NONCE_LENGTH,
+            message.len() + Aes256Gcm::ENCRYPTION_OVERHEAD,
+        );
+
+        // prepend the Nonce
+        let mut full_ct = nonce_bytes.to_vec();
+        full_ct.extend_from_slice(&ciphertext);
+        // decrypt using salsa_sealbox
+        let secret_key =
+            SymmetricKey::<{ Aes256Gcm::KEY_LENGTH }>::try_from_bytes(secret_key_bytes).unwrap();
+        let plaintext_ = Aes256Gcm::decrypt(&secret_key, &full_ct, None).unwrap();
+        assert!(plaintext_ == message);
     }
 }
