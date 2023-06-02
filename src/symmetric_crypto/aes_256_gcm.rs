@@ -122,8 +122,6 @@ mod tests {
 
     #[test]
     fn libsodium_compat() {
-        // let mut rng = CsRng::from_entropy();
-
         let message = b"Hello, World!";
 
         // the shared secret key
@@ -145,13 +143,14 @@ mod tests {
             secret_key_ptr
         };
 
+        // encrypt using libsodium
         let mut ciphertext_len: u64 = 0;
         unsafe {
             // generate the nonce
             let nonce_ptr: *mut libc::c_uchar = nonce_bytes.as_mut_ptr() as *mut libc::c_uchar;
             libsodium_sys::randombytes_buf(nonce_ptr as *mut libc::c_void, nonce_bytes.len());
 
-            // encrypt using libsodium
+            // now the actual encryption
             let message_ptr: *const libc::c_uchar = message.as_ptr() as *const libc::c_uchar;
             let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr() as *mut libc::c_uchar;
             let ciphertext_len_ptr: *mut libc::c_ulonglong = &mut ciphertext_len;
@@ -168,6 +167,8 @@ mod tests {
             );
         }
 
+        // check that the ciphertext has the correct length,
+        // the libsodium ciphertext does have a nonce prepended
         assert_eq!(
             ciphertext_len as usize + aes_256_gcm::NONCE_LENGTH,
             message.len() + Aes256Gcm::ENCRYPTION_OVERHEAD,
@@ -181,5 +182,52 @@ mod tests {
             SymmetricKey::<{ Aes256Gcm::KEY_LENGTH }>::try_from_bytes(secret_key_bytes).unwrap();
         let plaintext_ = Aes256Gcm::decrypt(&secret_key, &full_ct, None).unwrap();
         assert!(plaintext_ == message);
+
+        // the other way round
+
+        // encrypt using Aes256Gcm
+        let mut rng = CsRng::from_entropy();
+        let ciphertext = Aes256Gcm::encrypt(&mut rng, &secret_key, message, None).unwrap();
+
+        // decrypt using libsodium
+        //  the plain text buffer (does not contain the nonce)
+        let mut plaintext: Vec<u8> = vec![
+            0;
+            ciphertext.len()
+                - libsodium_sys::crypto_aead_aes256gcm_ABYTES as usize
+                - libsodium_sys::crypto_aead_aes256gcm_NPUBBYTES
+                    as usize
+        ];
+        let mut plaintext_len: u64 = 0;
+        unsafe {
+            // recover the nonce
+            let nonce = &ciphertext[..libsodium_sys::crypto_aead_aes256gcm_NPUBBYTES as usize];
+            let nonce_ptr: *const libc::c_uchar = nonce.as_ptr() as *const libc::c_uchar;
+
+            // recover the rest of the ciphertext
+            let ciphertext = &ciphertext[libsodium_sys::crypto_aead_aes256gcm_NPUBBYTES as usize..];
+            let ciphertext_ptr: *const libc::c_uchar = ciphertext.as_ptr() as *const libc::c_uchar;
+
+            // now the actual decryption
+            let plaintext_ptr: *mut libc::c_uchar = plaintext.as_mut_ptr() as *mut libc::c_uchar;
+            let plaintext_len_ptr: *mut libc::c_ulonglong = &mut plaintext_len;
+            libsodium_sys::crypto_aead_aes256gcm_decrypt(
+                plaintext_ptr,
+                plaintext_len_ptr,
+                std::ptr::null_mut(),
+                ciphertext_ptr,
+                ciphertext.len() as libc::c_ulonglong,
+                std::ptr::null(),
+                0,
+                nonce_ptr,
+                secret_key_ptr,
+            );
+        }
+
+        // check that the plaintext has the correct length,
+        assert_eq!(plaintext_len as usize, message.len(),);
+
+        // check the plaintext is correct
+        assert_eq!(plaintext, message);
     }
 }
