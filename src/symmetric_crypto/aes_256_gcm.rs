@@ -100,11 +100,7 @@ mod tests {
 
     use crate::{
         reexport::rand_core::SeedableRng,
-        symmetric_crypto::{
-            aes_256_gcm::{self, Aes256Gcm},
-            key::SymmetricKey,
-            Dem,
-        },
+        symmetric_crypto::{aes_256_gcm::Aes256Gcm, key::SymmetricKey, Dem},
         CryptoCoreError, CsRng, FixedSizeKey, SecretKey,
     };
 
@@ -170,7 +166,7 @@ mod tests {
         // check that the ciphertext has the correct length,
         // the libsodium ciphertext does have a nonce prepended
         assert_eq!(
-            ciphertext_len as usize + aes_256_gcm::NONCE_LENGTH,
+            ciphertext_len as usize + libsodium_sys::crypto_aead_aes256gcm_NPUBBYTES as usize,
             message.len() + Aes256Gcm::ENCRYPTION_OVERHEAD,
         );
 
