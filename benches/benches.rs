@@ -9,6 +9,7 @@ use dem::{bench_symmetric_decryption, bench_symmetric_encryption};
 
 mod dem;
 mod ecies;
+mod signature;
 
 /// Bench the Group-Scalar multiplication on which is based the
 /// Diffie-Hellman key exchange. This gives an indication on how fast
@@ -20,7 +21,7 @@ fn bench_dh_r25519(c: &mut Criterion) {
     };
     let public_key = R25519PublicKey::from(&private_key);
     c.bench_function(
-        "Bench R25519 Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
+        "R25519 Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
         |b| b.iter(|| &public_key * &private_key),
     );
 }
@@ -30,7 +31,7 @@ fn bench_dh_r25519(c: &mut Criterion) {
 /// *WARNING*: the generation of a RNG is slower on an idle computer since the
 /// OS needs to gather enough entropy.
 fn bench_rng_generation(c: &mut Criterion) {
-    c.bench_function("Bench the generation of a cryptographic RNG", |b| {
+    c.bench_function("generation of a cryptographic RNG", |b| {
         b.iter(CsRng::from_entropy)
     });
 }
@@ -42,11 +43,11 @@ fn bench_kdf(c: &mut Criterion) {
     let mut ikm_64 = [0; 64];
     rng.fill_bytes(&mut ikm_64);
     c.bench_function(
-        "Bench the KDF 128bit derivation of a 32-byte IKM into a 16-bytes key",
+        "KDF 128bit derivation of a 32-byte IKM into a 16-bytes key",
         |b| b.iter(|| kdf128!(16, &ikm_32, b"KDF derivation")),
     );
     c.bench_function(
-        "Bench the KDF 256bit derivation of a 64-byte IKM into a 32-bytes key",
+        "KDF 256bit derivation of a 64-byte IKM into a 32-bytes key",
         |b| b.iter(|| kdf256!(32, &ikm_64, b"KDF derivation")),
     );
 }
@@ -81,4 +82,10 @@ criterion_group!(
     targets =  ecies::ecies_r25519_aes128gcm_bench, ecies::ecies_salsa_seal_box
 );
 
-criterion_main!(asymmetric_crypto, dem, cs_rng, kdf, ecies);
+criterion_group!(
+    name = signature;
+    config = Criterion::default().sample_size(5000);
+    targets =  signature::bench_ed25519_signature
+);
+
+criterion_main!(asymmetric_crypto, dem, cs_rng, kdf, ecies, signature);

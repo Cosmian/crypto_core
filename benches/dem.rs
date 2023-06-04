@@ -16,12 +16,12 @@ pub fn bench_symmetric_encryption(c: &mut Criterion) {
     rng.fill_bytes(&mut msg);
 
     c.bench_function(
-        "Bench the AES 128 GCM DEM encryption of a 2048-bytes message without additional data",
+        "AES 128 GCM DEM encryption of a 2048-bytes message without additional data",
         |b| b.iter(|| Aes128Gcm::encrypt(&mut rng, &key16, &msg, None).unwrap()),
     );
 
     c.bench_function(
-        "Bench the AES 256 GCM DEM encryption of a 2048-bytes message without additional data",
+        "AES 256 GCM DEM encryption of a 2048-bytes message without additional data",
         |b| b.iter(|| Aes256Gcm::encrypt(&mut rng, &key32, &msg, None).unwrap()),
     );
 }
@@ -35,13 +35,13 @@ pub fn bench_symmetric_decryption(c: &mut Criterion) {
 
     let enc_aes_128_gcm = Aes256Gcm::encrypt(&mut rng, &key16, &msg, None).unwrap();
     c.bench_function(
-        "Bench the AES 128 GCM DEM decryption of a 2048-bytes message without additional data",
+        "AES 128 GCM DEM decryption of a 2048-bytes message without additional data",
         |b| b.iter(|| Aes256Gcm::decrypt(&key16, &enc_aes_128_gcm, None).unwrap()),
     );
 
     let enc_aes_256_gcm = Aes256Gcm::encrypt(&mut rng, &key32, &msg, None).unwrap();
     c.bench_function(
-        "Bench the AES 256 GCM DEM decryption of a 2048-bytes message without additional data",
+        "AES 256 GCM DEM decryption of a 2048-bytes message without additional data",
         |b| b.iter(|| Aes256Gcm::decrypt(&key32, &enc_aes_256_gcm, None).unwrap()),
     );
 }
