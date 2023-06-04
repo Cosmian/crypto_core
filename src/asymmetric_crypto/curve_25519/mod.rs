@@ -1,6 +1,7 @@
+mod ed_25519;
 mod private_key;
 mod ristretto_25519;
-mod salsa_sealbox;
+mod x25519;
 
 pub use ristretto_25519::*;
-pub use salsa_sealbox::*;
+pub use x25519::*;

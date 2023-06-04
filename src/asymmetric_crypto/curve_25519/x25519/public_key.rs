@@ -16,8 +16,8 @@ impl FixedSizeKey<{ crypto_box::KEY_SIZE }> for X25519PublicKey {
         self.0.to_bytes()
     }
 
-    fn try_from_bytes(slice: [u8; crypto_box::KEY_SIZE]) -> Result<Self, crate::CryptoCoreError> {
-        Ok(Self(MontgomeryPoint(slice)))
+    fn try_from_bytes(bytes: [u8; crypto_box::KEY_SIZE]) -> Result<Self, crate::CryptoCoreError> {
+        Ok(Self(MontgomeryPoint(bytes)))
     }
 }
 
@@ -34,3 +34,10 @@ impl Zeroize for X25519PublicKey {
 }
 
 impl ZeroizeOnDrop for X25519PublicKey {}
+
+// Implements `Drop` trait to follow R23.
+impl Drop for X25519PublicKey {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}

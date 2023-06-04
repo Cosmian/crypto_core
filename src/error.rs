@@ -3,25 +3,6 @@ use core::fmt::Display;
 /// Error type for this crate.
 #[derive(Debug)]
 pub enum CryptoCoreError {
-    DeserializationEmptyError,
-    DeserializationSizeError {
-        given: usize,
-        expected: usize,
-    },
-    ReadLeb128Error(leb128::read::Error),
-    GenericDeserializationError(String),
-    WriteLeb128Error {
-        value: u64,
-        error: std::io::Error,
-    },
-    SerializationIoError {
-        bytes_len: usize,
-        error: std::io::Error,
-    },
-    PlaintextTooBigError {
-        plaintext_len: usize,
-        max: u64,
-    },
     CiphertextTooSmallError {
         ciphertext_len: usize,
         min: u64,
@@ -31,33 +12,57 @@ pub enum CryptoCoreError {
         max: u64,
     },
     ConversionError(String),
-    EncryptionError,
     DecryptionError,
+    DeserializationEmptyError,
+    DeserializationSizeError {
+        given: usize,
+        expected: usize,
+    },
+    EncryptionError,
+    GenericDeserializationError(String),
     InvalidKeyLength,
+    PlaintextTooBigError {
+        plaintext_len: usize,
+        max: u64,
+    },
+    ReadLeb128Error(leb128::read::Error),
+    SerializationIoError {
+        bytes_len: usize,
+        error: std::io::Error,
+    },
+    SignatureError(String),
+    WriteLeb128Error {
+        value: u64,
+        error: std::io::Error,
+    },
 }
 
 impl Display for CryptoCoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::DeserializationEmptyError => write!(f, "empty input when parsing bytes"),
-            Self::DeserializationSizeError { given, expected } => write!(
+            CryptoCoreError::DeserializationEmptyError => {
+                write!(f, "empty input when parsing bytes")
+            }
+            CryptoCoreError::DeserializationSizeError { given, expected } => write!(
                 f,
                 "wrong size when parsing bytes: {given} given should be {expected}"
             ),
-            Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
-            Self::GenericDeserializationError(err) => write!(f, "deserialization error: {err}"),
-            Self::WriteLeb128Error { value, error } => {
+            CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
+            CryptoCoreError::GenericDeserializationError(err) => {
+                write!(f, "deserialization error: {err}")
+            }
+            CryptoCoreError::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
-            Self::SerializationIoError { bytes_len, error } => {
+            CryptoCoreError::SerializationIoError { bytes_len, error } => {
                 write!(f, "when writing {bytes_len} bytes, {error}")
             }
-            Self::PlaintextTooBigError { plaintext_len, max } => write!(
+            CryptoCoreError::PlaintextTooBigError { plaintext_len, max } => write!(
                 f,
                 "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
                  bytes"
             ),
-            Self::CiphertextTooSmallError {
+            CryptoCoreError::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
             } => write!(
@@ -65,7 +70,7 @@ impl Display for CryptoCoreError {
                 "when decrypting, ciphertext of {ciphertext_len} bytes is too small, min is {min} \
                  bytes"
             ),
-            Self::CiphertextTooBigError {
+            CryptoCoreError::CiphertextTooBigError {
                 ciphertext_len,
                 max,
             } => write!(
@@ -73,10 +78,11 @@ impl Display for CryptoCoreError {
                 "when decrypting, ciphertext of {ciphertext_len} bytes is too big, max is {max} \
                  bytes"
             ),
-            Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
-            Self::EncryptionError => write!(f, "error during encryption"),
-            Self::DecryptionError => write!(f, "error during decryption"),
-            Self::InvalidKeyLength => write!(f, "invalid key length"),
+            CryptoCoreError::ConversionError(err) => write!(f, "failed to convert: {err}"),
+            CryptoCoreError::EncryptionError => write!(f, "error during encryption"),
+            CryptoCoreError::DecryptionError => write!(f, "error during decryption"),
+            CryptoCoreError::InvalidKeyLength => write!(f, "invalid key length"),
+            CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
         }
     }
 }

@@ -10,6 +10,8 @@ pub mod reexport {
     // reexport `rand_core` so that the PRNGs implement the correct version of
     // the traits
     pub use rand_chacha::rand_core;
+    // reexport the signature Traits
+    pub use signature;
 }
 pub mod symmetric_crypto;
 
@@ -25,7 +27,7 @@ pub type CsRng = rand_chacha::ChaCha12Rng;
 /// A cryptographic key.
 ///
 /// The key should be thread-safe, clonable, comparable, and zeroizeable.
-pub trait Key: Clone + Eq + PartialEq + Send + Sync + Zeroize + ZeroizeOnDrop {}
+pub trait Key: Clone + Eq + PartialEq + Send + Sync {}
 
 /// A Fixed Size Key
 ///
@@ -51,7 +53,7 @@ pub trait FixedSizeKey<const LENGTH: usize>: Key + Sized {
 }
 
 /// A secret key such as a symmetric key or an elliptic curve private key.
-pub trait SecretKey<const LENGTH: usize>: FixedSizeKey<LENGTH> {
+pub trait SecretKey<const LENGTH: usize>: FixedSizeKey<LENGTH> + Zeroize + ZeroizeOnDrop {
     /// Generates a new random key.
     #[must_use]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
