@@ -1,6 +1,6 @@
 /// Size of the message used in the benchmarks
 use cosmian_crypto_core::{
-    asymmetric_crypto::{Cached25519Signer, Ed25519PrivateKey, Ed25519PublicKey},
+    asymmetric_crypto::{Cached25519Signer, Ed25519Keypair, Ed25519PrivateKey, Ed25519PublicKey},
     reexport::rand_core::{RngCore, SeedableRng},
     CsRng, SecretKey,
 };
@@ -11,10 +11,11 @@ const MSG_LENGTH: usize = 2048;
 
 pub fn bench_ed25519_signature(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
-    let private_key = Ed25519PrivateKey::new(&mut rng);
 
     let mut msg = [0; MSG_LENGTH];
     rng.fill_bytes(&mut msg);
+
+    let private_key = Ed25519PrivateKey::new(&mut rng);
 
     c.bench_function("Ed25519 (direct) signature", |b| {
         b.iter(|| private_key.try_sign(&msg).unwrap())
@@ -35,5 +36,21 @@ pub fn bench_ed25519_signature(c: &mut Criterion) {
 
     c.bench_function("Ed25519 signature verification", |b| {
         b.iter(|| public_key.verify(&msg, &signature).unwrap())
+    });
+
+    c.bench_function("Ed25519key key pair instantiation", |b| {
+        b.iter(|| Ed25519Keypair::new(&mut rng))
+    });
+
+    let key_pair = Ed25519Keypair::new(&mut rng);
+
+    c.bench_function("Ed25519key key pair signature", |b| {
+        b.iter(|| key_pair.try_sign(&msg).unwrap())
+    });
+
+    let signature = key_pair.try_sign(&msg).unwrap();
+
+    c.bench_function("Ed25519 key pair signature verification", |b| {
+        b.iter(|| key_pair.verify(&msg, &signature).unwrap())
     });
 }

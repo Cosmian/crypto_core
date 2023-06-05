@@ -12,7 +12,9 @@ use crate::{
     },
     CryptoCoreError, SecretKey,
 };
+use aead::{generic_array::GenericArray, KeyInit};
 use aes_gcm::Aes256Gcm as Aes256GcmLib;
+use std::fmt::{self, Debug, Formatter};
 
 /// Use a 256-bit AES key.
 pub const KEY_LENGTH: usize = 32;
@@ -29,8 +31,26 @@ const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 256 GCM.
-#[derive(Debug, PartialEq, Eq)]
-pub struct Aes256Gcm;
+pub struct Aes256Gcm(Aes256GcmLib);
+
+impl Aes256Gcm {
+    pub fn new(key: SymmetricKey<KEY_LENGTH>) -> Self {
+        let lib = Aes256GcmLib::new(GenericArray::from_slice(key.as_bytes()));
+        Self(lib)
+    }
+}
+
+impl Debug for Aes256Gcm {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "Aes256Gcm")
+    }
+}
+
+impl PartialEq for Aes256Gcm {
+    fn eq(&self, _other: &Self) -> bool {
+        true
+    }
+}
 
 impl Dem<KEY_LENGTH> for Aes256Gcm {
     type SymmetricKey = SymmetricKey<KEY_LENGTH>;
@@ -110,6 +130,23 @@ mod tests {
         let additional_data = Some(b"public tag".as_slice());
         let mut rng = CsRng::from_entropy();
         let secret_key = SymmetricKey::new(&mut rng);
+        let c = Aes256Gcm::encrypt(&mut rng, &secret_key, m, additional_data)?;
+        let res = Aes256Gcm::decrypt(&secret_key, &c, additional_data)?;
+        assert_eq!(res, m, "Decryption failed");
+        Ok(())
+    }
+
+    #[test]
+    fn test_stream() -> Result<(), CryptoCoreError> {
+        let m = b"my secret message";
+        let additional_data = Some(b"public tag".as_slice());
+        let mut rng = CsRng::from_entropy();
+        let secret_key = SymmetricKey::new(&mut rng);
+
+        //
+        use aead::stream::EncryptorBE32;
+        let mut encryptor = EncryptorBE32::from(Aes256Gcm::new(&secret_key, additional_data)?);
+
         let c = Aes256Gcm::encrypt(&mut rng, &secret_key, m, additional_data)?;
         let res = Aes256Gcm::decrypt(&secret_key, &c, additional_data)?;
         assert_eq!(res, m, "Decryption failed");

@@ -2,7 +2,124 @@
 
 ![Build status](https://github.com/Cosmian/crypto_core/actions/workflows/ci.yml/badge.svg)
 ![Build status](https://github.com/Cosmian/crypto_core/actions/workflows/audit.yml/badge.svg)
-![latest version](<https://img.shields.io/crates/v/cosmian_crypto_core.svg>)
+![latest version](https://img.shields.io/crates/v/cosmian_crypto_core.svg)
+
+This crate implements the cryptographic primitives (modern encryption and signature schemes) used in many other Cosmian products, such as the Cloudproof libraries and the KMS.
+It is primarily a thin layer over the [RustCrypto](https://github.com/RustCrypto) libraries, exposing as far as possible more straightforward and more consistent Traits, for example:
+
+- it hides all GenericArray types and uses only [u8; N] arrays
+- it provides a single struct for a Curve25519 private key, whether used for Diffie-Hellman or signatures.
+- etc..
+
+This crate may disappear in the future, depending on the evolution of the RustCrypto libraries.
+
+## Using
+
+To use Cosmian CryptoCore in another Rust software, add the dependency
+using Cargo:
+
+```bash
+cargo add cosmian_crypto_core
+```
+
+## Building and Testing
+
+### Build
+
+To install and build Cosmian CryptoCore, clone the repo:
+
+```bash
+git clone https://github.com/Cosmian/crypto_core.git
+```
+
+Build it with Cargo:
+
+```bash
+cargo build --release
+```
+
+### Further improving performance
+
+Running the nightly backend with the following flags (SIMD instructions) will improve performance by about 50% on the Ristretto backend, 25% for AES GCM, and 15% on the ED25519 backend
+
+```sh
+  RUSTFLAGS='--cfg curve25519_dalek_backend="simd" -C target_cpu=native'
+```
+
+### Running tests and benchmarks
+
+Run tests with:
+
+```bash
+cargo test --release
+```
+
+Run benchmarks with:
+
+```bash
+cargo bench
+```
+
+## Cryptographic Random Number Generator (RNG)
+
+This crate exposes a cryptographically secure random number generator (RNG) that uses the implementation of the CHACHA algorithm with 12 rounds from the [`rand_chacha`](https://rust-random.github.io/rand/rand_chacha/index.html).
+It is 128 bits secure.
+
+```Rust
+use cosmian_crypto_core::CsRng;
+let mut rng = CsRng::from_entropy();
+```
+
+Performance: 1.7µs per instantiation
+
+## Symmetric key encryption
+
+This crate offers standardized authenticated encryption schemes: AES-GCM and Chacha20-Poly1305.
+
+### AES 128 GCM
+
+This NIST standardized scheme offers 128 bits of classic (pre-quantum) security.
+
+The implementation uses the AES-NI instruction set, available on most modern processors whenever possible.
+
+`````Rust
+
+````Rust
+
+```Rust
+use cosmian_crypto_core::{
+reexport::rand_core::SeedableRng,
+symmetric_crypto::{aes_128_gcm::Aes128Gcm, key::SymmetricKey, Dem},
+CsRng, SecretKey,
+};
+
+// The cryptographic random generator
+let mut rng = CsRng::from_entropy();
+
+// the message to encrypt
+let message = b"my secret message";
+
+// the additional data to authenticate
+let additional_data = Some(b"additional data".as_slice());
+
+// the secret key used to encrypt the message
+// which is shared between the sender and the recipient
+let secret_key = SymmetricKey::new(&mut rng);
+
+// the sender encrypts the message
+let ciphertext = Aes128Gcm::encrypt(&mut rng, &secret_key, message, additional_data).unwrap();
+
+// the recipient decrypts the message
+let plaintext = Aes128Gcm::decrypt(&secret_key, &ciphertext, additional_data).unwrap();
+
+// assert the decrypted message is identical to the original plaintext
+assert_eq!(plaintext, message, "Decryption failed");
+
+println!("AES 128 GCM: SUCCESS");
+
+`````
+
+===============================
 
 This crate implements the cryptographic primitives which are used in many other
 Cosmian resources:
@@ -23,14 +140,14 @@ complex software.
 
 - [Getting started](#getting-started)
 - [Building and Testing](#building-and-testing)
-  * [Build](#build)
-  * [Use](#use)
-  * [Run tests and benchmarks](#run-tests-and-benchmarks)
+  - [Build](#build)
+  - [Use](#use)
+  - [Run tests and benchmarks](#run-tests-and-benchmarks)
 - [Features and Benchmarks](#features-and-benchmarks)
-  * [Asymmetric Crypto](#asymmetric-crypto)
-  * [Symmetric Crypto](#symmetric-crypto)
-  * [Random Number Generator (RNG)](#random-number-generator-rng)
-  * [Key Derivation Function (KDF)](#key-derivation-function-kdf)
+  - [Asymmetric Crypto](#asymmetric-crypto)
+  - [Symmetric Crypto](#symmetric-crypto)
+  - [Random Number Generator (RNG)](#random-number-generator-rng)
+  - [Key Derivation Function (KDF)](#key-derivation-function-kdf)
 - [Documentation](#documentation)
 
 <!-- tocstop -->
@@ -90,47 +207,6 @@ let res = Aes256GcmCrypto::decrypt(&symmetric_key, &c, additional_data).unwrap()
 assert_eq!(res, plaintext, "Decryption failed!");
 
 println!("Message has been privately and successfully transmitted!");
-```
-
-## Building and Testing
-
-### Build
-
-To install and build Cosmian CryptoCore, just clone the repo:
-
-```bash
-git clone https://github.com/Cosmian/crypto_core.git
-```
-
-and build it with Cargo:
-
-```bash
-cargo build --release
-```
-
-### Use
-
-To use Cosmian CryptoCore in another Rust software, just add the dependency
-using Cargo:
-
-```bash
-cargo add cosmian_crypto_core
-```
-
-and use it in your project!
-
-### Run tests and benchmarks
-
-Tests can be run with:
-
-```bash
-cargo test --release
-```
-
-Benchmarks can be run with:
-
-```bash
-cargo bench
 ```
 
 ## Features and Benchmarks
