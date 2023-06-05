@@ -9,7 +9,7 @@ use super::nonce::NonceTrait;
 
 /// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
 /// [ISO 2004](https://www.shoup.net/iso/std6.pdf).
-pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
+pub trait Dem<const KEY_LENGTH: usize>: Debug {
     /// Number of bytes added to the message length in the encapsulation.
     const ENCRYPTION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
 

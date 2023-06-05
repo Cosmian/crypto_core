@@ -12,9 +12,16 @@ use crate::{
     },
     CryptoCoreError, SecretKey,
 };
-use aead::{generic_array::GenericArray, KeyInit};
+use aead::{
+    generic_array::GenericArray,
+    stream::{DecryptorBE32, EncryptorBE32},
+    KeyInit,
+};
 use aes_gcm::Aes256Gcm as Aes256GcmLib;
-use std::fmt::{self, Debug, Formatter};
+use std::{
+    fmt::{self, Debug, Formatter},
+    ops::Deref,
+};
 
 /// Use a 256-bit AES key.
 pub const KEY_LENGTH: usize = 32;
@@ -38,17 +45,33 @@ impl Aes256Gcm {
         let lib = Aes256GcmLib::new(GenericArray::from_slice(key.as_bytes()));
         Self(lib)
     }
+
+    pub(crate) fn into_stream_encryptor(
+        self,
+        nonce: Nonce<NONCE_LENGTH>,
+    ) -> EncryptorBE32<Aes256GcmLib> {
+        EncryptorBE32::from_aead(self.0, nonce.as_bytes().into())
+    }
+
+    pub(crate) fn into_stream_decryptor(
+        self,
+        nonce: Nonce<NONCE_LENGTH>,
+    ) -> DecryptorBE32<Aes256GcmLib> {
+        DecryptorBE32::from_aead(self.0, nonce.as_bytes().into())
+    }
+}
+
+impl Deref for Aes256Gcm {
+    type Target = Aes256GcmLib;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl Debug for Aes256Gcm {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Aes256Gcm")
-    }
-}
-
-impl PartialEq for Aes256Gcm {
-    fn eq(&self, _other: &Self) -> bool {
-        true
     }
 }
 
@@ -144,8 +167,11 @@ mod tests {
         let secret_key = SymmetricKey::new(&mut rng);
 
         //
+        use crate::symmetric_crypto::nonce::NonceTrait;
         use aead::stream::EncryptorBE32;
-        let mut encryptor = EncryptorBE32::from(Aes256Gcm::new(&secret_key, additional_data)?);
+        let aes_gcm = Aes256Gcm::new(secret_key);
+        let nonce = <Aes256Gcm as Dem<32>>::Nonce::new(&mut rng);
+        let mut encryptor = aes_gcm.into_encryptor(nonce);
 
         let c = Aes256Gcm::encrypt(&mut rng, &secret_key, m, additional_data)?;
         let res = Aes256Gcm::decrypt(&secret_key, &c, additional_data)?;

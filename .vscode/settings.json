@@ -6,6 +6,7 @@
     "Cosmian",
     "ecies",
     "Ecies",
+    "Encryptor",
     "keypair",
     "libsodium",
     "Seedable",
