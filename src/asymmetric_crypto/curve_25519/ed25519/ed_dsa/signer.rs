@@ -38,7 +38,7 @@ impl TryFrom<&Ed25519PrivateKey> for Cached25519Signer {
         let sk: EdSecretKey = sk
             .to_owned()
             .try_into()
-            .map_err(|_| crate::CryptoCoreError::InvalidKeyLength)?;
+            .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?;
         let pk = EdPublicKey::from(&sk);
         let expanded: ExpandedSecretKey = (&sk).into();
         Ok(Self { pk, expanded })

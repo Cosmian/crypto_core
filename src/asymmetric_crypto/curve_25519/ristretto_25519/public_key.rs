@@ -6,7 +6,7 @@ use curve25519_dalek::{
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::{bytes_ser_de::Serializable, CryptoCoreError, FixedSizeKey, Key};
+use crate::{bytes_ser_de::Serializable, CBytes, CryptoCoreError, FixedSizeCBytes};
 
 use super::R25519PrivateKey;
 
@@ -17,9 +17,9 @@ use super::R25519PrivateKey;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct R25519PublicKey(pub(crate) RistrettoPoint);
 
-impl Key for R25519PublicKey {}
+impl CBytes for R25519PublicKey {}
 
-impl FixedSizeKey<32> for R25519PublicKey {
+impl FixedSizeCBytes<32> for R25519PublicKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0.compress().to_bytes()
     }
@@ -105,7 +105,7 @@ impl ZeroizeOnDrop for R25519PublicKey {}
 #[cfg(test)]
 mod test {
     use super::{R25519PrivateKey, R25519PublicKey};
-    use crate::{reexport::rand_core::SeedableRng, CsRng, FixedSizeKey, SecretKey};
+    use crate::{reexport::rand_core::SeedableRng, CsRng, FixedSizeCBytes, SecretCBytes};
 
     #[test]
     fn test_private_key_serialization() {

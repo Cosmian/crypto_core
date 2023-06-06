@@ -5,28 +5,7 @@
 
 use core::{convert::TryFrom, fmt::Debug};
 
-use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError};
-
-/// Defines a nonce to use in a symmetric encryption scheme.
-pub trait NonceTrait: Send + Sync + Sized + Clone {
-    /// Size of the nonce in bytes.
-    const LENGTH: usize;
-
-    /// Generates a new nonce object.
-    #[must_use]
-    fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
-
-    /// Tries to deserialize the given `bytes` into a nonce object. The number
-    /// of `bytes` must be equal to `Self::LENGTH`.
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError>;
-
-    /// Xor the nonce with the given value.
-    #[must_use]
-    fn xor(&self, b2: &[u8]) -> Self;
-
-    /// Serializes the nonce.
-    fn as_bytes(&self) -> &[u8];
-}
+use crate::{reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes};
 
 /// Nonce object of the given size.
 ///
@@ -34,22 +13,26 @@ pub trait NonceTrait: Send + Sync + Sized + Clone {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Nonce<const LENGTH: usize>(pub [u8; LENGTH]);
 
-impl<const LENGTH: usize> NonceTrait for Nonce<LENGTH> {
-    const LENGTH: usize = LENGTH;
+impl<const LENGTH: usize> CBytes for Nonce<LENGTH> {}
 
-    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+impl<const LENGTH: usize> FixedSizeCBytes<LENGTH> for Nonce<LENGTH> {
+    fn to_bytes(&self) -> [u8; LENGTH] {
+        self.0
+    }
+
+    fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError> {
+        Ok(Self(bytes))
+    }
+}
+
+impl<const LENGTH: usize> Nonce<LENGTH> {
+    pub fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; LENGTH];
         rng.fill_bytes(&mut bytes);
         Self(bytes)
     }
 
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        let bytes = <[u8; LENGTH]>::try_from(bytes)
-            .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
-        Ok(Self(bytes))
-    }
-
-    fn xor(&self, b2: &[u8]) -> Self {
+    pub fn xor(&self, b2: &[u8]) -> Self {
         let mut n = self.0;
         for (ni, bi) in n.iter_mut().zip(b2) {
             *ni ^= bi
@@ -57,8 +40,8 @@ impl<const LENGTH: usize> NonceTrait for Nonce<LENGTH> {
         Self(n)
     }
 
-    fn as_bytes(&self) -> &[u8] {
-        &self.0
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_ref()
     }
 }
 
@@ -66,7 +49,7 @@ impl<'a, const LENGTH: usize> TryFrom<&'a [u8]> for Nonce<LENGTH> {
     type Error = CryptoCoreError;
 
     fn try_from(bytes: &'a [u8]) -> Result<Self, Self::Error> {
-        Self::try_from_bytes(bytes)
+        Self::try_from_slice(bytes)
     }
 }
 
@@ -78,11 +61,7 @@ impl<const LENGTH: usize> From<[u8; LENGTH]> for Nonce<LENGTH> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        reexport::rand_core::SeedableRng,
-        symmetric_crypto::nonce::{Nonce, NonceTrait},
-        CsRng,
-    };
+    use crate::{reexport::rand_core::SeedableRng, symmetric_crypto::nonce::Nonce, CsRng};
 
     const NONCE_LENGTH: usize = 12;
 

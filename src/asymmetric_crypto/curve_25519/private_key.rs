@@ -1,4 +1,4 @@
-use crate::{bytes_ser_de::Serializable, CryptoCoreError, FixedSizeKey, Key, SecretKey};
+use crate::{bytes_ser_de::Serializable, CBytes, CryptoCoreError, FixedSizeCBytes, SecretCBytes};
 use curve25519_dalek::Scalar;
 use rand_chacha::rand_core::CryptoRngCore;
 use std::ops::{Add, Div, Mul, Sub};
@@ -42,9 +42,9 @@ impl Eq for Curve25519PrivateKey {}
 
 // Key traits implementations
 
-impl Key for Curve25519PrivateKey {}
+impl CBytes for Curve25519PrivateKey {}
 
-impl FixedSizeKey<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
+impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0.to_bytes()
     }
@@ -54,7 +54,7 @@ impl FixedSizeKey<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     }
 }
 
-impl SecretKey<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
+impl SecretCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; Self::LENGTH];
         rng.fill_bytes(&mut bytes);

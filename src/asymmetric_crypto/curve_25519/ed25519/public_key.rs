@@ -1,16 +1,16 @@
 //reexport the RustBox Ed25519 impl
 
 use super::private_key::Ed25519PrivateKey;
-use crate::{FixedSizeKey, Key};
+use crate::{CBytes, FixedSizeCBytes};
 pub use ed25519_dalek::{PublicKey as EdPublicKey, SecretKey as EdSecretKey};
 use std::ops::Deref;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519PublicKey(pub(crate) EdPublicKey);
 
-impl Key for Ed25519PublicKey {}
+impl CBytes for Ed25519PublicKey {}
 
-impl FixedSizeKey<32> for Ed25519PublicKey {
+impl FixedSizeCBytes<32> for Ed25519PublicKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0.to_bytes()
     }
@@ -18,7 +18,7 @@ impl FixedSizeKey<32> for Ed25519PublicKey {
     fn try_from_bytes(bytes: [u8; crypto_box::KEY_SIZE]) -> Result<Self, crate::CryptoCoreError> {
         Ok(Self(
             EdPublicKey::from_bytes(&bytes)
-                .map_err(|_| crate::CryptoCoreError::InvalidKeyLength)?,
+                .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?,
         ))
     }
 }

@@ -1,4 +1,4 @@
-use crate::{FixedSizeKey, Key};
+use crate::{CBytes, FixedSizeCBytes};
 use curve25519_dalek::MontgomeryPoint;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -9,9 +9,9 @@ use super::X25519PrivateKey;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct X25519PublicKey(pub(crate) MontgomeryPoint);
 
-impl Key for X25519PublicKey {}
+impl CBytes for X25519PublicKey {}
 
-impl FixedSizeKey<{ crypto_box::KEY_SIZE }> for X25519PublicKey {
+impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for X25519PublicKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0.to_bytes()
     }

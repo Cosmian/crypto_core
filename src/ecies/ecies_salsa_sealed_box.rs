@@ -104,7 +104,7 @@ mod tests {
     use crate::{
         asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
         ecies::ecies_salsa_sealed_box::EciesSalsaSealBox,
-        CsRng, Ecies, FixedSizeKey, SecretKey,
+        CsRng, Ecies, FixedSizeCBytes, SecretCBytes,
     };
 
     #[test]

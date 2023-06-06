@@ -2,7 +2,7 @@
 use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
     symmetric_crypto::{aes_128_gcm::Aes128Gcm, aes_256_gcm::Aes256Gcm, key::SymmetricKey, Dem},
-    CsRng, SecretKey,
+    CsRng, SecretCBytes,
 };
 use criterion::Criterion;
 

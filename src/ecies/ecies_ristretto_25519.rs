@@ -2,12 +2,8 @@ use crate::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
     kdf128,
     reexport::rand_core::CryptoRngCore,
-    symmetric_crypto::{
-        aes_128_gcm::{Aes128Gcm, KEY_LENGTH as SYMMETRIC_KEY_LENGTH},
-        nonce::NonceTrait,
-        AeadExtra, Dem,
-    },
-    CryptoCoreError, Ecies, FixedSizeKey, SecretKey,
+    symmetric_crypto::{aes_128_gcm::Aes128Gcm, key::SymmetricKey, nonce::Nonce, Dem},
+    CryptoCoreError, Ecies, FixedSizeCBytes, SecretCBytes,
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
@@ -20,17 +16,19 @@ pub struct EciesR25519Aes128 {}
 fn get_nonce<const NONCE_LENGTH: usize>(
     ephemeral_pk: &R25519PublicKey,
     recipient_pk: &R25519PublicKey,
-) -> [u8; NONCE_LENGTH] {
-    kdf128!(
+) -> Nonce<NONCE_LENGTH> {
+    Nonce(kdf128!(
         NONCE_LENGTH,
         &ephemeral_pk.to_bytes(),
         &recipient_pk.to_bytes()
-    )
+    ))
 }
 
 #[inline]
-fn get_ephemeral_key<const KEY_LENGTH: usize>(shared_point: &R25519PublicKey) -> [u8; KEY_LENGTH] {
-    kdf128!(KEY_LENGTH, &shared_point.to_bytes())
+fn get_ephemeral_key<const KEY_LENGTH: usize>(
+    shared_point: &R25519PublicKey,
+) -> SymmetricKey<KEY_LENGTH> {
+    SymmetricKey(kdf128!(KEY_LENGTH, &shared_point.to_bytes()))
 }
 
 impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes128 {
@@ -54,17 +52,14 @@ impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes128 {
         // - S1: if the user provided shared_encapsulation_data S1, then we append it to
         //   the shared_bytes S
         // This implementation does NOT use the shared_encapsulation_data S1
-        let key = get_ephemeral_key::<SYMMETRIC_KEY_LENGTH>(&shared_point);
+        let key = get_ephemeral_key::<{ Aes128Gcm::KEY_LENGTH }>(&shared_point);
 
         // Calculate the nonce based on the 2 public keys
-        let nonce = get_nonce::<{ <Aes128Gcm as Dem<SYMMETRIC_KEY_LENGTH>>::Nonce::LENGTH }>(
-            &ephemeral_pk,
-            recipient_pk,
-        );
+        let nonce = get_nonce::<{ Aes128Gcm::NONCE_LENGTH }>(&ephemeral_pk, recipient_pk);
 
         // Encrypt and authenticate the message, returning the ciphertext and MAC
         let ciphertext_plus_tag =
-            Aes128Gcm::encrypt_combined(&key, plaintext, &nonce, authentication_data)?;
+            Aes128Gcm::new(&key).encrypt(&nonce, plaintext, authentication_data)?;
 
         // Assemble the final encrypted message: R || nonce || c || d
         let mut res =
@@ -92,20 +87,20 @@ impl Ecies<R25519PrivateKey, R25519PublicKey> for EciesR25519Aes128 {
         // - S1: if the user provided shared_encapsulation_data S1, then we append it to
         //   the shared_bytes S
         // This implementation does NOT use the shared_encapsulation_data S1
-        let key = get_ephemeral_key::<SYMMETRIC_KEY_LENGTH>(&shared_point);
+        let key = get_ephemeral_key::<{ Aes128Gcm::KEY_LENGTH }>(&shared_point);
 
         // Recompute the nonce
-        let nonce = get_nonce::<{ <Aes128Gcm as Dem<SYMMETRIC_KEY_LENGTH>>::Nonce::LENGTH }>(
+        let nonce = get_nonce::<{ Aes128Gcm::NONCE_LENGTH }>(
             &ephemeral_pk,
             &R25519PublicKey::from(recipient_sk),
         );
 
-        // Separate the encrypted message and MAC from the ciphertext
-        let ciphertext_plus_tag = &ciphertext[R25519PublicKey::LENGTH..];
-
         // Decrypt and verify the message using AES-128-GCM
-        let decrypted_message =
-            Aes128Gcm::decrypt_combined(&key, ciphertext_plus_tag, &nonce, authentication_data)?;
+        let decrypted_message = Aes128Gcm::new(&key).decrypt(
+            &nonce,
+            &ciphertext[R25519PublicKey::LENGTH..],
+            authentication_data,
+        )?;
 
         Ok(decrypted_message)
     }
@@ -118,7 +113,7 @@ mod tests {
         asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
         ecies::ecies_ristretto_25519::EciesR25519Aes128,
         reexport::rand_core::SeedableRng,
-        CsRng, Ecies, SecretKey,
+        CsRng, Ecies, SecretCBytes,
     };
 
     #[test]
@@ -182,6 +177,8 @@ mod tests {
             &ciphertext,
             Some(&b"Corrupted authenticated data"[..]),
         );
+
+        println!("{:?}", not_decrypted);
 
         assert!(matches!(
             not_decrypted,

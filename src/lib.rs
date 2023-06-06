@@ -24,15 +24,16 @@ pub use ecies::Ecies;
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
 pub type CsRng = rand_chacha::ChaCha12Rng;
 
-/// A cryptographic key.
+/// Cryptographic bytes
 ///
-/// The key should be thread-safe, clonable, comparable, and zeroizeable.
-pub trait Key: Clone + Eq + PartialEq + Send + Sync {}
+/// The bytes should be thread-safe, clonable and comparable.
+pub trait CBytes: Clone + Eq + PartialEq + Send + Sync {}
 
-/// A Fixed Size Key
+/// A Fixed Size Array of cryptographic bytes
 ///
-/// This may be the compressed form of a public key when using elliptic curves
-pub trait FixedSizeKey<const LENGTH: usize>: Key + Sized {
+/// This may be a Salt, a Nonce,
+/// the compressed form of a public key when using elliptic curves, etc...
+pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
     /// Key length
     const LENGTH: usize = LENGTH;
 
@@ -44,7 +45,7 @@ pub trait FixedSizeKey<const LENGTH: usize>: Key + Sized {
     fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
         slice
             .try_into()
-            .map_err(|_| CryptoCoreError::InvalidKeyLength)
+            .map_err(|_| CryptoCoreError::InvalidBytesLength)
             .and_then(Self::try_from_bytes)
     }
 
@@ -52,13 +53,17 @@ pub trait FixedSizeKey<const LENGTH: usize>: Key + Sized {
     fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError>;
 }
 
-/// A secret key such as a symmetric key or an elliptic curve private key.
-pub trait SecretKey<const LENGTH: usize>: FixedSizeKey<LENGTH> + Zeroize + ZeroizeOnDrop {
+/// Secret array of bytes such as a symmetric key or an elliptic curve private key.
+///
+/// These bytes can be generated from entropy and must be zeroized on drop
+pub trait SecretCBytes<const LENGTH: usize>:
+    FixedSizeCBytes<LENGTH> + Zeroize + ZeroizeOnDrop
+{
     /// Generates a new random key.
     #[must_use]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
 
-    /// Access the underlying slice of bytes (avoid copy).
+    /// Access the underlying slice of bytes (avoiding a copy).
     #[must_use]
     fn as_bytes(&self) -> &[u8];
 }

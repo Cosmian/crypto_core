@@ -20,7 +20,7 @@ pub enum CryptoCoreError {
     },
     EncryptionError,
     GenericDeserializationError(String),
-    InvalidKeyLength,
+    InvalidBytesLength,
     PlaintextTooBigError {
         plaintext_len: usize,
         max: u64,
@@ -31,6 +31,7 @@ pub enum CryptoCoreError {
         error: std::io::Error,
     },
     SignatureError(String),
+    StreamCipherError(String),
     WriteLeb128Error {
         value: u64,
         error: std::io::Error,
@@ -81,10 +82,17 @@ impl Display for CryptoCoreError {
             CryptoCoreError::ConversionError(err) => write!(f, "failed to convert: {err}"),
             CryptoCoreError::EncryptionError => write!(f, "error during encryption"),
             CryptoCoreError::DecryptionError => write!(f, "error during decryption"),
-            CryptoCoreError::InvalidKeyLength => write!(f, "invalid key length"),
+            CryptoCoreError::InvalidBytesLength => write!(f, "invalid key length"),
             CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
+            CryptoCoreError::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
         }
     }
 }
 
 impl std::error::Error for CryptoCoreError {}
+
+impl From<aead::Error> for CryptoCoreError {
+    fn from(e: aead::Error) -> Self {
+        CryptoCoreError::StreamCipherError(e.to_string())
+    }
+}

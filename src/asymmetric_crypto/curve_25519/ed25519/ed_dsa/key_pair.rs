@@ -5,7 +5,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     asymmetric_crypto::{Ed25519PrivateKey, Ed25519PublicKey},
-    FixedSizeKey, Key, SecretKey,
+    CBytes, FixedSizeCBytes, SecretCBytes,
 };
 
 /// An Ed25519 keypair which is compatible with the signature crate.
@@ -39,9 +39,9 @@ impl Verifier<ed25519_dalek::Signature> for Ed25519Keypair {
     }
 }
 
-impl Key for Ed25519Keypair {}
+impl CBytes for Ed25519Keypair {}
 
-impl FixedSizeKey<{ Ed25519PrivateKey::LENGTH + Ed25519PublicKey::LENGTH }> for Ed25519Keypair {
+impl FixedSizeCBytes<{ Ed25519PrivateKey::LENGTH + Ed25519PublicKey::LENGTH }> for Ed25519Keypair {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         let mut bytes = [0; Self::LENGTH];
         bytes[..Ed25519PrivateKey::LENGTH].copy_from_slice(&self.private_key.to_bytes());
@@ -53,12 +53,12 @@ impl FixedSizeKey<{ Ed25519PrivateKey::LENGTH + Ed25519PublicKey::LENGTH }> for 
         let private_key = Ed25519PrivateKey::try_from_bytes(
             bytes[..Ed25519PrivateKey::LENGTH]
                 .try_into()
-                .map_err(|_| crate::CryptoCoreError::InvalidKeyLength)?,
+                .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?,
         )?;
         let public_key = Ed25519PublicKey::try_from_bytes(
             bytes[Ed25519PrivateKey::LENGTH..]
                 .try_into()
-                .map_err(|_| crate::CryptoCoreError::InvalidKeyLength)?,
+                .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?,
         )?;
         Ok(Self {
             private_key,

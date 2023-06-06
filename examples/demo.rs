@@ -1,36 +1,37 @@
 //! This demo is used in `README.md`.
 
-pub fn aes128gcm() {
-    use cosmian_crypto_core::{
-        reexport::rand_core::SeedableRng,
-        symmetric_crypto::{aes_128_gcm::Aes128Gcm, key::SymmetricKey, Dem},
-        CsRng, SecretKey,
-    };
+// pub fn aes128gcm() {
+//     use cosmian_crypto_core::{
+//         reexport::rand_core::SeedableRng,
+//         symmetric_crypto::{aes_128_gcm::Aes128Gcm, key::SymmetricKey, Dem},
+//         CsRng, SecretCBytes,
+//     };
 
-    // The cryptographic random generator
-    let mut rng = CsRng::from_entropy();
+//     // The cryptographic random generator
+//     let mut rng = CsRng::from_entropy();
 
-    // the message to encrypt
-    let message = b"my secret message";
+//     // the message to encrypt
+//     let message = b"my secret message";
 
-    // the additional data to authenticate
-    let additional_data = Some(b"additional data".as_slice());
+//     // the additional data to authenticate
+//     let additional_data = Some(b"additional data".as_slice());
 
-    // the secret key used to encrypt the message
-    // which is shared between the sender and the recipient
-    let secret_key = SymmetricKey::new(&mut rng);
+//     // the secret key used to encrypt the message
+//     // which is shared between the sender and the recipient
+//     let secret_key = SymmetricKey::new(&mut rng);
 
-    // the sender encrypts the message
-    let ciphertext = Aes128Gcm::encrypt(&mut rng, &secret_key, message, additional_data).unwrap();
+//     // the sender encrypts the message
+//     let ciphertext =
+//         Aes128Gcm::encrypt_combined(&mut rng, &secret_key, message, additional_data).unwrap();
 
-    // the recipient decrypts the message
-    let plaintext = Aes128Gcm::decrypt(&secret_key, &ciphertext, additional_data).unwrap();
+//     // the recipient decrypts the message
+//     let plaintext = Aes128Gcm::decrypt_combined(&secret_key, &ciphertext, additional_data).unwrap();
 
-    // assert the decrypted message is identical to the original plaintext
-    assert_eq!(plaintext, message, "Decryption failed");
+//     // assert the decrypted message is identical to the original plaintext
+//     assert_eq!(plaintext, message, "Decryption failed");
 
-    println!("AES 128 GCM: SUCCESS");
-}
+//     println!("AES 128 GCM: SUCCESS");
+// }
 
 fn main() {
     aes128gcm();

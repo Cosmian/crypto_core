@@ -15,8 +15,8 @@ mod tests {
     use crate::asymmetric_crypto::curve_25519::ed25519::Ed25519PublicKey;
     use crate::asymmetric_crypto::Ed25519Keypair;
     use crate::reexport::rand_core::SeedableRng;
-    use crate::FixedSizeKey;
-    use crate::SecretKey;
+    use crate::FixedSizeCBytes;
+    use crate::SecretCBytes;
     use signature::Signer;
     use signature::Verifier;
 
