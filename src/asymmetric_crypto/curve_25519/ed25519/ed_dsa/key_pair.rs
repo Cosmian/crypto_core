@@ -5,7 +5,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     asymmetric_crypto::{Ed25519PrivateKey, Ed25519PublicKey},
-    CBytes, FixedSizeCBytes, SecretCBytes,
+    CBytes, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
 
 /// An Ed25519 keypair which is compatible with the signature crate.

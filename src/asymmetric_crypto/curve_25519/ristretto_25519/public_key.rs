@@ -105,7 +105,7 @@ impl ZeroizeOnDrop for R25519PublicKey {}
 #[cfg(test)]
 mod test {
     use super::{R25519PrivateKey, R25519PublicKey};
-    use crate::{reexport::rand_core::SeedableRng, CsRng, FixedSizeCBytes, SecretCBytes};
+    use crate::{reexport::rand_core::SeedableRng, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes};
 
     #[test]
     fn test_private_key_serialization() {

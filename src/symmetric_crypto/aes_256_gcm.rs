@@ -5,7 +5,7 @@
 use super::dem::AeadExtra;
 use crate::{
     symmetric_crypto::{key::SymmetricKey, nonce::Nonce, Dem},
-    CryptoCoreError, SecretCBytes,
+    CryptoCoreError, RandomFixedSizeCBytes,
 };
 use aead::{
     generic_array::GenericArray,
@@ -167,7 +167,7 @@ mod tests {
     use crate::{
         reexport::rand_core::SeedableRng,
         symmetric_crypto::{aes_256_gcm::Aes256Gcm, key::SymmetricKey, nonce::Nonce, Dem},
-        CryptoCoreError, CsRng, FixedSizeCBytes, SecretCBytes,
+        CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
     };
 
     #[test]

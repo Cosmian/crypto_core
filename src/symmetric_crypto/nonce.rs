@@ -5,7 +5,10 @@
 
 use core::{convert::TryFrom, fmt::Debug};
 
-use crate::{reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes};
+use crate::{
+    reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
+    RandomFixedSizeCBytes,
+};
 
 /// Nonce object of the given size.
 ///
@@ -25,23 +28,25 @@ impl<const LENGTH: usize> FixedSizeCBytes<LENGTH> for Nonce<LENGTH> {
     }
 }
 
-impl<const LENGTH: usize> Nonce<LENGTH> {
-    pub fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+impl<const LENGTH: usize> RandomFixedSizeCBytes<LENGTH> for Nonce<LENGTH> {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; LENGTH];
         rng.fill_bytes(&mut bytes);
         Self(bytes)
     }
 
+    fn as_bytes(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl<const LENGTH: usize> Nonce<LENGTH> {
     pub fn xor(&self, b2: &[u8]) -> Self {
         let mut n = self.0;
         for (ni, bi) in n.iter_mut().zip(b2) {
             *ni ^= bi
         }
         Self(n)
-    }
-
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_ref()
     }
 }
 
@@ -61,7 +66,10 @@ impl<const LENGTH: usize> From<[u8; LENGTH]> for Nonce<LENGTH> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{reexport::rand_core::SeedableRng, symmetric_crypto::nonce::Nonce, CsRng};
+    use crate::{
+        reexport::rand_core::SeedableRng, symmetric_crypto::nonce::Nonce, CsRng,
+        RandomFixedSizeCBytes,
+    };
 
     const NONCE_LENGTH: usize = 12;
 

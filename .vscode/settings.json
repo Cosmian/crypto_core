@@ -13,6 +13,7 @@
     "keypair",
     "libsodium",
     "Seedable",
-    "zeroize"
+    "zeroize",
+    "zeroized"
   ]
 }

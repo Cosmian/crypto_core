@@ -26,13 +26,13 @@ pub type CsRng = rand_chacha::ChaCha12Rng;
 
 /// Cryptographic bytes
 ///
-/// The bytes should be thread-safe, clonable and comparable.
-pub trait CBytes: Clone + Eq + PartialEq + Send + Sync {}
+/// The bytes should be thread-safe and comparable.
+/// The bytes are NOT clonable by design (secrets should not be cloned).
+pub trait CBytes: Eq + PartialEq + Send + Sync {}
 
 /// A Fixed Size Array of cryptographic bytes
 ///
-/// This may be a Salt, a Nonce,
-/// the compressed form of a public key when using elliptic curves, etc...
+/// This may be the compressed version of a public key for instance
 pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
     /// Key length
     const LENGTH: usize = LENGTH;
@@ -53,17 +53,24 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
     fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError>;
 }
 
-/// Secret array of bytes such as a symmetric key or an elliptic curve private key.
+/// A Fixed Size Array of cryptographic bytes
+/// that can be generated from a cryptographically secure random generator.
 ///
-/// These bytes can be generated from entropy and must be zeroized on drop
-pub trait SecretCBytes<const LENGTH: usize>:
-    FixedSizeCBytes<LENGTH> + Zeroize + ZeroizeOnDrop
-{
-    /// Generates a new random key.
+/// This may be a Nonce for instance
+pub trait RandomFixedSizeCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> {
+    /// Generate a new random array of LENGTH bytes
     #[must_use]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
 
     /// Access the underlying slice of bytes (avoiding a copy).
     #[must_use]
     fn as_bytes(&self) -> &[u8];
+}
+
+/// Secret array of bytes such as a symmetric key or an elliptic curve private key.
+///
+/// These bytes must be zeroized on drop.
+pub trait SecretCBytes<const LENGTH: usize>:
+    RandomFixedSizeCBytes<LENGTH> + Zeroize + ZeroizeOnDrop
+{
 }

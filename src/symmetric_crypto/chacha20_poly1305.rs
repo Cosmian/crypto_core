@@ -2,7 +2,7 @@
 //! in RustCrypto (https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305)
 use super::AeadExtra;
 use super::{key::SymmetricKey, nonce::Nonce, Dem};
-use crate::{CryptoCoreError, SecretCBytes};
+use crate::{CryptoCoreError, RandomFixedSizeCBytes};
 use aead::{generic_array::GenericArray, Aead, KeyInit, Payload};
 use chacha20poly1305::ChaCha20Poly1305 as ChaCha20Poly1305Lib;
 use std::fmt::Debug;
@@ -100,7 +100,7 @@ mod tests {
         symmetric_crypto::{
             chacha20_poly1305::ChaCha20Poly1305, key::SymmetricKey, nonce::Nonce, Dem,
         },
-        CryptoCoreError, CsRng, FixedSizeCBytes, SecretCBytes,
+        CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
     };
 
     #[test]

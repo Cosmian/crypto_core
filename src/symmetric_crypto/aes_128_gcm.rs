@@ -5,7 +5,7 @@
 use super::{dem::AeadExtra, nonce::Nonce};
 use crate::{
     symmetric_crypto::{key::SymmetricKey, Dem},
-    CryptoCoreError, SecretCBytes,
+    CryptoCoreError, RandomFixedSizeCBytes,
 };
 use aead::{generic_array::GenericArray, Aead, KeyInit, Payload};
 use aes_gcm::Aes128Gcm as Aes128GcmLib;
@@ -115,7 +115,7 @@ mod tests {
     use crate::{
         reexport::rand_core::SeedableRng,
         symmetric_crypto::{aes_128_gcm::Aes128Gcm, key::SymmetricKey, nonce::Nonce, Dem},
-        CryptoCoreError, CsRng, SecretCBytes,
+        CryptoCoreError, CsRng, RandomFixedSizeCBytes,
     };
 
     #[test]

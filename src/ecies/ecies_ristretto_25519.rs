@@ -3,7 +3,7 @@ use crate::{
     kdf128,
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{aes_128_gcm::Aes128Gcm, key::SymmetricKey, nonce::Nonce, Dem},
-    CryptoCoreError, Ecies, FixedSizeCBytes, SecretCBytes,
+    CryptoCoreError, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
@@ -113,7 +113,7 @@ mod tests {
         asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
         ecies::ecies_ristretto_25519::EciesR25519Aes128,
         reexport::rand_core::SeedableRng,
-        CsRng, Ecies, SecretCBytes,
+        CsRng, Ecies, RandomFixedSizeCBytes,
     };
 
     #[test]

@@ -11,18 +11,16 @@ pub use signer::Cached25519Signer;
 #[cfg(test)]
 mod tests {
 
-    use crate::asymmetric_crypto::curve_25519::ed25519::Ed25519PrivateKey;
-    use crate::asymmetric_crypto::curve_25519::ed25519::Ed25519PublicKey;
-    use crate::asymmetric_crypto::Ed25519Keypair;
-    use crate::reexport::rand_core::SeedableRng;
-    use crate::FixedSizeCBytes;
-    use crate::SecretCBytes;
-    use signature::Signer;
-    use signature::Verifier;
-
-    use crate::CsRng;
-
     use super::Cached25519Signer;
+    use crate::{
+        asymmetric_crypto::{
+            curve_25519::ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
+            Ed25519Keypair,
+        },
+        reexport::rand_core::SeedableRng,
+        CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
+    };
+    use signature::{Signer, Verifier};
 
     #[test]
     fn ed25519_test() {

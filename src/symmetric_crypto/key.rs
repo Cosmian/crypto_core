@@ -4,12 +4,12 @@ use core::{hash::Hash, ops::Deref};
 
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::SecretCBytes;
+use crate::{RandomFixedSizeCBytes, SecretCBytes};
 
 /// A type that holds symmetric key of a fixed  size.
 ///
 /// It is internally built using an array of bytes of the given length.
-#[derive(Debug, Hash, Clone, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct SymmetricKey<const LENGTH: usize>(pub(crate) [u8; LENGTH]);
 
 impl<const LENGTH: usize> crate::CBytes for SymmetricKey<LENGTH> {}
@@ -24,7 +24,7 @@ impl<const LENGTH: usize> crate::FixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH
     }
 }
 
-impl<const LENGTH: usize> SecretCBytes<LENGTH> for SymmetricKey<LENGTH> {
+impl<const LENGTH: usize> RandomFixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH> {
     fn new<R: rand_chacha::rand_core::CryptoRngCore>(rng: &mut R) -> Self {
         let mut key = [0; LENGTH];
         rng.fill_bytes(&mut key);
@@ -35,6 +35,9 @@ impl<const LENGTH: usize> SecretCBytes<LENGTH> for SymmetricKey<LENGTH> {
         self.as_ref()
     }
 }
+
+/// The symmetric key is a secret and must be zeroized.
+impl<const LENGTH: usize> SecretCBytes<LENGTH> for SymmetricKey<LENGTH> {}
 
 impl<const LENGTH: usize> Zeroize for SymmetricKey<LENGTH> {
     fn zeroize(&mut self) {
@@ -63,7 +66,8 @@ impl<const LENGTH: usize> Deref for SymmetricKey<LENGTH> {
 mod tests {
 
     use crate::{
-        reexport::rand_core::SeedableRng, symmetric_crypto::key::SymmetricKey, CsRng, SecretCBytes,
+        reexport::rand_core::SeedableRng, symmetric_crypto::key::SymmetricKey, CsRng,
+        RandomFixedSizeCBytes,
     };
 
     const KEY_LENGTH: usize = 32;
