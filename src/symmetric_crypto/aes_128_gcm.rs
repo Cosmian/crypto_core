@@ -2,12 +2,15 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
-use super::{dem::AeadExtra, nonce::Nonce};
+use super::{
+    dem::{DemInPlace, Instantiable},
+    nonce::Nonce,
+};
 use crate::{
     symmetric_crypto::{key::SymmetricKey, Dem},
-    CryptoCoreError, RandomFixedSizeCBytes,
+    RandomFixedSizeCBytes,
 };
-use aead::{generic_array::GenericArray, Aead, KeyInit, Payload};
+use aead::{generic_array::GenericArray, KeyInit};
 use aes_gcm::Aes128Gcm as Aes128GcmLib;
 use std::fmt::Debug;
 
@@ -33,62 +36,39 @@ impl Aes128Gcm {
 
     /// Plaintext size (in bytes) restriction from the NIST
     /// <https://csrc.nist.gov/publications/detail/sp/800-38d/final>
-    const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
+    pub const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
+}
+
+impl Instantiable<{ Aes128Gcm::KEY_LENGTH }> for Aes128Gcm {
+    type Secret = SymmetricKey<{ Aes128Gcm::KEY_LENGTH }>;
+
+    fn new(symmetric_key: &Self::Secret) -> Self {
+        Self(Aes128GcmLib::new(GenericArray::from_slice(
+            symmetric_key.as_bytes(),
+        )))
+    }
 }
 
 impl Dem<{ Aes128Gcm::KEY_LENGTH }, { Aes128Gcm::NONCE_LENGTH }, { Aes128Gcm::MAC_LENGTH }>
     for Aes128Gcm
 {
-    type SymmetricKey = SymmetricKey<{ Aes128Gcm::KEY_LENGTH }>;
+    type AeadAlgo = Aes128GcmLib;
     type Nonce = Nonce<{ Aes128Gcm::NONCE_LENGTH }>;
 
-    fn new(symmetric_key: &Self::SymmetricKey) -> Self {
-        Self(Aes128GcmLib::new(GenericArray::from_slice(
-            symmetric_key.as_bytes(),
-        )))
-    }
-
-    fn encrypt(
-        &self,
-        nonce: &Self::Nonce,
-        plaintext: &[u8],
-        aad: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        // allocate correct byte number
-        Ok(self
-            .0
-            .encrypt(
-                GenericArray::from_slice(nonce.as_bytes()),
-                Payload {
-                    msg: plaintext,
-                    aad: aad.unwrap_or(b""),
-                },
-            )
-            .map_err(|_| CryptoCoreError::EncryptionError)?)
-    }
-
-    fn decrypt(
-        &self,
-        nonce: &Self::Nonce,
-        ciphertext: &[u8],
-        aad: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        // The ciphertext is of the form: nonce || AEAD ciphertext
-        Ok(self
-            .0
-            .decrypt(
-                nonce.as_bytes().into(),
-                Payload {
-                    msg: &ciphertext,
-                    aad: aad.unwrap_or(b""),
-                },
-            )
-            .map_err(|_| CryptoCoreError::DecryptionError)?)
+    fn aead_backend<'a>(&'a self) -> &'a Self::AeadAlgo {
+        &self.0
     }
 }
 
-impl AeadExtra for Aes128Gcm {
-    type Algo = Aes128GcmLib;
+impl DemInPlace<{ Aes128Gcm::KEY_LENGTH }, { Aes128Gcm::NONCE_LENGTH }, { Aes128Gcm::MAC_LENGTH }>
+    for Aes128Gcm
+{
+    type AeadInPlaceAlgo = Aes128GcmLib;
+    type Nonce = Nonce<{ Aes128Gcm::NONCE_LENGTH }>;
+
+    fn aead_in_place_backend<'a>(&'a self) -> &'a Self::AeadInPlaceAlgo {
+        &self.0
+    }
 }
 
 #[cfg(test)]
@@ -96,7 +76,9 @@ mod tests {
 
     use crate::{
         reexport::rand_core::SeedableRng,
-        symmetric_crypto::{aes_128_gcm::Aes128Gcm, key::SymmetricKey, nonce::Nonce, Dem},
+        symmetric_crypto::{
+            aes_128_gcm::Aes128Gcm, dem::Instantiable, key::SymmetricKey, nonce::Nonce, Dem,
+        },
         CryptoCoreError, CsRng, RandomFixedSizeCBytes,
     };
 

@@ -13,7 +13,7 @@ use crate::{
 /// Nonce object of the given size.
 ///
 /// Internally, it uses an array of bytes of the given size.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Nonce<const LENGTH: usize>(pub [u8; LENGTH]);
 
 impl<const LENGTH: usize> CBytes for Nonce<LENGTH> {}

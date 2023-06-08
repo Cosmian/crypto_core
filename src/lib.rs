@@ -15,6 +15,8 @@ pub mod reexport {
 }
 pub mod symmetric_crypto;
 
+use std::hash::Hash;
+
 use reexport::rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -37,7 +39,7 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
     /// Key length
     const LENGTH: usize = LENGTH;
 
-    /// Converts the given key into a vector of LENGTH bytes.
+    /// Converts the given key into an array of LENGTH bytes.
     #[must_use]
     fn to_bytes(&self) -> [u8; LENGTH];
 
@@ -49,7 +51,7 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
             .and_then(Self::try_from_bytes)
     }
 
-    /// Tries to create a key from the given bytes into a key.
+    /// Tries to create a key from the given array of bytes into a key.
     fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError>;
 }
 
@@ -57,7 +59,7 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
 /// that can be generated from a cryptographically secure random generator.
 ///
 /// This may be a Nonce for instance
-pub trait RandomFixedSizeCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> {
+pub trait RandomFixedSizeCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> + Hash {
     /// Generate a new random array of LENGTH bytes
     #[must_use]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self;

@@ -13,7 +13,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// Curve25519PrivateKey should not be used directly
 /// but rather re-used as a base type for other final types on the curve
 /// such as X22519PrivateKey.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Curve25519PrivateKey(pub(crate) Scalar);
 
 /// Zeroizes the private key.

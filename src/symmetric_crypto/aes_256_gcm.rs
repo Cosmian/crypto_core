@@ -2,15 +2,15 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
-use super::dem::AeadExtra;
+use super::dem::{DemInPlace, Instantiable};
 use crate::{
     symmetric_crypto::{key::SymmetricKey, nonce::Nonce, Dem},
-    CryptoCoreError, RandomFixedSizeCBytes,
+    RandomFixedSizeCBytes,
 };
 use aead::{
     generic_array::GenericArray,
     stream::{DecryptorBE32, DecryptorLE31, EncryptorBE32, EncryptorLE31},
-    Aead, KeyInit, Payload,
+    KeyInit,
 };
 use aes_gcm::Aes256Gcm as Aes256GcmLib;
 use std::{
@@ -34,7 +34,7 @@ impl Aes256Gcm {
 
     /// Plaintext size (in bytes) restriction from the NIST
     /// <https://csrc.nist.gov/publications/detail/sp/800-38d/final>
-    const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
+    pub const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 }
 
 impl Aes256Gcm {
@@ -85,58 +85,35 @@ impl Debug for Aes256Gcm {
     }
 }
 
-impl Dem<{ Aes256Gcm::KEY_LENGTH }, { Aes256Gcm::NONCE_LENGTH }, { Aes256Gcm::MAC_LENGTH }>
-    for Aes256Gcm
-{
-    type SymmetricKey = SymmetricKey<{ Aes256Gcm::KEY_LENGTH }>;
-    type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
-
-    fn new(symmetric_key: &Self::SymmetricKey) -> Self {
+impl Instantiable<{ Aes256Gcm::KEY_LENGTH }> for Aes256Gcm {
+    type Secret = SymmetricKey<{ Aes256Gcm::KEY_LENGTH }>;
+    fn new(symmetric_key: &Self::Secret) -> Self {
         Self(Aes256GcmLib::new(GenericArray::from_slice(
             symmetric_key.as_bytes(),
         )))
     }
+}
 
-    fn encrypt(
-        &self,
-        nonce: &Self::Nonce,
-        plaintext: &[u8],
-        aad: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        Ok(self
-            .0
-            .encrypt(
-                GenericArray::from_slice(nonce.as_bytes()),
-                Payload {
-                    msg: plaintext,
-                    aad: aad.unwrap_or(b""),
-                },
-            )
-            .map_err(|_| CryptoCoreError::EncryptionError)?)
-    }
+impl Dem<{ Aes256Gcm::KEY_LENGTH }, { Aes256Gcm::NONCE_LENGTH }, { Aes256Gcm::MAC_LENGTH }>
+    for Aes256Gcm
+{
+    type AeadAlgo = Aes256GcmLib;
+    type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
 
-    fn decrypt(
-        &self,
-        nonce: &Self::Nonce,
-        ciphertext: &[u8],
-        aad: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        // The ciphertext is of the form: nonce || AEAD ciphertext
-        Ok(self
-            .0
-            .decrypt(
-                nonce.as_bytes().into(),
-                Payload {
-                    msg: &ciphertext,
-                    aad: aad.unwrap_or(b""),
-                },
-            )
-            .map_err(|_| CryptoCoreError::DecryptionError)?)
+    fn aead_backend<'a>(&'a self) -> &'a Self::AeadAlgo {
+        &self.0
     }
 }
 
-impl AeadExtra for Aes256Gcm {
-    type Algo = Aes256GcmLib;
+impl DemInPlace<{ Aes256Gcm::KEY_LENGTH }, { Aes256Gcm::NONCE_LENGTH }, { Aes256Gcm::MAC_LENGTH }>
+    for Aes256Gcm
+{
+    type AeadInPlaceAlgo = Aes256GcmLib;
+    type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
+
+    fn aead_in_place_backend<'a>(&'a self) -> &'a Self::AeadInPlaceAlgo {
+        &self.0
+    }
 }
 
 #[cfg(test)]

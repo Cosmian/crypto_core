@@ -2,7 +2,7 @@ use crate::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
     kdf128,
     reexport::rand_core::CryptoRngCore,
-    symmetric_crypto::{Aes128Gcm, Dem, Nonce, SymmetricKey},
+    symmetric_crypto::{Aes128Gcm, Dem, Instantiable, Nonce, SymmetricKey},
     CryptoCoreError, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
 

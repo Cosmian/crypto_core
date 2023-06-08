@@ -11,6 +11,6 @@ mod nonce;
 pub use aes_128_gcm::Aes128Gcm;
 pub use aes_256_gcm::Aes256Gcm;
 pub use chacha20_poly1305::ChaCha20Poly1305;
-pub use dem::{AeadExtra, Dem};
+pub use dem::{Dem, DemInPlace, Instantiable};
 pub use key::SymmetricKey;
 pub use nonce::Nonce;

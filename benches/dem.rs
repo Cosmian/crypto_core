@@ -1,7 +1,9 @@
 /// Size of the message used in the benchmarks
 use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
-    symmetric_crypto::{Aes128Gcm, Aes256Gcm, ChaCha20Poly1305, Dem, Nonce, SymmetricKey},
+    symmetric_crypto::{
+        Aes128Gcm, Aes256Gcm, ChaCha20Poly1305, Dem, Instantiable, Nonce, SymmetricKey,
+    },
     CsRng, RandomFixedSizeCBytes,
 };
 use criterion::Criterion;

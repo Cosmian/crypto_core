@@ -1,9 +1,10 @@
 //! This file exposes the Chacha20 Poly1305 implemented
 //! in RustCrypto (https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305)
-use super::AeadExtra;
+use super::dem::Instantiable;
+use super::DemInPlace;
 use super::{key::SymmetricKey, nonce::Nonce, Dem};
-use crate::{CryptoCoreError, RandomFixedSizeCBytes};
-use aead::{generic_array::GenericArray, Aead, KeyInit, Payload};
+use crate::RandomFixedSizeCBytes;
+use aead::{generic_array::GenericArray, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305 as ChaCha20Poly1305Lib;
 use std::fmt::Debug;
 
@@ -26,8 +27,14 @@ impl Debug for ChaCha20Poly1305 {
     }
 }
 
-impl AeadExtra for ChaCha20Poly1305 {
-    type Algo = ChaCha20Poly1305Lib;
+impl Instantiable<{ ChaCha20Poly1305::KEY_LENGTH }> for ChaCha20Poly1305 {
+    type Secret = SymmetricKey<{ ChaCha20Poly1305::KEY_LENGTH }>;
+
+    fn new(symmetric_key: &Self::Secret) -> Self {
+        Self(ChaCha20Poly1305Lib::new(GenericArray::from_slice(
+            symmetric_key.as_bytes(),
+        )))
+    }
 }
 
 impl
@@ -37,51 +44,26 @@ impl
         { ChaCha20Poly1305::MAC_LENGTH },
     > for ChaCha20Poly1305
 {
-    type SymmetricKey = SymmetricKey<{ ChaCha20Poly1305::KEY_LENGTH }>;
+    type AeadAlgo = ChaCha20Poly1305Lib;
     type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn new(symmetric_key: &Self::SymmetricKey) -> Self {
-        Self(ChaCha20Poly1305Lib::new(GenericArray::from_slice(
-            symmetric_key.as_bytes(),
-        )))
+    fn aead_backend<'a>(&'a self) -> &'a Self::AeadAlgo {
+        &self.0
     }
+}
 
-    fn encrypt(
-        &self,
-        nonce: &Self::Nonce,
-        plaintext: &[u8],
-        aad: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        // allocate correct byte number
-        Ok(self
-            .0
-            .encrypt(
-                GenericArray::from_slice(nonce.as_bytes()),
-                Payload {
-                    msg: plaintext,
-                    aad: aad.unwrap_or(b""),
-                },
-            )
-            .map_err(|_| CryptoCoreError::EncryptionError)?)
-    }
+impl
+    DemInPlace<
+        { ChaCha20Poly1305::KEY_LENGTH },
+        { ChaCha20Poly1305::NONCE_LENGTH },
+        { ChaCha20Poly1305::MAC_LENGTH },
+    > for ChaCha20Poly1305
+{
+    type AeadInPlaceAlgo = ChaCha20Poly1305Lib;
+    type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn decrypt(
-        &self,
-        nonce: &Self::Nonce,
-        ciphertext: &[u8],
-        aad: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoCoreError> {
-        // The ciphertext is of the form: nonce || AEAD ciphertext
-        Ok(self
-            .0
-            .decrypt(
-                nonce.as_bytes().into(),
-                Payload {
-                    msg: ciphertext,
-                    aad: aad.unwrap_or(b""),
-                },
-            )
-            .map_err(|_| CryptoCoreError::DecryptionError)?)
+    fn aead_in_place_backend<'a>(&'a self) -> &'a Self::AeadInPlaceAlgo {
+        &self.0
     }
 }
 
@@ -91,7 +73,8 @@ mod tests {
     use crate::{
         reexport::rand_core::SeedableRng,
         symmetric_crypto::{
-            chacha20_poly1305::ChaCha20Poly1305, key::SymmetricKey, nonce::Nonce, Dem,
+            chacha20_poly1305::ChaCha20Poly1305, dem::Instantiable, key::SymmetricKey,
+            nonce::Nonce, Dem,
         },
         CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
     };

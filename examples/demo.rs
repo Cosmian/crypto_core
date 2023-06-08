@@ -1,6 +1,6 @@
 //! This demo is used in `README.md`.
 
-use cosmian_crypto_core::{FixedSizeCBytes, RandomFixedSizeCBytes};
+use cosmian_crypto_core::{symmetric_crypto::Instantiable, FixedSizeCBytes, RandomFixedSizeCBytes};
 
 pub fn aes128gcm() {
     use cosmian_crypto_core::{

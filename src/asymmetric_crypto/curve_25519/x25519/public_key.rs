@@ -6,7 +6,7 @@ use super::X25519PrivateKey;
 
 // pub const X25519_PUBLIC_KEY_LENGTH: usize = crypto_box::KEY_SIZE;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct X25519PublicKey(pub(crate) MontgomeryPoint);
 
 impl CBytes for X25519PublicKey {}
