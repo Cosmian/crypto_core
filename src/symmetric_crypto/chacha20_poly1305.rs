@@ -71,13 +71,6 @@ impl
         ciphertext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        if ciphertext.len() < Self::ENCRYPTION_OVERHEAD {
-            return Err(CryptoCoreError::CiphertextTooSmallError {
-                ciphertext_len: ciphertext.len(),
-                min: Self::ENCRYPTION_OVERHEAD as u64,
-            });
-        }
-
         // The ciphertext is of the form: nonce || AEAD ciphertext
         Ok(self
             .0

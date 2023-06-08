@@ -103,12 +103,6 @@ impl Dem<{ Aes256Gcm::KEY_LENGTH }, { Aes256Gcm::NONCE_LENGTH }, { Aes256Gcm::MA
         plaintext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        if plaintext.len() as u64 > Aes256Gcm::MAX_PLAINTEXT_LENGTH {
-            return Err(CryptoCoreError::PlaintextTooBigError {
-                plaintext_len: plaintext.len(),
-                max: Aes256Gcm::MAX_PLAINTEXT_LENGTH,
-            });
-        }
         Ok(self
             .0
             .encrypt(
@@ -127,20 +121,6 @@ impl Dem<{ Aes256Gcm::KEY_LENGTH }, { Aes256Gcm::NONCE_LENGTH }, { Aes256Gcm::MA
         ciphertext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        if ciphertext.len() < Self::ENCRYPTION_OVERHEAD {
-            return Err(CryptoCoreError::CiphertextTooSmallError {
-                ciphertext_len: ciphertext.len(),
-                min: Self::ENCRYPTION_OVERHEAD as u64,
-            });
-        }
-        if ciphertext.len() as u64
-            > Aes256Gcm::MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD as u64
-        {
-            return Err(CryptoCoreError::CiphertextTooBigError {
-                ciphertext_len: ciphertext.len(),
-                max: Aes256Gcm::MAX_PLAINTEXT_LENGTH + Self::ENCRYPTION_OVERHEAD as u64,
-            });
-        }
         // The ciphertext is of the form: nonce || AEAD ciphertext
         Ok(self
             .0

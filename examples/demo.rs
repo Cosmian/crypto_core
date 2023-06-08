@@ -1,37 +1,56 @@
 //! This demo is used in `README.md`.
 
-// pub fn aes128gcm() {
-//     use cosmian_crypto_core::{
-//         reexport::rand_core::SeedableRng,
-//         symmetric_crypto::{aes_128_gcm::Aes128Gcm, key::SymmetricKey, Dem},
-//         CsRng, SecretCBytes,
-//     };
+use cosmian_crypto_core::{FixedSizeCBytes, RandomFixedSizeCBytes};
 
-//     // The cryptographic random generator
-//     let mut rng = CsRng::from_entropy();
+pub fn aes128gcm() {
+    use cosmian_crypto_core::{
+        reexport::rand_core::SeedableRng,
+        symmetric_crypto::{Aes128Gcm, Dem, Nonce, SymmetricKey},
+        CsRng,
+    };
 
-//     // the message to encrypt
-//     let message = b"my secret message";
+    // A cryptographically secure random generator
+    let mut rng = CsRng::from_entropy();
 
-//     // the additional data to authenticate
-//     let additional_data = Some(b"additional data".as_slice());
+    // the message to encrypt
+    let message = b"my secret message";
+    // the secret key used to encrypt the message
+    // which is shared between the sender and the recipient
+    let secret_key = SymmetricKey::new(&mut rng);
 
-//     // the secret key used to encrypt the message
-//     // which is shared between the sender and the recipient
-//     let secret_key = SymmetricKey::new(&mut rng);
+    // the additional data shared between the sender and the recipient to authenticate the message
+    let additional_data = Some(b"additional data".as_slice());
 
-//     // the sender encrypts the message
-//     let ciphertext =
-//         Aes128Gcm::encrypt_combined(&mut rng, &secret_key, message, additional_data).unwrap();
+    // the sender generate a Nonce an encrypts the message
+    let nonce = Nonce::new(&mut rng);
+    let ciphertext = Aes128Gcm::new(&secret_key)
+        .encrypt(&nonce, message, additional_data)
+        .unwrap();
+    // to transmit the message, the sender can concatenate the nonce and the ciphertext
+    // and send the concatenated result to the recipient
+    let ciphertext = [nonce.as_bytes(), ciphertext.as_slice()].concat();
 
-//     // the recipient decrypts the message
-//     let plaintext = Aes128Gcm::decrypt_combined(&secret_key, &ciphertext, additional_data).unwrap();
+    // the ciphertext size is the message size plus the nonce size plus the authentication tag size
+    assert_eq!(
+        ciphertext.len(),
+        message.len() + Aes128Gcm::NONCE_LENGTH + Aes128Gcm::MAC_LENGTH
+    );
 
-//     // assert the decrypted message is identical to the original plaintext
-//     assert_eq!(plaintext, message, "Decryption failed");
+    // the recipient extracts the nonce and decrypts the message
+    let nonce = Nonce::try_from_slice(&ciphertext[..Aes128Gcm::NONCE_LENGTH]).unwrap();
+    let plaintext = Aes128Gcm::new(&secret_key)
+        .decrypt(
+            &nonce,
+            &ciphertext[Aes128Gcm::NONCE_LENGTH..],
+            additional_data,
+        )
+        .unwrap();
 
-//     println!("AES 128 GCM: SUCCESS");
-// }
+    // assert the decrypted message is identical to the original plaintext
+    assert_eq!(plaintext, message, "Decryption failed");
+
+    println!("AES 128 GCM: SUCCESS");
+}
 
 fn main() {
     aes128gcm();

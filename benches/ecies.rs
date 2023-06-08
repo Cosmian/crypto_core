@@ -1,7 +1,7 @@
 use cosmian_crypto_core::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey, X25519PrivateKey, X25519PublicKey},
     ecies::{Ecies, EciesR25519Aes128, EciesSalsaSealBox},
-    CsRng, SecretCBytes,
+    CsRng, RandomFixedSizeCBytes,
 };
 use criterion::Criterion;
 use rand_chacha::rand_core::SeedableRng;

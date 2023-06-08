@@ -10,9 +10,6 @@ use crate::{CryptoCoreError, FixedSizeCBytes, SecretCBytes};
 pub trait Dem<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const MAC_LENGTH: usize>:
     Debug
 {
-    /// Number of bytes added to the message length in the encapsulation.
-    const ENCRYPTION_OVERHEAD: usize = NONCE_LENGTH + MAC_LENGTH;
-
     type SymmetricKey: SecretCBytes<KEY_LENGTH>;
     type Nonce: FixedSizeCBytes<NONCE_LENGTH>;
 

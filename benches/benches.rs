@@ -2,7 +2,7 @@ use cosmian_crypto_core::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
     kdf128, kdf256,
     reexport::rand_core::{RngCore, SeedableRng},
-    CsRng, SecretCBytes,
+    CsRng, RandomFixedSizeCBytes,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use dem::{bench_symmetric_decryption, bench_symmetric_encryption};
