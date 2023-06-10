@@ -2,16 +2,12 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
-use super::dem::{DemInPlace, Instantiable};
+use super::dem::{DemInPlace, DemStream, Instantiable};
 use crate::{
     symmetric_crypto::{key::SymmetricKey, nonce::Nonce, Dem},
     RandomFixedSizeCBytes,
 };
-use aead::{
-    generic_array::GenericArray,
-    stream::{DecryptorBE32, DecryptorLE31, EncryptorBE32, EncryptorLE31},
-    KeyInit,
-};
+use aead::{generic_array::GenericArray, KeyInit};
 use aes_gcm::Aes256Gcm as Aes256GcmLib;
 use std::{
     fmt::{self, Debug, Formatter},
@@ -37,40 +33,6 @@ impl Aes256Gcm {
     pub const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 }
 
-impl Aes256Gcm {
-    pub fn new(key: &SymmetricKey<{ Aes256Gcm::KEY_LENGTH }>) -> Self {
-        Self(Aes256GcmLib::new(GenericArray::from_slice(key.as_bytes())))
-    }
-
-    pub fn into_stream_encryptor_be32(
-        self,
-        nonce: &Nonce<{ Aes256Gcm::NONCE_LENGTH }>,
-    ) -> EncryptorBE32<Aes256GcmLib> {
-        EncryptorBE32::from_aead(self.0, nonce.as_bytes().into())
-    }
-
-    pub fn into_stream_decryptor_be32(
-        self,
-        nonce: &Nonce<{ Aes256Gcm::NONCE_LENGTH }>,
-    ) -> DecryptorBE32<Aes256GcmLib> {
-        DecryptorBE32::from_aead(self.0, nonce.as_bytes().into())
-    }
-
-    pub fn into_stream_encryptor_le31(
-        self,
-        nonce: &Nonce<{ Aes256Gcm::NONCE_LENGTH }>,
-    ) -> EncryptorLE31<Aes256GcmLib> {
-        EncryptorLE31::from_aead(self.0, nonce.as_bytes().into())
-    }
-
-    pub fn into_stream_decryptor_le31(
-        self,
-        nonce: &Nonce<{ Aes256Gcm::NONCE_LENGTH }>,
-    ) -> DecryptorLE31<Aes256GcmLib> {
-        DecryptorLE31::from_aead(self.0, nonce.as_bytes().into())
-    }
-}
-
 impl Deref for Aes256Gcm {
     type Target = Aes256GcmLib;
 
@@ -94,25 +56,48 @@ impl Instantiable<{ Aes256Gcm::KEY_LENGTH }> for Aes256Gcm {
     }
 }
 
-impl Dem<{ Aes256Gcm::KEY_LENGTH }, { Aes256Gcm::NONCE_LENGTH }, { Aes256Gcm::MAC_LENGTH }>
-    for Aes256Gcm
+impl
+    Dem<
+        { Aes256Gcm::KEY_LENGTH },
+        { Aes256Gcm::NONCE_LENGTH },
+        { Aes256Gcm::MAC_LENGTH },
+        Aes256GcmLib,
+    > for Aes256Gcm
 {
-    type AeadAlgo = Aes256GcmLib;
     type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
 
-    fn aead_backend<'a>(&'a self) -> &'a Self::AeadAlgo {
+    fn aead_backend<'a>(&'a self) -> &'a Aes256GcmLib {
         &self.0
     }
 }
 
-impl DemInPlace<{ Aes256Gcm::KEY_LENGTH }, { Aes256Gcm::NONCE_LENGTH }, { Aes256Gcm::MAC_LENGTH }>
-    for Aes256Gcm
+impl
+    DemInPlace<
+        { Aes256Gcm::KEY_LENGTH },
+        { Aes256Gcm::NONCE_LENGTH },
+        { Aes256Gcm::MAC_LENGTH },
+        Aes256GcmLib,
+    > for Aes256Gcm
 {
-    type AeadInPlaceAlgo = Aes256GcmLib;
     type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
 
-    fn aead_in_place_backend<'a>(&'a self) -> &'a Self::AeadInPlaceAlgo {
+    fn aead_in_place_backend<'a>(&'a self) -> &'a Aes256GcmLib {
         &self.0
+    }
+}
+
+impl
+    DemStream<
+        { Aes256Gcm::KEY_LENGTH },
+        { Aes256Gcm::NONCE_LENGTH },
+        { Aes256Gcm::MAC_LENGTH },
+        Aes256GcmLib,
+    > for Aes256Gcm
+{
+    type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
+
+    fn into_aead_stream_backend(self) -> Aes256GcmLib {
+        self.0
     }
 }
 
@@ -123,12 +108,15 @@ mod tests {
 
     use crate::{
         reexport::rand_core::SeedableRng,
-        symmetric_crypto::{aes_256_gcm::Aes256Gcm, key::SymmetricKey, nonce::Nonce, Dem},
+        symmetric_crypto::{
+            aes_256_gcm::Aes256Gcm, dem::DemStream, key::SymmetricKey, nonce::Nonce, Dem,
+            DemInPlace, Instantiable,
+        },
         CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
     };
 
     #[test]
-    fn test_dem() -> Result<(), CryptoCoreError> {
+    fn test_dem_combined() -> Result<(), CryptoCoreError> {
         let message = b"my secret message";
         let additional_data = Some(b"public tag".as_slice());
         let mut rng = CsRng::from_entropy();
@@ -142,6 +130,35 @@ mod tests {
         let plaintext =
             Aes256Gcm::new(&secret_key).decrypt(&nonce, &ciphertext, additional_data)?;
         assert_eq!(plaintext, message, "Decryption failed");
+        Ok(())
+    }
+
+    #[test]
+    fn test_dem_in_place() -> Result<(), CryptoCoreError> {
+        let message = b"my secret message";
+        let additional_data = Some(b"public tag".as_slice());
+        let mut rng = CsRng::from_entropy();
+        let secret_key = SymmetricKey::new(&mut rng);
+        let nonce = Nonce::new(&mut rng);
+
+        // the in-place buffer
+        let mut buffer = message.to_vec();
+
+        // Encrypt
+        let tag = Aes256Gcm::new(&secret_key).encrypt_in_place_detached(
+            &nonce,
+            &mut buffer,
+            additional_data,
+        )?;
+
+        // decrypt
+        Aes256Gcm::new(&secret_key).decrypt_in_place_detached(
+            &nonce,
+            &mut buffer,
+            &tag,
+            additional_data,
+        )?;
+        assert_eq!(&message[..], buffer.as_slice(), "Decryption failed");
         Ok(())
     }
 
@@ -260,32 +277,98 @@ mod tests {
     }
 
     #[test]
-    fn test_stream() -> Result<(), CryptoCoreError> {
+    fn test_stream_be32() -> Result<(), CryptoCoreError> {
         let message = b"Hello, World!";
-        let aad = b"aad";
+        let aad = b"the aad";
+        // there will be 2 chunks for the message, one of size 8 and one of size 5
+        const BLOCK_SIZE: usize = 8;
+
+        // generate a random key and nonce
         let mut rng = CsRng::from_entropy();
         let secret_key = SymmetricKey::new(&mut rng);
         let nonce = Nonce::new(&mut rng);
 
-        //
+        // Instantiate an encryptor
         let mut encryptor = Aes256Gcm::new(&secret_key).into_stream_encryptor_be32(&nonce);
+
+        // encrypt the first chunk
         let mut ciphertext = encryptor.encrypt_next(Payload {
-            msg: &message[..6],
+            msg: &message[..BLOCK_SIZE],
             aad,
         })?;
-        ciphertext.extend_from_slice(&encryptor.encrypt_next(Payload {
-            msg: &message[6..],
+
+        // encrypt the second and last chunk
+        ciphertext.extend_from_slice(&encryptor.encrypt_last(Payload {
+            msg: &message[BLOCK_SIZE..],
             aad,
         })?);
 
         // decryption
-        let mut encryptor = Aes256Gcm::new(&secret_key).into_stream_decryptor_be32(&nonce);
-        let mut plaintext = encryptor.decrypt_next(Payload {
-            msg: &ciphertext[..4],
+
+        // Instantiate a decryptor
+        let mut decryptor = Aes256Gcm::new(&secret_key).into_stream_decryptor_be32(&nonce);
+
+        // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
+        let mut plaintext = decryptor.decrypt_next(Payload {
+            msg: &ciphertext[..BLOCK_SIZE + Aes256Gcm::MAC_LENGTH],
             aad,
         })?;
-        plaintext.extend_from_slice(&encryptor.decrypt_next(Payload {
-            msg: &ciphertext[4..],
+
+        // decrypt the second and last chunk
+        plaintext.extend_from_slice(&decryptor.decrypt_last(Payload {
+            msg: &ciphertext[BLOCK_SIZE + Aes256Gcm::MAC_LENGTH..],
+            aad,
+        })?);
+
+        assert_eq!(
+            message.as_slice(),
+            plaintext.as_slice(),
+            "Decryption failed"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_stream_le31() -> Result<(), CryptoCoreError> {
+        let message = b"Hello, World!";
+        let aad = b"the aad";
+        // there will be 2 chunks for the message, one of size 8 and one of size 5
+        const BLOCK_SIZE: usize = 8;
+
+        // generate a random key and nonce
+        let mut rng = CsRng::from_entropy();
+        let secret_key = SymmetricKey::new(&mut rng);
+        let nonce = Nonce::new(&mut rng);
+
+        // Instantiate an encryptor
+        let mut encryptor = Aes256Gcm::new(&secret_key).into_stream_encryptor_le31(&nonce);
+
+        // encrypt the first chunk
+        let mut ciphertext = encryptor.encrypt_next(Payload {
+            msg: &message[..BLOCK_SIZE],
+            aad,
+        })?;
+
+        // encrypt the second and last chunk
+        ciphertext.extend_from_slice(&encryptor.encrypt_last(Payload {
+            msg: &message[BLOCK_SIZE..],
+            aad,
+        })?);
+
+        // decryption
+
+        // Instantiate a decryptor
+        let mut decryptor = Aes256Gcm::new(&secret_key).into_stream_decryptor_le31(&nonce);
+
+        // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
+        let mut plaintext = decryptor.decrypt_next(Payload {
+            msg: &ciphertext[..BLOCK_SIZE + Aes256Gcm::MAC_LENGTH],
+            aad,
+        })?;
+
+        // decrypt the second and last chunk
+        plaintext.extend_from_slice(&decryptor.decrypt_last(Payload {
+            msg: &ciphertext[BLOCK_SIZE + Aes256Gcm::MAC_LENGTH..],
             aad,
         })?);
 

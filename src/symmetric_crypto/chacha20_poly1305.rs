@@ -1,6 +1,6 @@
 //! This file exposes the Chacha20 Poly1305 implemented
 //! in RustCrypto (https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305)
-use super::dem::Instantiable;
+use super::dem::{DemStream, Instantiable};
 use super::DemInPlace;
 use super::{key::SymmetricKey, nonce::Nonce, Dem};
 use crate::RandomFixedSizeCBytes;
@@ -42,12 +42,12 @@ impl
         { ChaCha20Poly1305::KEY_LENGTH },
         { ChaCha20Poly1305::NONCE_LENGTH },
         { ChaCha20Poly1305::MAC_LENGTH },
+        ChaCha20Poly1305Lib,
     > for ChaCha20Poly1305
 {
-    type AeadAlgo = ChaCha20Poly1305Lib;
     type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn aead_backend<'a>(&'a self) -> &'a Self::AeadAlgo {
+    fn aead_backend<'a>(&'a self) -> &'a ChaCha20Poly1305Lib {
         &self.0
     }
 }
@@ -57,30 +57,50 @@ impl
         { ChaCha20Poly1305::KEY_LENGTH },
         { ChaCha20Poly1305::NONCE_LENGTH },
         { ChaCha20Poly1305::MAC_LENGTH },
+        ChaCha20Poly1305Lib,
     > for ChaCha20Poly1305
 {
-    type AeadInPlaceAlgo = ChaCha20Poly1305Lib;
     type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn aead_in_place_backend<'a>(&'a self) -> &'a Self::AeadInPlaceAlgo {
+    fn aead_in_place_backend<'a>(&'a self) -> &'a ChaCha20Poly1305Lib {
         &self.0
+    }
+}
+
+impl
+    DemStream<
+        { ChaCha20Poly1305::KEY_LENGTH },
+        { ChaCha20Poly1305::NONCE_LENGTH },
+        { ChaCha20Poly1305::MAC_LENGTH },
+        ChaCha20Poly1305Lib,
+    > for ChaCha20Poly1305
+{
+    type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
+
+    fn into_aead_stream_backend(self) -> ChaCha20Poly1305Lib {
+        self.0
     }
 }
 
 #[cfg(test)]
 mod tests {
 
+    use aead::Payload;
+
     use crate::{
         reexport::rand_core::SeedableRng,
         symmetric_crypto::{
-            chacha20_poly1305::ChaCha20Poly1305, dem::Instantiable, key::SymmetricKey,
-            nonce::Nonce, Dem,
+            chacha20_poly1305::ChaCha20Poly1305,
+            dem::{DemStream, Instantiable},
+            key::SymmetricKey,
+            nonce::Nonce,
+            Dem, DemInPlace,
         },
         CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
     };
 
     #[test]
-    fn test_dem() -> Result<(), CryptoCoreError> {
+    fn test_dem_combined() -> Result<(), CryptoCoreError> {
         let message = b"my secret message";
         let additional_data = Some(b"public tag".as_slice());
         let mut rng = CsRng::from_entropy();
@@ -95,6 +115,35 @@ mod tests {
         let plaintext =
             ChaCha20Poly1305::new(&secret_key).decrypt(&nonce, &ciphertext, additional_data)?;
         assert_eq!(plaintext, message, "Decryption failed");
+        Ok(())
+    }
+
+    #[test]
+    fn test_dem_in_place() -> Result<(), CryptoCoreError> {
+        let message = b"my secret message";
+        let additional_data = Some(b"public tag".as_slice());
+        let mut rng = CsRng::from_entropy();
+        let secret_key = SymmetricKey::new(&mut rng);
+        let nonce = Nonce::new(&mut rng);
+
+        // the in-place buffer
+        let mut buffer = message.to_vec();
+
+        // Encrypt
+        let tag = ChaCha20Poly1305::new(&secret_key).encrypt_in_place_detached(
+            &nonce,
+            &mut buffer,
+            additional_data,
+        )?;
+
+        // decrypt
+        ChaCha20Poly1305::new(&secret_key).decrypt_in_place_detached(
+            &nonce,
+            &mut buffer,
+            &tag,
+            additional_data,
+        )?;
+        assert_eq!(&message[..], buffer.as_slice(), "Decryption failed");
         Ok(())
     }
 
@@ -217,5 +266,109 @@ mod tests {
 
         // check the plaintext is correct
         assert_eq!(plaintext, message);
+    }
+
+    #[test]
+    fn test_stream_be32() -> Result<(), CryptoCoreError> {
+        let message = b"Hello, World!";
+        let aad = b"the aad";
+        // there will be 2 chunks for the message, one of size 8 and one of size 5
+        const BLOCK_SIZE: usize = 8;
+
+        // generate a random key and nonce
+        let mut rng = CsRng::from_entropy();
+        let secret_key = SymmetricKey::new(&mut rng);
+        let nonce = Nonce::new(&mut rng);
+
+        // Instantiate an encryptor
+        let mut encryptor = ChaCha20Poly1305::new(&secret_key).into_stream_encryptor_be32(&nonce);
+
+        // encrypt the first chunk
+        let mut ciphertext = encryptor.encrypt_next(Payload {
+            msg: &message[..BLOCK_SIZE],
+            aad,
+        })?;
+
+        // encrypt the second and last chunk
+        ciphertext.extend_from_slice(&encryptor.encrypt_last(Payload {
+            msg: &message[BLOCK_SIZE..],
+            aad,
+        })?);
+
+        // decryption
+
+        // Instantiate a decryptor
+        let mut decryptor = ChaCha20Poly1305::new(&secret_key).into_stream_decryptor_be32(&nonce);
+
+        // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
+        let mut plaintext = decryptor.decrypt_next(Payload {
+            msg: &ciphertext[..BLOCK_SIZE + ChaCha20Poly1305::MAC_LENGTH],
+            aad,
+        })?;
+
+        // decrypt the second and last chunk
+        plaintext.extend_from_slice(&decryptor.decrypt_last(Payload {
+            msg: &ciphertext[BLOCK_SIZE + ChaCha20Poly1305::MAC_LENGTH..],
+            aad,
+        })?);
+
+        assert_eq!(
+            message.as_slice(),
+            plaintext.as_slice(),
+            "Decryption failed"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_stream_le31() -> Result<(), CryptoCoreError> {
+        let message = b"Hello, World!";
+        let aad = b"the aad";
+        // there will be 2 chunks for the message, one of size 8 and one of size 5
+        const BLOCK_SIZE: usize = 8;
+
+        // generate a random key and nonce
+        let mut rng = CsRng::from_entropy();
+        let secret_key = SymmetricKey::new(&mut rng);
+        let nonce = Nonce::new(&mut rng);
+
+        // Instantiate an encryptor
+        let mut encryptor = ChaCha20Poly1305::new(&secret_key).into_stream_encryptor_le31(&nonce);
+
+        // encrypt the first chunk
+        let mut ciphertext = encryptor.encrypt_next(Payload {
+            msg: &message[..BLOCK_SIZE],
+            aad,
+        })?;
+
+        // encrypt the second and last chunk
+        ciphertext.extend_from_slice(&encryptor.encrypt_last(Payload {
+            msg: &message[BLOCK_SIZE..],
+            aad,
+        })?);
+
+        // decryption
+
+        // Instantiate a decryptor
+        let mut decryptor = ChaCha20Poly1305::new(&secret_key).into_stream_decryptor_le31(&nonce);
+
+        // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
+        let mut plaintext = decryptor.decrypt_next(Payload {
+            msg: &ciphertext[..BLOCK_SIZE + ChaCha20Poly1305::MAC_LENGTH],
+            aad,
+        })?;
+
+        // decrypt the second and last chunk
+        plaintext.extend_from_slice(&decryptor.decrypt_last(Payload {
+            msg: &ciphertext[BLOCK_SIZE + ChaCha20Poly1305::MAC_LENGTH..],
+            aad,
+        })?);
+
+        assert_eq!(
+            message.as_slice(),
+            plaintext.as_slice(),
+            "Decryption failed"
+        );
+        Ok(())
     }
 }

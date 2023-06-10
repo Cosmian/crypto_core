@@ -5,7 +5,10 @@ use cosmian_crypto_core::{
     CsRng, RandomFixedSizeCBytes,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
-use dem::{bench_symmetric_decryption, bench_symmetric_encryption};
+use dem::{
+    bench_symmetric_decryption_combined, bench_symmetric_decryption_in_place,
+    bench_symmetric_encryption_combined, bench_symmetric_encryption_in_place,
+};
 
 mod dem;
 mod ecies;
@@ -61,7 +64,8 @@ criterion_group!(
 criterion_group!(
     name = dem;
     config = Criterion::default().sample_size(5000);
-    targets = bench_symmetric_encryption, bench_symmetric_decryption
+    targets = bench_symmetric_encryption_combined, bench_symmetric_encryption_in_place,
+    bench_symmetric_decryption_combined,bench_symmetric_decryption_in_place
 );
 
 criterion_group!(

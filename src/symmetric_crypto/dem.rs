@@ -1,7 +1,12 @@
+use aead::{
+    consts::{U4, U5},
+    generic_array::{ArrayLength, GenericArray},
+    stream::{DecryptorBE32, DecryptorLE31, EncryptorBE32, EncryptorLE31},
+    Aead, AeadCore, AeadInPlace, KeyInit, Payload,
+};
 use core::fmt::Debug;
+use std::ops::Sub;
 use std::vec::Vec;
-
-use aead::{generic_array::GenericArray, Aead, AeadInPlace, KeyInit, Payload};
 
 use crate::{CryptoCoreError, RandomFixedSizeCBytes, SecretCBytes};
 
@@ -15,14 +20,18 @@ pub trait Instantiable<const KEY_LENGTH: usize>: Debug {
 
 /// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
 /// [ISO 2004](https://www.shoup.net/iso/std6.pdf).
-pub trait Dem<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const MAC_LENGTH: usize>:
-    Instantiable<KEY_LENGTH>
+pub trait Dem<
+    const KEY_LENGTH: usize,
+    const NONCE_LENGTH: usize,
+    const MAC_LENGTH: usize,
+    RustCryptoBackend,
+>: Instantiable<KEY_LENGTH> where
+    RustCryptoBackend: Aead + KeyInit,
 {
-    type AeadAlgo: Aead + KeyInit;
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
 
     /// Returns the RustCrypto Aead backend algorithm
-    fn aead_backend<'a>(&'a self) -> &'a Self::AeadAlgo;
+    fn aead_backend<'a>(&'a self) -> &'a RustCryptoBackend;
 
     /// Encrypts a plaintext using the given symmetric key.
     ///
@@ -76,14 +85,21 @@ pub trait Dem<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const MAC_LENG
     }
 }
 
-pub trait DemInPlace<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const MAC_LENGTH: usize>:
-    Debug
+/// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
+/// [ISO 2004](https://www.shoup.net/iso/std6.pdf)
+/// that allows encryption and decryption in place.
+pub trait DemInPlace<
+    const KEY_LENGTH: usize,
+    const NONCE_LENGTH: usize,
+    const MAC_LENGTH: usize,
+    RustCryptoBackend,
+>: Instantiable<KEY_LENGTH> where
+    RustCryptoBackend: AeadInPlace + KeyInit,
 {
-    type AeadInPlaceAlgo: AeadInPlace + KeyInit;
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
 
     /// Returns the RustCrypto Aead in place backend algorithm
-    fn aead_in_place_backend<'a>(&'a self) -> &'a Self::AeadInPlaceAlgo;
+    fn aead_in_place_backend<'a>(&'a self) -> &'a RustCryptoBackend;
 
     /// Encrypts a message in place using a secret key and a public nonce in
     /// detached mode: the tag authenticating both the confidential
@@ -124,5 +140,54 @@ pub trait DemInPlace<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const M
                 GenericArray::from_slice(tag),
             )
             .map_err(|_| CryptoCoreError::DecryptionError)
+    }
+}
+
+/// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
+/// [ISO 2004](https://www.shoup.net/iso/std6.pdf)
+/// that allows encrypting and decrypting a stream.
+pub trait DemStream<
+    const KEY_LENGTH: usize,
+    const NONCE_LENGTH: usize,
+    const MAC_LENGTH: usize,
+    AeadAlgo,
+>: Instantiable<KEY_LENGTH> + Sized where
+    AeadAlgo: AeadInPlace + KeyInit,
+    <AeadAlgo as AeadCore>::NonceSize: Sub<U5>,
+    <AeadAlgo as AeadCore>::NonceSize: Sub<U4>,
+    <<AeadAlgo as AeadCore>::NonceSize as Sub<U5>>::Output: ArrayLength<u8>,
+    <<AeadAlgo as AeadCore>::NonceSize as Sub<U4>>::Output: ArrayLength<u8>,
+{
+    type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
+
+    /// Returns the RustCrypto Aead in place backend algorithm with stream capabilities
+    fn into_aead_stream_backend(self) -> AeadAlgo;
+
+    fn into_stream_encryptor_be32(self, nonce: &Self::Nonce) -> EncryptorBE32<AeadAlgo> {
+        EncryptorBE32::from_aead(
+            self.into_aead_stream_backend(),
+            nonce.as_bytes()[0..NONCE_LENGTH - 5].into(),
+        )
+    }
+
+    fn into_stream_decryptor_be32(self, nonce: &Self::Nonce) -> DecryptorBE32<AeadAlgo> {
+        DecryptorBE32::from_aead(
+            self.into_aead_stream_backend(),
+            nonce.as_bytes()[0..NONCE_LENGTH - 5].into(),
+        )
+    }
+
+    fn into_stream_encryptor_le31(self, nonce: &Self::Nonce) -> EncryptorLE31<AeadAlgo> {
+        EncryptorLE31::from_aead(
+            self.into_aead_stream_backend(),
+            nonce.as_bytes()[0..NONCE_LENGTH - 4].into(),
+        )
+    }
+
+    fn into_stream_decryptor_le31(self, nonce: &Self::Nonce) -> DecryptorLE31<AeadAlgo> {
+        DecryptorLE31::from_aead(
+            self.into_aead_stream_backend(),
+            nonce.as_bytes()[0..NONCE_LENGTH - 4].into(),
+        )
     }
 }
