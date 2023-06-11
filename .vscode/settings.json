@@ -23,5 +23,6 @@
     "xchacha",
     "zeroize",
     "zeroized"
-  ]
+  ],
+  "rust-analyzer.check.command": "clippy"
 }

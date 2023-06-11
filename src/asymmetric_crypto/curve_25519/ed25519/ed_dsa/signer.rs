@@ -16,7 +16,7 @@ impl Signer<ed25519::Signature> for Ed25519PrivateKey {
             .map_err(|_| signature::Error::new())?;
         let public_key = EdPublicKey::from(&sk);
         let expanded: ExpandedSecretKey = (&sk).into();
-        Ok(expanded.sign(&message, &public_key).into())
+        Ok(expanded.sign(message, &public_key))
     }
 }
 
@@ -47,6 +47,6 @@ impl TryFrom<&Ed25519PrivateKey> for Cached25519Signer {
 
 impl Signer<ed25519::Signature> for Cached25519Signer {
     fn try_sign(&self, message: &[u8]) -> Result<ed25519::Signature, signature::Error> {
-        Ok(self.expanded.sign(&message, &self.pk).into())
+        Ok(self.expanded.sign(message, &self.pk))
     }
 }

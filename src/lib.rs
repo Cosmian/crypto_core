@@ -16,15 +16,16 @@ pub mod reexport {
     // reexport the aead traits
     pub use aead;
 }
-pub mod symmetric_crypto;
+mod symmetric_crypto;
 
 pub use crate::error::CryptoCoreError;
 pub use ::blake2::*;
 pub use asymmetric_crypto::*;
 pub use ecies::*;
+pub use symmetric_crypto::*;
 
 use reexport::rand_core::CryptoRngCore;
-use std::hash::Hash;
+
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
@@ -63,7 +64,7 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
 /// that can be generated from a cryptographically secure random generator.
 ///
 /// This may be a Nonce for instance
-pub trait RandomFixedSizeCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> + Hash {
+pub trait RandomFixedSizeCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> {
     /// Generate a new random array of LENGTH bytes
     #[must_use]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self;

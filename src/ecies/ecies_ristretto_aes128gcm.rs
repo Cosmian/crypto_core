@@ -1,4 +1,4 @@
-use super::ecies::EciesStream;
+use super::ecies_traits::EciesStream;
 use crate::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
     kdf128,
@@ -88,7 +88,7 @@ impl EciesR25519Aes128 {
 
         // Recompute the nonce
         let nonce = get_nonce::<{ Aes128Gcm::NONCE_LENGTH }>(
-            &ephemeral_public_key,
+            ephemeral_public_key,
             &R25519PublicKey::from(recipient_sk),
         );
 
@@ -170,7 +170,7 @@ impl EciesStream<R25519PrivateKey, R25519PublicKey, Aes128GcmLib> for EciesR2551
     ) -> Result<aead::stream::DecryptorBE32<Aes128GcmLib>, CryptoCoreError> {
         // recover the symmetric key and nonce
         let (key, nonce) =
-            Self::recover_key_and_nonce(recipient_private_key, &ephemeral_public_key)?;
+            Self::recover_key_and_nonce(recipient_private_key, ephemeral_public_key)?;
         // instantiate the symmetric cipher
         let aes_128_gcm = Aes128Gcm::new(&key);
         // turn it into a stream decryptor
@@ -183,7 +183,7 @@ impl EciesStream<R25519PrivateKey, R25519PublicKey, Aes128GcmLib> for EciesR2551
     ) -> Result<aead::stream::DecryptorLE31<Aes128GcmLib>, CryptoCoreError> {
         // recover the symmetric key and nonce
         let (key, nonce) =
-            Self::recover_key_and_nonce(recipient_private_key, &ephemeral_public_key)?;
+            Self::recover_key_and_nonce(recipient_private_key, ephemeral_public_key)?;
         // instantiate the symmetric cipher
         let aes_128_gcm = Aes128Gcm::new(&key);
         // turn it into a stream decryptor
@@ -198,7 +198,7 @@ mod tests {
     use super::CryptoCoreError;
     use crate::{
         asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
-        ecies::{ecies::EciesStream, ecies_ristretto_aes128gcm::EciesR25519Aes128},
+        ecies::{ecies_ristretto_aes128gcm::EciesR25519Aes128, ecies_traits::EciesStream},
         reexport::rand_core::SeedableRng,
         symmetric_crypto::Aes128Gcm,
         CsRng, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,

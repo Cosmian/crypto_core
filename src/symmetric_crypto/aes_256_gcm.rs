@@ -66,7 +66,7 @@ impl
 {
     type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
 
-    fn aead_backend<'a>(&'a self) -> &'a Aes256GcmLib {
+    fn aead_backend(&self) -> &Aes256GcmLib {
         &self.0
     }
 }
@@ -81,7 +81,7 @@ impl
 {
     type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
 
-    fn aead_in_place_backend<'a>(&'a self) -> &'a Aes256GcmLib {
+    fn aead_in_place_backend(&self) -> &Aes256GcmLib {
         &self.0
     }
 }

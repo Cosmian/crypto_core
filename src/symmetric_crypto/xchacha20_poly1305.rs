@@ -47,7 +47,7 @@ impl
 {
     type Nonce = Nonce<{ XChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn aead_backend<'a>(&'a self) -> &'a XChaCha20Poly1305Lib {
+    fn aead_backend(&self) -> &XChaCha20Poly1305Lib {
         &self.0
     }
 }
@@ -62,7 +62,7 @@ impl
 {
     type Nonce = Nonce<{ XChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn aead_in_place_backend<'a>(&'a self) -> &'a XChaCha20Poly1305Lib {
+    fn aead_in_place_backend(&self) -> &XChaCha20Poly1305Lib {
         &self.0
     }
 }

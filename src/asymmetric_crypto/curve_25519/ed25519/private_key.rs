@@ -8,7 +8,7 @@ impl TryInto<EdSecretKey> for Ed25519PrivateKey {
     type Error = crate::CryptoCoreError;
 
     fn try_into(self) -> Result<EdSecretKey, Self::Error> {
-        Ok(EdSecretKey::from_bytes(self.0.as_bytes())
-            .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?)
+        EdSecretKey::from_bytes(self.0.as_bytes())
+            .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)
     }
 }

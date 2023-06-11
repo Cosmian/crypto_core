@@ -38,10 +38,9 @@ macro_rules! blake2b {
             $(
                 <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, $bytes);
             )*
-            if let Err(_) =
-                <blake2::Blake2bVar as blake2::digest::VariableOutput>::finalize_variable(
+            if <blake2::Blake2bVar as blake2::digest::VariableOutput>::finalize_variable(
                     hasher, &mut res,
-                )
+                ).is_err()
             {
                 return Err(CryptoCoreError::InvalidBytesLength);
             }
@@ -88,10 +87,9 @@ macro_rules! blake2s {
             $(
                 <blake2::Blake2sVar as blake2::digest::Update>::update(&mut hasher, $bytes);
             )*
-            if let Err(_) =
-                <blake2::Blake2sVar as blake2::digest::VariableOutput>::finalize_variable(
+            if  <blake2::Blake2sVar as blake2::digest::VariableOutput>::finalize_variable(
                     hasher, &mut res,
-                )
+                ).is_err()
             {
                 return Err(CryptoCoreError::InvalidBytesLength);
             }
@@ -102,7 +100,7 @@ macro_rules! blake2s {
 
 #[cfg(test)]
 mod tests {
-    use blake2;
+
     use blake2::digest::VariableOutput;
 
     use crate::CryptoCoreError;
@@ -123,10 +121,10 @@ mod tests {
             };
             <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, msg1);
             <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, msg2);
-            if let Err(_) =
-                <blake2::Blake2bVar as blake2::digest::VariableOutput>::finalize_variable(
-                    hasher, &mut res,
-                )
+            if <blake2::Blake2bVar as blake2::digest::VariableOutput>::finalize_variable(
+                hasher, &mut res,
+            )
+            .is_err()
             {
                 return Err(CryptoCoreError::InvalidBytesLength);
             }

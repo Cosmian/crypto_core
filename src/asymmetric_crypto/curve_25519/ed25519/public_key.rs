@@ -36,8 +36,8 @@ impl Deref for Ed25519PublicKey {
         &self.0
     }
 }
-impl Into<EdPublicKey> for Ed25519PublicKey {
-    fn into(self) -> EdPublicKey {
-        self.0
+impl From<Ed25519PublicKey> for EdPublicKey {
+    fn from(val: Ed25519PublicKey) -> Self {
+        val.0
     }
 }
