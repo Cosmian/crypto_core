@@ -1,8 +1,7 @@
 use cosmian_crypto_core::{
-    asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
-    kdf128, kdf256,
+    blake2b, blake2s, kdf128, kdf256,
     reexport::rand_core::{RngCore, SeedableRng},
-    CsRng, RandomFixedSizeCBytes,
+    CryptoCoreError, CsRng, R25519PrivateKey, R25519PublicKey, RandomFixedSizeCBytes,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use dem::{
@@ -46,12 +45,28 @@ fn bench_kdf(c: &mut Criterion) {
     let mut ikm_64 = [0; 64];
     rng.fill_bytes(&mut ikm_64);
     c.bench_function(
-        "KDF 128bit derivation of a 32-byte IKM into a 16-bytes key",
+        "Hashers: KDF 128bit derivation of a 32-byte IKM into a 16-bytes key",
         |b| b.iter(|| kdf128!(16, &ikm_32, b"KDF derivation")),
     );
     c.bench_function(
-        "KDF 256bit derivation of a 64-byte IKM into a 32-bytes key",
+        "Hashers: KDF 256bit derivation of a 64-byte IKM into a 32-bytes key",
         |b| b.iter(|| kdf256!(32, &ikm_64, b"KDF derivation")),
+    );
+}
+
+fn bench_blake2(c: &mut Criterion) {
+    let mut rng = CsRng::from_entropy();
+    let mut ikm_32 = [0; 32];
+    rng.fill_bytes(&mut ikm_32);
+    let mut ikm_64 = [0; 64];
+    rng.fill_bytes(&mut ikm_64);
+    c.bench_function(
+        "Hashers: Blake2s 256 derivation of a 32-byte IKM into a 16-bytes key",
+        |b| b.iter(|| blake2s!(16, &ikm_32, b"Blake2 derivation")),
+    );
+    c.bench_function(
+        "Hashers: Blake2b 512 derivation of a 64-byte IKM into a 32-bytes key",
+        |b| b.iter(|| blake2b!(32, &ikm_64, b"Blake2 derivation")),
     );
 }
 
@@ -75,15 +90,15 @@ criterion_group!(
 );
 
 criterion_group!(
-    name = kdf;
+    name = hashers;
     config = Criterion::default().sample_size(5000);
-    targets = bench_kdf
+    targets = bench_kdf, bench_blake2
 );
 
 criterion_group!(
     name = ecies;
     config = Criterion::default().sample_size(5000);
-    targets =  ecies::ecies_r25519_aes128gcm_bench, ecies::ecies_salsa_seal_box
+    targets =  ecies::ecies_r25519_aes128gcm_bench, ecies::ecies_salsa_seal_box,ecies::ecies_x25519_xchacha20
 );
 
 criterion_group!(
@@ -92,4 +107,4 @@ criterion_group!(
     targets =  signature::bench_ed25519_signature
 );
 
-criterion_main!(asymmetric_crypto, dem, cs_rng, kdf, ecies, signature);
+criterion_main!(asymmetric_crypto, dem, cs_rng, hashers, ecies, signature);

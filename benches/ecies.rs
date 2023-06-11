@@ -1,7 +1,6 @@
 use cosmian_crypto_core::{
-    asymmetric_crypto::{R25519PrivateKey, R25519PublicKey, X25519PrivateKey, X25519PublicKey},
-    ecies::{Ecies, EciesR25519Aes128, EciesSalsaSealBox},
-    CsRng, RandomFixedSizeCBytes,
+    CsRng, Ecies, EciesR25519Aes128, EciesSalsaSealBox, EciesX25519XChaCha20, R25519PrivateKey,
+    R25519PublicKey, RandomFixedSizeCBytes, X25519PrivateKey, X25519PublicKey,
 };
 use criterion::Criterion;
 use rand_chacha::rand_core::SeedableRng;
@@ -50,6 +49,30 @@ pub fn ecies_salsa_seal_box(c: &mut Criterion) {
     c.bench_function("ECIES salsa_sealbox decrypt", |b| {
         b.iter(|| {
             EciesSalsaSealBox::decrypt(&private_key, &ciphertext, None).unwrap();
+        });
+    });
+}
+
+pub fn ecies_x25519_xchacha20(c: &mut Criterion) {
+    let mut rng = CsRng::from_entropy();
+    // generate a key pair
+    let private_key = X25519PrivateKey::new(&mut rng);
+    let public_key = X25519PublicKey::from(&private_key);
+    // encrypt
+    let plaintext = b"Hello World!";
+
+    c.bench_function("ECIES X25519 XChaCha20 Poly1305 encrypt", |b| {
+        b.iter(|| {
+            EciesX25519XChaCha20::encrypt(&mut rng, &public_key, plaintext, None).unwrap();
+        });
+    });
+
+    let ciphertext = EciesX25519XChaCha20::encrypt(&mut rng, &public_key, plaintext, None).unwrap();
+
+    // decrypt
+    c.bench_function("ECIES X25519 XChaCha20 Poly1305 decrypt", |b| {
+        b.iter(|| {
+            EciesX25519XChaCha20::decrypt(&private_key, &ciphertext, None).unwrap();
         });
     });
 }

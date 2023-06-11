@@ -1,8 +1,8 @@
 /// Size of the message used in the benchmarks
 use cosmian_crypto_core::{
-    asymmetric_crypto::{Cached25519Signer, Ed25519Keypair, Ed25519PrivateKey, Ed25519PublicKey},
     reexport::rand_core::{RngCore, SeedableRng},
-    CsRng, RandomFixedSizeCBytes,
+    Cached25519Signer, CsRng, Ed25519Keypair, Ed25519PrivateKey, Ed25519PublicKey,
+    RandomFixedSizeCBytes,
 };
 use criterion::Criterion;
 use signature::{Signer, Verifier};

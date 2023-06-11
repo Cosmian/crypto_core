@@ -13,6 +13,8 @@ pub mod reexport {
     pub use rand_chacha::rand_core;
     // reexport the signature Traits
     pub use signature;
+    // reexport the aead traits
+    pub use aead;
 }
 pub mod symmetric_crypto;
 

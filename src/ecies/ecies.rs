@@ -9,6 +9,15 @@ use aead::{
 
 use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError};
 
+/// Elliptic Curve Integrated Encryption Scheme (ECIES) trait.
+///
+/// The `Ecies` trait provides methods for encryption and decryption
+/// using public-key cryptography based on elliptic curves.
+///
+/// # Type Parameters
+///
+/// - `PrivateKey`: the type representing a private key.
+/// - `PublicKey`: the type representing a public key.
 pub trait Ecies<PrivateKey, PublicKey> {
     /// The size of the overhead added by the encryption process.
     const ENCRYPTION_OVERHEAD: usize;
@@ -16,7 +25,9 @@ pub trait Ecies<PrivateKey, PublicKey> {
     /// Encrypts a message using the given public key
     /// and optional authentication data.
     ///
-    /// Not: some algorithms, typically the sealed box variants of ECIES,
+    /// # Note
+    ///
+    /// Some algorithms, typically the sealed box variants of ECIES,
     /// based on Salsa, do not support authentication data.
     fn encrypt<R: CryptoRngCore>(
         rng: &mut R,
@@ -28,7 +39,9 @@ pub trait Ecies<PrivateKey, PublicKey> {
     /// Decrypts a message using the given private key
     /// and optional authentication data.
     ///
-    /// Note: some algorithms, typically the sealed box variants of ECIES,
+    /// # Note
+    ///
+    /// Some algorithms, typically the sealed box variants of ECIES,
     /// based on Salsa, do not support authentication data.
     fn decrypt(
         private_key: &PrivateKey,
@@ -37,6 +50,17 @@ pub trait Ecies<PrivateKey, PublicKey> {
     ) -> Result<Vec<u8>, CryptoCoreError>;
 }
 
+/// Trait for ECIES stream cipher.
+///
+/// The `EciesStream` trait provides methods for creating encryptors
+/// and decryptors that work with streams of data.
+///
+/// # Type Parameters
+///
+/// - `PrivateKey`: the type representing a private key.
+/// - `PublicKey`: the type representing a public key.
+/// - `RustCryptoBackend`: the RustCrypto symmetric cryptographic backend
+///     used to perform operations.
 pub trait EciesStream<PrivateKey, PublicKey, RustCryptoBackend>
 where
     RustCryptoBackend: AeadInPlace + KeyInit,
@@ -45,23 +69,27 @@ where
     <<RustCryptoBackend as AeadCore>::NonceSize as Sub<U5>>::Output: ArrayLength<u8>,
     <<RustCryptoBackend as AeadCore>::NonceSize as Sub<U4>>::Output: ArrayLength<u8>,
 {
-    fn new(recipient_public_key: &PublicKey) -> Self;
-
-    fn get_ephemeral_public_key(&self) -> PublicKey;
-
-    fn get_dem_encryptor_be32(
+    /// Creates a `EncryptorBE32` using the given public key.
+    fn get_dem_encryptor_be32<R: CryptoRngCore>(
+        rng: &mut R,
         recipient_public_key: &PublicKey,
-    ) -> (PublicKey, EncryptorBE32<RustCryptoBackend>);
-    fn get_dem_encryptor_le31(
-        recipient_public_key: &PublicKey,
-    ) -> (PublicKey, EncryptorLE31<RustCryptoBackend>);
+    ) -> Result<(PublicKey, EncryptorBE32<RustCryptoBackend>), CryptoCoreError>;
 
+    /// Creates a `EncryptorLE31` using the given public key.
+    fn get_dem_encryptor_le31<R: CryptoRngCore>(
+        rng: &mut R,
+        recipient_public_key: &PublicKey,
+    ) -> Result<(PublicKey, EncryptorLE31<RustCryptoBackend>), CryptoCoreError>;
+
+    /// Creates a `DecryptorBE32` using the given private key.
     fn get_dem_decryptor_be32(
         recipient_private_key: &PrivateKey,
         ephemeral_public_key: &PublicKey,
-    ) -> DecryptorBE32<RustCryptoBackend>;
+    ) -> Result<DecryptorBE32<RustCryptoBackend>, CryptoCoreError>;
+
+    /// Creates a `DecryptorLE31` using the given private key.
     fn get_dem_decryptor_le31(
         recipient_private_key: &PrivateKey,
         ephemeral_public_key: &PublicKey,
-    ) -> DecryptorLE31<RustCryptoBackend>;
+    ) -> Result<DecryptorLE31<RustCryptoBackend>, CryptoCoreError>;
 }
