@@ -1,5 +1,6 @@
 use crate::{CBytes, FixedSizeCBytes};
 use curve25519_dalek::MontgomeryPoint;
+use std::ops::Mul;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use super::X25519PrivateKey;
@@ -39,5 +40,13 @@ impl ZeroizeOnDrop for X25519PublicKey {}
 impl Drop for X25519PublicKey {
     fn drop(&mut self) {
         self.zeroize();
+    }
+}
+
+impl<'a> Mul<&'a X25519PrivateKey> for &X25519PublicKey {
+    type Output = X25519PublicKey;
+
+    fn mul(self, rhs: &X25519PrivateKey) -> Self::Output {
+        X25519PublicKey(self.0 * rhs.0)
     }
 }

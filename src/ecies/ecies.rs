@@ -37,7 +37,7 @@ pub trait Ecies<PrivateKey, PublicKey> {
     ) -> Result<Vec<u8>, CryptoCoreError>;
 }
 
-pub trait EciesStreamEncryptor<PrivateKey, PublicKey, RustCryptoBackend>
+pub trait EciesStream<PrivateKey, PublicKey, RustCryptoBackend>
 where
     RustCryptoBackend: AeadInPlace + KeyInit,
     <RustCryptoBackend as AeadCore>::NonceSize: Sub<U5>,
@@ -49,22 +49,19 @@ where
 
     fn get_ephemeral_public_key(&self) -> PublicKey;
 
-    fn get_dem_encryptor_be32(&self) -> EncryptorBE32<RustCryptoBackend>;
-    fn get_dem_encryptor_le31(&self) -> EncryptorLE31<RustCryptoBackend>;
-}
+    fn get_dem_encryptor_be32(
+        recipient_public_key: &PublicKey,
+    ) -> (PublicKey, EncryptorBE32<RustCryptoBackend>);
+    fn get_dem_encryptor_le31(
+        recipient_public_key: &PublicKey,
+    ) -> (PublicKey, EncryptorLE31<RustCryptoBackend>);
 
-pub trait EciesStreamDecryptor<PrivateKey, PublicKey, RustCryptoBackend>
-where
-    RustCryptoBackend: AeadInPlace + KeyInit,
-    <RustCryptoBackend as AeadCore>::NonceSize: Sub<U5>,
-    <RustCryptoBackend as AeadCore>::NonceSize: Sub<U4>,
-    <<RustCryptoBackend as AeadCore>::NonceSize as Sub<U5>>::Output: ArrayLength<u8>,
-    <<RustCryptoBackend as AeadCore>::NonceSize as Sub<U4>>::Output: ArrayLength<u8>,
-{
-    fn new(recipient_private_key: &PrivateKey) -> Self;
-
-    fn get_ephemeral_public_key(&self) -> PublicKey;
-
-    fn get_dem_encryptor_be32(&self) -> DecryptorBE32<RustCryptoBackend>;
-    fn get_dem_encryptor_le31(&self) -> DecryptorLE31<RustCryptoBackend>;
+    fn get_dem_decryptor_be32(
+        recipient_private_key: &PrivateKey,
+        ephemeral_public_key: &PublicKey,
+    ) -> DecryptorBE32<RustCryptoBackend>;
+    fn get_dem_decryptor_le31(
+        recipient_private_key: &PrivateKey,
+        ephemeral_public_key: &PublicKey,
+    ) -> DecryptorLE31<RustCryptoBackend>;
 }

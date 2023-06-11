@@ -31,7 +31,7 @@ macro_rules! blake2b {
         {
             use $crate::digest::VariableOutput;
             let mut res = [0; $length];
-            let mut hasher = match blake2::Blake2bVar::new(LENGTH) {
+            let mut hasher = match blake2::Blake2bVar::new($length) {
                 Ok(hasher) => hasher,
                 Err(_) => return Err(CryptoCoreError::InvalidBytesLength),
             };
@@ -81,7 +81,7 @@ macro_rules! blake2s {
         {
             use $crate::digest::VariableOutput;
             let mut res = [0; $length];
-            let mut hasher = match blake2::Blake2sVar::new(LENGTH) {
+            let mut hasher = match blake2::Blake2sVar::new($length) {
                 Ok(hasher) => hasher,
                 Err(_) => return Err(CryptoCoreError::InvalidBytesLength),
             };

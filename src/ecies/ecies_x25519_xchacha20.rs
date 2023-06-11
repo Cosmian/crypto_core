@@ -1,34 +1,37 @@
 use crate::{
     asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
-    kdf128,
+    blake2b,
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{Dem, Instantiable, Nonce, SymmetricKey, XChaCha20Poly1305},
     CryptoCoreError, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
-///  - the Ristretto group of Curve 25516
-///  - AES 128 GCM
-///  - SHAKE256 (XOF)
+///  - X25519
+///  - XChaCha20
+///  - Blake2b
 pub struct EciesX25519XChaCha20 {}
 
 #[inline]
 fn get_nonce<const NONCE_LENGTH: usize>(
     ephemeral_pk: &X25519PublicKey,
     recipient_pk: &X25519PublicKey,
-) -> Nonce<NONCE_LENGTH> {
-    Nonce(kdf128!(
+) -> Result<Nonce<NONCE_LENGTH>, CryptoCoreError> {
+    Ok(Nonce(blake2b!(
         NONCE_LENGTH,
         &ephemeral_pk.to_bytes(),
         &recipient_pk.to_bytes()
-    ))
+    )?))
 }
 
 #[inline]
 fn get_ephemeral_key<const KEY_LENGTH: usize>(
     shared_point: &X25519PublicKey,
-) -> SymmetricKey<KEY_LENGTH> {
-    SymmetricKey(kdf128!(KEY_LENGTH, &shared_point.to_bytes()))
+) -> Result<SymmetricKey<KEY_LENGTH>, CryptoCoreError> {
+    Ok(SymmetricKey(blake2b!(
+        KEY_LENGTH,
+        &shared_point.to_bytes()
+    )?))
 }
 
 impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
@@ -52,10 +55,10 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
         // - S1: if the user provided shared_encapsulation_data S1, then we append it to
         //   the shared_bytes S
         // This implementation does NOT use the shared_encapsulation_data S1
-        let key = get_ephemeral_key::<{ XChaCha20Poly1305::KEY_LENGTH }>(&shared_point);
+        let key = get_ephemeral_key::<{ XChaCha20Poly1305::KEY_LENGTH }>(&shared_point)?;
 
         // Calculate the nonce based on the 2 public keys
-        let nonce = get_nonce::<{ XChaCha20Poly1305::NONCE_LENGTH }>(&ephemeral_pk, recipient_pk);
+        let nonce = get_nonce::<{ XChaCha20Poly1305::NONCE_LENGTH }>(&ephemeral_pk, recipient_pk)?;
 
         // Encrypt and authenticate the message, returning the ciphertext and MAC
         let ciphertext_plus_tag =
@@ -88,13 +91,13 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
         // - S1: if the user provided shared_encapsulation_data S1, then we append it to
         //   the shared_bytes S
         // This implementation does NOT use the shared_encapsulation_data S1
-        let key = get_ephemeral_key::<{ XChaCha20Poly1305::KEY_LENGTH }>(&shared_point);
+        let key = get_ephemeral_key::<{ XChaCha20Poly1305::KEY_LENGTH }>(&shared_point)?;
 
         // Recompute the nonce
         let nonce = get_nonce::<{ XChaCha20Poly1305::NONCE_LENGTH }>(
             &ephemeral_pk,
             &X25519PublicKey::from(recipient_sk),
-        );
+        )?;
 
         // Decrypt and verify the message using AES-128-GCM
         let decrypted_message = XChaCha20Poly1305::new(&key).decrypt(
@@ -118,7 +121,7 @@ mod tests {
     };
 
     #[test]
-    fn ecies_r25519_aes128_gcm_test() {
+    fn ecies_x25519_xchacha20_poly1305_test() {
         let mut rng = CsRng::from_entropy();
         // generate a key pair
         let private_key = X25519PrivateKey::new(&mut rng);
