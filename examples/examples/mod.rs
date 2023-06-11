@@ -1,2 +1,2 @@
 mod symmetric_crypto;
-pub use symmetric_crypto::dem_block_combined;
+pub use symmetric_crypto::{dem_block_combined, dem_stream_be32};
