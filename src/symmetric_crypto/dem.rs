@@ -5,8 +5,7 @@ use aead::{
     Aead, AeadCore, AeadInPlace, KeyInit, Payload,
 };
 use core::fmt::Debug;
-use std::ops::Sub;
-use std::vec::Vec;
+use std::{ops::Sub, vec::Vec};
 
 use crate::{CryptoCoreError, RandomFixedSizeCBytes, SecretCBytes};
 
@@ -150,41 +149,41 @@ pub trait DemStream<
     const KEY_LENGTH: usize,
     const NONCE_LENGTH: usize,
     const MAC_LENGTH: usize,
-    AeadAlgo,
+    RustCryptoBackend,
 >: Instantiable<KEY_LENGTH> + Sized where
-    AeadAlgo: AeadInPlace + KeyInit,
-    <AeadAlgo as AeadCore>::NonceSize: Sub<U5>,
-    <AeadAlgo as AeadCore>::NonceSize: Sub<U4>,
-    <<AeadAlgo as AeadCore>::NonceSize as Sub<U5>>::Output: ArrayLength<u8>,
-    <<AeadAlgo as AeadCore>::NonceSize as Sub<U4>>::Output: ArrayLength<u8>,
+    RustCryptoBackend: AeadInPlace + KeyInit,
+    <RustCryptoBackend as AeadCore>::NonceSize: Sub<U5>,
+    <RustCryptoBackend as AeadCore>::NonceSize: Sub<U4>,
+    <<RustCryptoBackend as AeadCore>::NonceSize as Sub<U5>>::Output: ArrayLength<u8>,
+    <<RustCryptoBackend as AeadCore>::NonceSize as Sub<U4>>::Output: ArrayLength<u8>,
 {
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
 
     /// Returns the RustCrypto Aead in place backend algorithm with stream capabilities
-    fn into_aead_stream_backend(self) -> AeadAlgo;
+    fn into_aead_stream_backend(self) -> RustCryptoBackend;
 
-    fn into_stream_encryptor_be32(self, nonce: &Self::Nonce) -> EncryptorBE32<AeadAlgo> {
+    fn into_stream_encryptor_be32(self, nonce: &Self::Nonce) -> EncryptorBE32<RustCryptoBackend> {
         EncryptorBE32::from_aead(
             self.into_aead_stream_backend(),
             nonce.as_bytes()[0..NONCE_LENGTH - 5].into(),
         )
     }
 
-    fn into_stream_decryptor_be32(self, nonce: &Self::Nonce) -> DecryptorBE32<AeadAlgo> {
+    fn into_stream_decryptor_be32(self, nonce: &Self::Nonce) -> DecryptorBE32<RustCryptoBackend> {
         DecryptorBE32::from_aead(
             self.into_aead_stream_backend(),
             nonce.as_bytes()[0..NONCE_LENGTH - 5].into(),
         )
     }
 
-    fn into_stream_encryptor_le31(self, nonce: &Self::Nonce) -> EncryptorLE31<AeadAlgo> {
+    fn into_stream_encryptor_le31(self, nonce: &Self::Nonce) -> EncryptorLE31<RustCryptoBackend> {
         EncryptorLE31::from_aead(
             self.into_aead_stream_backend(),
             nonce.as_bytes()[0..NONCE_LENGTH - 4].into(),
         )
     }
 
-    fn into_stream_decryptor_le31(self, nonce: &Self::Nonce) -> DecryptorLE31<AeadAlgo> {
+    fn into_stream_decryptor_le31(self, nonce: &Self::Nonce) -> DecryptorLE31<RustCryptoBackend> {
         DecryptorLE31::from_aead(
             self.into_aead_stream_backend(),
             nonce.as_bytes()[0..NONCE_LENGTH - 4].into(),

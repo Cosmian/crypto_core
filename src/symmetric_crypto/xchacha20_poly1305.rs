@@ -1,37 +1,37 @@
-//! This file exposes the Chacha20 Poly1305 implemented
-//! in RustCrypto `<https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305>`
+//! This file exposes the XChacha20 Poly1305 implemented
+//! in RustCrypto `<https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305>`.
 use super::dem::{DemStream, Instantiable};
 use super::DemInPlace;
 use super::{key::SymmetricKey, nonce::Nonce, Dem};
 use crate::RandomFixedSizeCBytes;
 use aead::{generic_array::GenericArray, KeyInit};
-use chacha20poly1305::ChaCha20Poly1305 as ChaCha20Poly1305Lib;
+use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 use std::fmt::Debug;
 
-pub struct ChaCha20Poly1305(ChaCha20Poly1305Lib);
+pub struct XChaCha20Poly1305(XChaCha20Poly1305Lib);
 
-impl ChaCha20Poly1305 {
+impl XChaCha20Poly1305 {
     /// Use a 256-bit key.
     pub const KEY_LENGTH: usize = 32;
 
-    /// Use a 96-bit nonce.
-    pub const NONCE_LENGTH: usize = 12;
+    /// Use a 192-bit nonce.
+    pub const NONCE_LENGTH: usize = 24;
 
     /// Use a 128-bit MAC tag.
     pub const MAC_LENGTH: usize = 16;
 }
 
-impl Debug for ChaCha20Poly1305 {
+impl Debug for XChaCha20Poly1305 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ChaCha20Poly1305").finish()
+        f.debug_struct("XChaCha20Poly1305").finish()
     }
 }
 
-impl Instantiable<{ ChaCha20Poly1305::KEY_LENGTH }> for ChaCha20Poly1305 {
-    type Secret = SymmetricKey<{ ChaCha20Poly1305::KEY_LENGTH }>;
+impl Instantiable<{ XChaCha20Poly1305::KEY_LENGTH }> for XChaCha20Poly1305 {
+    type Secret = SymmetricKey<{ XChaCha20Poly1305::KEY_LENGTH }>;
 
     fn new(symmetric_key: &Self::Secret) -> Self {
-        Self(ChaCha20Poly1305Lib::new(GenericArray::from_slice(
+        Self(XChaCha20Poly1305Lib::new(GenericArray::from_slice(
             symmetric_key.as_bytes(),
         )))
     }
@@ -39,45 +39,45 @@ impl Instantiable<{ ChaCha20Poly1305::KEY_LENGTH }> for ChaCha20Poly1305 {
 
 impl
     Dem<
-        { ChaCha20Poly1305::KEY_LENGTH },
-        { ChaCha20Poly1305::NONCE_LENGTH },
-        { ChaCha20Poly1305::MAC_LENGTH },
-        ChaCha20Poly1305Lib,
-    > for ChaCha20Poly1305
+        { XChaCha20Poly1305::KEY_LENGTH },
+        { XChaCha20Poly1305::NONCE_LENGTH },
+        { XChaCha20Poly1305::MAC_LENGTH },
+        XChaCha20Poly1305Lib,
+    > for XChaCha20Poly1305
 {
-    type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ XChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn aead_backend<'a>(&'a self) -> &'a ChaCha20Poly1305Lib {
+    fn aead_backend<'a>(&'a self) -> &'a XChaCha20Poly1305Lib {
         &self.0
     }
 }
 
 impl
     DemInPlace<
-        { ChaCha20Poly1305::KEY_LENGTH },
-        { ChaCha20Poly1305::NONCE_LENGTH },
-        { ChaCha20Poly1305::MAC_LENGTH },
-        ChaCha20Poly1305Lib,
-    > for ChaCha20Poly1305
+        { XChaCha20Poly1305::KEY_LENGTH },
+        { XChaCha20Poly1305::NONCE_LENGTH },
+        { XChaCha20Poly1305::MAC_LENGTH },
+        XChaCha20Poly1305Lib,
+    > for XChaCha20Poly1305
 {
-    type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ XChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn aead_in_place_backend<'a>(&'a self) -> &'a ChaCha20Poly1305Lib {
+    fn aead_in_place_backend<'a>(&'a self) -> &'a XChaCha20Poly1305Lib {
         &self.0
     }
 }
 
 impl
     DemStream<
-        { ChaCha20Poly1305::KEY_LENGTH },
-        { ChaCha20Poly1305::NONCE_LENGTH },
-        { ChaCha20Poly1305::MAC_LENGTH },
-        ChaCha20Poly1305Lib,
-    > for ChaCha20Poly1305
+        { XChaCha20Poly1305::KEY_LENGTH },
+        { XChaCha20Poly1305::NONCE_LENGTH },
+        { XChaCha20Poly1305::MAC_LENGTH },
+        XChaCha20Poly1305Lib,
+    > for XChaCha20Poly1305
 {
-    type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ XChaCha20Poly1305::NONCE_LENGTH }>;
 
-    fn into_aead_stream_backend(self) -> ChaCha20Poly1305Lib {
+    fn into_aead_stream_backend(self) -> XChaCha20Poly1305Lib {
         self.0
     }
 }
@@ -90,10 +90,10 @@ mod tests {
     use crate::{
         reexport::rand_core::SeedableRng,
         symmetric_crypto::{
-            chacha20_poly1305::ChaCha20Poly1305,
             dem::{DemStream, Instantiable},
             key::SymmetricKey,
             nonce::Nonce,
+            xchacha20_poly1305::XChaCha20Poly1305,
             Dem, DemInPlace,
         },
         CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
@@ -109,11 +109,11 @@ mod tests {
         // Encrypt
         let nonce = Nonce::new(&mut rng);
         let ciphertext =
-            ChaCha20Poly1305::new(&secret_key).encrypt(&nonce, message, additional_data)?;
+            XChaCha20Poly1305::new(&secret_key).encrypt(&nonce, message, additional_data)?;
 
         // decrypt
         let plaintext =
-            ChaCha20Poly1305::new(&secret_key).decrypt(&nonce, &ciphertext, additional_data)?;
+            XChaCha20Poly1305::new(&secret_key).decrypt(&nonce, &ciphertext, additional_data)?;
         assert_eq!(plaintext, message, "Decryption failed");
         Ok(())
     }
@@ -130,14 +130,14 @@ mod tests {
         let mut buffer = message.to_vec();
 
         // Encrypt
-        let tag = ChaCha20Poly1305::new(&secret_key).encrypt_in_place_detached(
+        let tag = XChaCha20Poly1305::new(&secret_key).encrypt_in_place_detached(
             &nonce,
             &mut buffer,
             additional_data,
         )?;
 
         // decrypt
-        ChaCha20Poly1305::new(&secret_key).decrypt_in_place_detached(
+        XChaCha20Poly1305::new(&secret_key).decrypt_in_place_detached(
             &nonce,
             &mut buffer,
             &tag,
@@ -153,17 +153,17 @@ mod tests {
 
         // the shared secret key
         let mut secret_key_bytes =
-            [0u8; libsodium_sys::crypto_aead_chacha20poly1305_IETF_KEYBYTES as usize];
+            [0u8; libsodium_sys::crypto_aead_xchacha20poly1305_IETF_KEYBYTES as usize];
 
         // the public nonce
         let mut nonce_bytes =
-            [0u8; libsodium_sys::crypto_aead_chacha20poly1305_IETF_NPUBBYTES as usize];
+            [0u8; libsodium_sys::crypto_aead_xchacha20poly1305_IETF_NPUBBYTES as usize];
 
         //  the cipher text buffer (does not contain the nonce)
         let mut ciphertext: Vec<u8> =
             vec![
                 0;
-                message.len() + libsodium_sys::crypto_aead_chacha20poly1305_IETF_ABYTES as usize
+                message.len() + libsodium_sys::crypto_aead_xchacha20poly1305_IETF_ABYTES as usize
             ];
 
         // encrypt using libsodium
@@ -171,7 +171,7 @@ mod tests {
             // initialize the secret key
             let secret_key_ptr: *mut libc::c_uchar =
                 secret_key_bytes.as_mut_ptr() as *mut libc::c_uchar;
-            libsodium_sys::crypto_aead_chacha20poly1305_ietf_keygen(secret_key_ptr);
+            libsodium_sys::crypto_aead_xchacha20poly1305_ietf_keygen(secret_key_ptr);
             secret_key_ptr
         };
 
@@ -186,7 +186,7 @@ mod tests {
             let message_ptr: *const libc::c_uchar = message.as_ptr() as *const libc::c_uchar;
             let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr() as *mut libc::c_uchar;
             let ciphertext_len_ptr: *mut libc::c_ulonglong = &mut ciphertext_len;
-            libsodium_sys::crypto_aead_chacha20poly1305_ietf_encrypt(
+            libsodium_sys::crypto_aead_xchacha20poly1305_ietf_encrypt(
                 ciphertext_ptr,
                 ciphertext_len_ptr,
                 message_ptr,
@@ -203,16 +203,16 @@ mod tests {
         // the libsodium ciphertext does have a nonce prepended
         assert_eq!(
             ciphertext_len as usize,
-            message.len() + ChaCha20Poly1305::MAC_LENGTH,
+            message.len() + XChaCha20Poly1305::MAC_LENGTH,
         );
 
         // prepend the Nonce
 
         // decrypt using salsa_sealbox
         let secret_key =
-            SymmetricKey::<{ ChaCha20Poly1305::KEY_LENGTH }>::try_from_bytes(secret_key_bytes)
+            SymmetricKey::<{ XChaCha20Poly1305::KEY_LENGTH }>::try_from_bytes(secret_key_bytes)
                 .unwrap();
-        let plaintext_ = ChaCha20Poly1305::new(&secret_key)
+        let plaintext_ = XChaCha20Poly1305::new(&secret_key)
             .decrypt(
                 &Nonce::try_from_bytes(nonce_bytes).unwrap(),
                 &ciphertext,
@@ -223,19 +223,20 @@ mod tests {
 
         // the other way round
 
-        // encrypt using ChaCha20Poly1305
+        // encrypt using XChaCha20Poly1305
         let nonce = Nonce::try_from_bytes(nonce_bytes).unwrap();
-        let ciphertext = ChaCha20Poly1305::new(&secret_key)
+        let ciphertext = XChaCha20Poly1305::new(&secret_key)
             .encrypt(&nonce, message, None)
             .unwrap();
 
         // decrypt using libsodium
         //  the plain text buffer (does not contain the nonce)
-        let mut plaintext: Vec<u8> =
-            vec![
-                0;
-                ciphertext.len() - libsodium_sys::crypto_aead_chacha20poly1305_IETF_ABYTES as usize
-            ];
+        let mut plaintext: Vec<u8> = vec![
+            0;
+            ciphertext.len()
+                - libsodium_sys::crypto_aead_xchacha20poly1305_IETF_ABYTES
+                    as usize
+        ];
         let mut plaintext_len: u64 = 0;
         unsafe {
             // recover the nonce
@@ -248,7 +249,7 @@ mod tests {
             // now the actual decryption
             let plaintext_ptr: *mut libc::c_uchar = plaintext.as_mut_ptr() as *mut libc::c_uchar;
             let plaintext_len_ptr: *mut libc::c_ulonglong = &mut plaintext_len;
-            libsodium_sys::crypto_aead_chacha20poly1305_ietf_decrypt(
+            libsodium_sys::crypto_aead_xchacha20poly1305_ietf_decrypt(
                 plaintext_ptr,
                 plaintext_len_ptr,
                 std::ptr::null_mut(),
@@ -281,7 +282,7 @@ mod tests {
         let nonce = Nonce::new(&mut rng);
 
         // Instantiate an encryptor
-        let mut encryptor = ChaCha20Poly1305::new(&secret_key).into_stream_encryptor_be32(&nonce);
+        let mut encryptor = XChaCha20Poly1305::new(&secret_key).into_stream_encryptor_be32(&nonce);
 
         // encrypt the first chunk
         let mut ciphertext = encryptor.encrypt_next(Payload {
@@ -298,17 +299,17 @@ mod tests {
         // decryption
 
         // Instantiate a decryptor
-        let mut decryptor = ChaCha20Poly1305::new(&secret_key).into_stream_decryptor_be32(&nonce);
+        let mut decryptor = XChaCha20Poly1305::new(&secret_key).into_stream_decryptor_be32(&nonce);
 
         // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
         let mut plaintext = decryptor.decrypt_next(Payload {
-            msg: &ciphertext[..BLOCK_SIZE + ChaCha20Poly1305::MAC_LENGTH],
+            msg: &ciphertext[..BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH],
             aad,
         })?;
 
         // decrypt the second and last chunk
         plaintext.extend_from_slice(&decryptor.decrypt_last(Payload {
-            msg: &ciphertext[BLOCK_SIZE + ChaCha20Poly1305::MAC_LENGTH..],
+            msg: &ciphertext[BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH..],
             aad,
         })?);
 
@@ -333,7 +334,7 @@ mod tests {
         let nonce = Nonce::new(&mut rng);
 
         // Instantiate an encryptor
-        let mut encryptor = ChaCha20Poly1305::new(&secret_key).into_stream_encryptor_le31(&nonce);
+        let mut encryptor = XChaCha20Poly1305::new(&secret_key).into_stream_encryptor_le31(&nonce);
 
         // encrypt the first chunk
         let mut ciphertext = encryptor.encrypt_next(Payload {
@@ -350,17 +351,17 @@ mod tests {
         // decryption
 
         // Instantiate a decryptor
-        let mut decryptor = ChaCha20Poly1305::new(&secret_key).into_stream_decryptor_le31(&nonce);
+        let mut decryptor = XChaCha20Poly1305::new(&secret_key).into_stream_decryptor_le31(&nonce);
 
         // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
         let mut plaintext = decryptor.decrypt_next(Payload {
-            msg: &ciphertext[..BLOCK_SIZE + ChaCha20Poly1305::MAC_LENGTH],
+            msg: &ciphertext[..BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH],
             aad,
         })?;
 
         // decrypt the second and last chunk
         plaintext.extend_from_slice(&decryptor.decrypt_last(Payload {
-            msg: &ciphertext[BLOCK_SIZE + ChaCha20Poly1305::MAC_LENGTH..],
+            msg: &ciphertext[BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH..],
             aad,
         })?);
 

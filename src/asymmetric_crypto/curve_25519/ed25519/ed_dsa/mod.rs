@@ -1,5 +1,5 @@
 //! Edwards Digital Signature Algorithm (EdDSA) over Curve25519 as specified in RFC 8032.
-//! https://tools.ietf.org/html/rfc8032
+//! `<https://tools.ietf.org/html/rfc8032>`
 
 mod key_pair;
 mod signer;

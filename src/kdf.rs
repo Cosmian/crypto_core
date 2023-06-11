@@ -1,5 +1,3 @@
-pub use tiny_keccak::{Hasher, Shake};
-
 /// Key Derivation Function (KDF).
 ///
 /// Derives the given inputs to the desired length using SHAKE128, which should
@@ -17,7 +15,7 @@ pub use tiny_keccak::{Hasher, Shake};
 ///
 /// ```
 /// #[macro_use]
-/// use cosmian_crypto_core::kdf;
+/// use cosmian_crypto_core::kdf128;
 ///
 /// const KEY_LENGTH: usize = 16;
 ///
@@ -39,11 +37,11 @@ macro_rules! kdf128 {
     ($length: expr, $($bytes: expr),+) => {
         {
             let mut res = [0; $length];
-            let mut hasher = $crate::kdf::Shake::v128();
+            let mut hasher = tiny_keccak::Shake::v128();
             $(
-                <$crate::kdf::Shake as $crate::kdf::Hasher>::update(&mut hasher, $bytes);
+                <tiny_keccak::Shake as tiny_keccak::Hasher>::update(&mut hasher, $bytes);
             )*
-            <$crate::kdf::Shake as $crate::kdf::Hasher>::finalize(hasher, &mut res);
+            <tiny_keccak::Shake as tiny_keccak::Hasher>::finalize(hasher, &mut res);
             res
         }
     };
@@ -66,7 +64,7 @@ macro_rules! kdf128 {
 ///
 /// ```
 /// #[macro_use]
-/// use cosmian_crypto_core::kdf;
+/// use cosmian_crypto_core::kdf256;
 ///
 /// const KEY_LENGTH: usize = 32;
 ///
@@ -88,11 +86,11 @@ macro_rules! kdf256 {
     ($length: expr, $($bytes: expr),+) => {
         {
             let mut res = [0; $length];
-            let mut hasher = $crate::kdf::Shake::v256();
+            let mut hasher = tiny_keccak::Shake::v256();
             $(
-                <$crate::kdf::Shake as $crate::kdf::Hasher>::update(&mut hasher, $bytes);
+                <tiny_keccak::Shake as tiny_keccak::Hasher>::update(&mut hasher, $bytes);
             )*
-            <$crate::kdf::Shake as $crate::kdf::Hasher>::finalize(hasher, &mut res);
+            <tiny_keccak::Shake as tiny_keccak::Hasher>::finalize(hasher, &mut res);
             res
         }
     };

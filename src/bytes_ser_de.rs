@@ -235,7 +235,7 @@ mod tests {
     use crate::{
         asymmetric_crypto::R25519PrivateKey,
         reexport::rand_core::{RngCore, SeedableRng},
-        CryptoCoreError, CsRng,
+        CryptoCoreError, CsRng, RandomFixedSizeCBytes,
     };
 
     /// We don't have a non-fixed size implementation of Serializable inside
@@ -298,11 +298,11 @@ mod tests {
         let a3_ = de.read_vec()?;
         assert_eq!(a3, a3_);
 
-        let serialized_key = vec![1; 32];
-        let key = R25519PrivateKey::deserialize(&serialized_key)?;
-        let re_serialized_key = key.serialize()?;
-
-        assert_eq!(re_serialized_key, serialized_key);
+        let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
+        let serialized_key = key.serialize()?;
+        let key_ = R25519PrivateKey::deserialize(&serialized_key)?;
+        assert_eq!(key, key_);
+        assert_eq!(serialized_key, key_.serialize()?);
 
         let dummy = DummyLeb128Serializable {
             bytes: vec![1; 512],

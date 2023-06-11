@@ -1,5 +1,6 @@
 {
   "cSpell.words": [
+    "blake",
     "chacha",
     "ciphertext",
     "Cloudproof",
@@ -11,9 +12,11 @@
     "Ecies",
     "encryptor",
     "Encryptor",
+    "hasher",
     "keypair",
     "libsodium",
     "Seedable",
+    "xchacha",
     "zeroize",
     "zeroized"
   ]

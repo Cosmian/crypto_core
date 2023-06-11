@@ -5,12 +5,17 @@ use crate::{
 };
 use crypto_box::{PublicKey, SecretKey};
 
-/// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption Scheme (ECIES) functionality
-/// utilizing Salsa20 as its encryption mechanism.
+/// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption Scheme (ECIES) functionality.
 ///
 /// This implementation is compatible with `libsodium` sealed box: `<https://doc.libsodium.org/public-key_cryptography/sealed_boxe>`
 ///
-/// This struct is used for public-key encryption and decryption where the `X25519PrivateKey` and `X25519PublicKey` types are used.
+/// __Algorithm details__
+///
+/// Sealed boxes leverage the crypto_box construction, which uses X25519 and XSalsa20-Poly1305.
+///
+/// The format of a sealed box is:
+///
+/// `ephemeral_pk ‖ box(m, recipient_pk, ephemeral_sk, nonce=blake2b(ephemeral_pk ‖ recipient_pk))`
 ///
 /// # Examples
 ///
@@ -20,37 +25,30 @@ use crypto_box::{PublicKey, SecretKey};
 /// use std::sync::{Arc, Mutex};
 /// use rand_chacha::rand_core::SeedableRng;
 /// use cosmian_crypto_core::{
-///     asymmetric_crypto:: {
-///         Ecies,
-///         EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey,
-///     },
-///    CsRng, KeyTrait,
+///     Ecies, EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey,
+///    CsRng, RandomFixedSizeCBytes
 ///};
 ///
 /// // Instantiate a cryptographic random number generator
-/// let arc_rng = Arc::new(Mutex::new(CsRng::from_entropy()));
+/// let mut rng = CsRng::from_entropy();
 ///
-/// // Create a new instance of EciesSalsaSealBox
-/// let ecies = EciesSalsaSealBox::new_from_rng(arc_rng.clone());
-///
-/// // Generate a secret key
-/// let private_key = {
-///     let mut rng = arc_rng.lock().unwrap();
-///     X25519PrivateKey::new(&mut *rng)
-/// };
-/// let public_key = private_key.public_key();
+/// // Generate a key pair
+/// let private_key =
+///     X25519PrivateKey::new(&mut rng);
+/// let public_key = X25519PublicKey::from(&private_key);
 ///
 /// // The plaintext message to be encrypted
 /// let plaintext = b"Hello World!";
 ///
 /// // Encrypt the plaintext message with the public key
-/// let ciphertext = ecies.encrypt(&public_key, plaintext, None).unwrap();
+/// let ciphertext =
+///            EciesSalsaSealBox::encrypt(&mut rng, &public_key, plaintext, None).unwrap();
 ///
 /// // Verify that the size of the ciphertext is as expected
 /// assert_eq!(ciphertext.len(), plaintext.len() + EciesSalsaSealBox::ENCRYPTION_OVERHEAD);
 ///
 /// // Decrypt the ciphertext back into plaintext with the private key
-/// let plaintext_ = ecies.decrypt(&private_key, &ciphertext, None).unwrap();
+/// let plaintext_ = EciesSalsaSealBox::decrypt(&private_key, &ciphertext, None).unwrap();
 ///
 /// // Check that the decrypted text matches the original plaintext
 /// assert_eq!(plaintext, &plaintext_[..]);

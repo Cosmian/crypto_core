@@ -3,6 +3,7 @@ use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
     symmetric_crypto::{
         Aes128Gcm, Aes256Gcm, ChaCha20Poly1305, Dem, DemInPlace, Instantiable, Nonce, SymmetricKey,
+        XChaCha20Poly1305,
     },
     CsRng, RandomFixedSizeCBytes,
 };
@@ -42,7 +43,6 @@ pub fn bench_symmetric_encryption_combined(c: &mut Criterion) {
 
     // AES 256 GCM
     let aes_256_gcm = Aes256Gcm::new(&key32);
-
     c.bench_function(
         "AES 256 GCM DEM encryption combined of a 2048-bytes message without additional data",
         |b| b.iter(|| aes_256_gcm.encrypt(&nonce, &msg, None).unwrap()),
@@ -50,10 +50,17 @@ pub fn bench_symmetric_encryption_combined(c: &mut Criterion) {
 
     // Chacha20 Poly1305
     let chacha20_poly1305 = ChaCha20Poly1305::new(&key32);
-
     c.bench_function(
         "ChaCha20 Poly1305 DEM encryption combined of a 2048-bytes message without additional data",
         |b| b.iter(|| chacha20_poly1305.encrypt(&nonce, &msg, None).unwrap()),
+    );
+
+    // XChacha20 Poly1305
+    let xchacha20_poly1305 = XChaCha20Poly1305::new(&key32);
+    let nonce = Nonce::new(&mut rng);
+    c.bench_function(
+        "XChaCha20 Poly1305 DEM encryption combined of a 2048-bytes message without additional data",
+        |b| b.iter(|| xchacha20_poly1305.encrypt(&nonce, &msg, None).unwrap()),
     );
 }
 
@@ -102,6 +109,21 @@ pub fn bench_symmetric_decryption_combined(c: &mut Criterion) {
             })
         },
     );
+
+    // XChacha20 Poly1305
+    let xchacha20_poly1305 = XChaCha20Poly1305::new(&key32);
+    let nonce = Nonce::new(&mut rng);
+    let enc_xchacha20_poly1305 = xchacha20_poly1305.encrypt(&nonce, &msg, None).unwrap();
+    c.bench_function(
+        "XChaCha20 Poly1305 DEM decryption combined of a 2048-bytes message without additional data",
+        |b| {
+            b.iter(|| {
+                xchacha20_poly1305
+                    .decrypt(&nonce, &enc_xchacha20_poly1305, None)
+                    .unwrap()
+            })
+        },
+    );
 }
 
 pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
@@ -142,7 +164,6 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
 
     // AES 256 GCM
     let aes_256_gcm = Aes256Gcm::new(&key32);
-
     c.bench_function(
         "AES 256 GCM DEM encryption in place of a 2048-bytes message without additional data",
         |b| {
@@ -156,12 +177,25 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
 
     // Chacha20 Poly1305
     let chacha20_poly1305 = ChaCha20Poly1305::new(&key32);
-
     c.bench_function(
         "ChaCha20 Poly1305 DEM encryption in place of a 2048-bytes message without additional data",
         |b| {
             b.iter(|| {
                 chacha20_poly1305
+                    .encrypt_in_place_detached(&nonce, &mut msg, None)
+                    .unwrap()
+            })
+        },
+    );
+
+    // XChacha20 Poly1305
+    let xchacha20_poly1305 = XChaCha20Poly1305::new(&key32);
+    let nonce = Nonce::new(&mut rng);
+    c.bench_function(
+        "XChaCha20 Poly1305 DEM encryption in place of a 2048-bytes message without additional data",
+        |b| {
+            b.iter(|| {
+                xchacha20_poly1305
                     .encrypt_in_place_detached(&nonce, &mut msg, None)
                     .unwrap()
             })
@@ -228,6 +262,23 @@ pub fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
             b.iter(|| {
                 chacha20_poly1305
                     .decrypt_in_place_detached(&nonce, &mut bytes, &tag_chacha20_poly1305, None)
+                    .unwrap()
+            })
+        },
+    );
+
+    // XChacha20 Poly1305
+    let xchacha20_poly1305 = XChaCha20Poly1305::new(&key32);
+    let nonce = Nonce::new(&mut rng);
+    let tag_xchacha20_poly1305 = xchacha20_poly1305
+        .encrypt_in_place_detached(&nonce, &mut bytes, None)
+        .unwrap();
+    c.bench_function(
+        "XChaCha20 Poly1305 DEM decryption in place of a 2048-bytes message without additional data",
+        |b| {
+            b.iter(|| {
+                xchacha20_poly1305
+                    .decrypt_in_place_detached(&nonce, &mut bytes, &tag_xchacha20_poly1305, None)
                     .unwrap()
             })
         },
