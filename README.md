@@ -32,7 +32,7 @@ It is primarily a thin layer over the [RustCrypto](https://github.com/RustCrypto
 - the lib hides all confusing GenericArray types and uses[u8; N] arrays only,
 - provides a single representation of curves' private keys,
 - ensures secrets are always wiped from memory after use,
-- adds examples for usages,
+- adds examples for usage,
 - adds tests for `libsodium` compatibility,
 - etc.
 
@@ -48,7 +48,7 @@ cargo add cosmian_crypto_core
 
 ## Example usages
 
-This documentation provides examples of the most common use cases.
+This document provides examples of the most common use cases.
 All the examples are available in the [examples directory](./examples/examples/)
 
 ## Building
@@ -305,13 +305,13 @@ The library exposes 3 ECIES schemes based on the [Dalek implementation](https://
 
 - `EciesX25519XChaCha20`: which uses the X25519 KEM and the XChaCha20 Poly1305 DEM; it uses HChaCha for the ephemeral symmetric key derivation and Blake2b for the nonce generation. In case of doubt, this is the recommended scheme.
 - `EciesSalsaSealBox`: which uses the X25519 KEM and the Salsa20 Poly1305 DEM. This scheme is compatible with `libsodium` sealed boxes but does not offer support for additional data in the DEM authentication.
-- `EciesR25519Aes128`: which KEM is based on the Ristretto group of curve 25519 and uses Aes 128 GCM as a DEM. Both the derivation of the ephemeral symmetric key and the generation of the nonce are performed using Shake 128.
+- `EciesR25519Aes128`: which KEM is based on the Ristretto group of curve 25519 and uses Aes 128 GCM as a DEM. Both the derivation of the ephemeral symmetric key and the generation of the nonce is performed using Shake 128.
 
 All these implementations have similar performance (about 70µs for encryption/decryption on a 2.6GHz Intel Core i7) and security (128-bit classic security - no post-quantum resistance).
 
 A later version offering a hybrid encryption scheme with post-quantum resistance will be released.
 
-All these implementations use the same format for the Curve 25519 Private key; their public key implementations under the various representations (Edwards, Montgomery and Ristretto)are available in the [`asymmetric_cypto`](./src/asymmetric_crypto/curve_25519/) folder.
+All these implementations use the same format for the Curve 25519 Private key; their public key implementations under the various representations (Edwards, Montgomery, and Ristretto)are available in the [`asymmetric_cypto`](./src/asymmetric_crypto/curve_25519/) folder.
 
 ### ECIES encryption of a vector of bytes
 
@@ -446,7 +446,7 @@ assert_eq!(
 ## Signature
 
 The crate currently exposes the EdDSA (Ed25519) signature scheme.
-More signature schemes should be expose soon.
+More signature schemes will be exposed soon.
 
 ### Static implementation
 
