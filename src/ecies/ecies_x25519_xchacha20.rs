@@ -6,6 +6,8 @@ use crate::{
     symmetric_crypto::{Dem, DemStream, Instantiable, Nonce, SymmetricKey, XChaCha20Poly1305},
     CryptoCoreError, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
+use aead::{consts::U10, generic_array::GenericArray};
+use chacha20::hchacha;
 use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
@@ -30,10 +32,16 @@ fn get_nonce<const NONCE_LENGTH: usize>(
 fn get_ephemeral_key<const KEY_LENGTH: usize>(
     shared_point: &X25519PublicKey,
 ) -> Result<SymmetricKey<KEY_LENGTH>, CryptoCoreError> {
-    Ok(SymmetricKey(blake2b!(
-        KEY_LENGTH,
-        &shared_point.to_bytes()
-    )?))
+    let key = hchacha::<U10>(
+        GenericArray::from_slice(shared_point.0.as_bytes()),
+        &GenericArray::default(),
+    );
+
+    Ok(SymmetricKey(
+        key.as_slice()
+            .try_into()
+            .map_err(|_| CryptoCoreError::InvalidBytesLength)?,
+    ))
 }
 
 impl EciesX25519XChaCha20 {

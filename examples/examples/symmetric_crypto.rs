@@ -2,10 +2,10 @@
 
 /// Demonstrates how to use symmetric encryption in combined mode
 /// where
-///  - the plaintext is encrypted as a single block and the
-///  - ciphertext is generated inside a newly allocated vector
+///  - the plaintext is a single vector of bytes and
+///  - the ciphertext is a newly allocated vector
 ///    that combines the encrypted data and the MAC
-pub fn dem_block_combined() {
+pub fn dem_vector_combined() {
     use cosmian_crypto_core::XChaCha20Poly1305;
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, Dem, FixedSizeCBytes, Instantiable, Nonce,
@@ -55,7 +55,71 @@ pub fn dem_block_combined() {
     // assert the decrypted message is identical to the original plaintext
     assert_eq!(plaintext, message, "Decryption failed");
 
-    println!("{dem:?} block combined SUCCESS");
+    println!("{dem:?} vector combined: OK");
+}
+
+/// Demonstrates how to use symmetric encryption in combined mode
+/// where
+///  - the plaintext is a single vector of bytes and
+///  - the ciphertext is a newly allocated vector
+///    that combines the encrypted data and the MAC
+pub fn dem_vector_detached() {
+    use cosmian_crypto_core::DemInPlace;
+    use cosmian_crypto_core::{
+        reexport::rand_core::SeedableRng, CsRng, FixedSizeCBytes, Instantiable, Nonce,
+        RandomFixedSizeCBytes, SymmetricKey, XChaCha20Poly1305,
+    };
+
+    // Choose one of these DEMs depending on your use case
+    // type SC = Aes128Gcm;
+    // type SC = Aes256Gcm;
+    // type SC = ChaCha20Poly1305;
+    type SC = XChaCha20Poly1305;
+
+    // A cryptographically secure random generator
+    let mut rng = CsRng::from_entropy();
+
+    // the message to encrypt
+    let message = b"my secret message";
+    // the secret key used to encrypt the message
+    // which is shared between the sender and the recipient
+    let secret_key = SymmetricKey::new(&mut rng);
+
+    // the additional data shared between the sender and the recipient to authenticate the message
+    let additional_data = Some(b"additional data".as_slice());
+
+    // the sender generate a Nonce and encrypts the message in place
+    // the encryption method returns the tag/MAC
+    let mut bytes = message.to_vec();
+    let nonce = Nonce::new(&mut rng);
+    let dem = SC::new(&secret_key);
+    let tag = dem
+        .encrypt_in_place_detached(&nonce, &mut bytes, additional_data)
+        .unwrap();
+
+    // to transmit the message, the sender can concatenate the nonce, the encrypted data and the MAC
+    // then send the concatenated result to the recipient
+    let ciphertext = [nonce.as_bytes(), bytes.as_slice(), tag.as_slice()].concat();
+
+    // the ciphertext size is the message size plus the nonce size plus the authentication tag size
+    assert_eq!(
+        ciphertext.len(),
+        message.len() + SC::NONCE_LENGTH + SC::MAC_LENGTH
+    );
+
+    // the recipient extracts the nonce, message and the tag/MAC then decrypt the message in place
+    let nonce = Nonce::try_from_slice(&ciphertext[..SC::NONCE_LENGTH]).unwrap();
+    let mut bytes = ciphertext[SC::NONCE_LENGTH..ciphertext.len() - SC::MAC_LENGTH].to_vec();
+    let tag = ciphertext[ciphertext.len() - SC::MAC_LENGTH..].to_vec();
+
+    let dem = SC::new(&secret_key);
+    dem.decrypt_in_place_detached(&nonce, &mut bytes, &tag, additional_data)
+        .unwrap();
+
+    // assert the decrypted message is identical to the original plaintext
+    assert_eq!(bytes.as_slice(), message, "Decryption failed");
+
+    println!("{dem:?} vector detached: OK");
 }
 
 /// Demonstrates how to use symmetric encryption
@@ -92,7 +156,8 @@ pub fn dem_stream_be32() {
     // Check the documentation of the DemStream trait for more details
     let mut encryptor = SC::new(&secret_key).into_stream_encryptor_be32(&nonce);
 
-    // encrypt the first chunk
+    // Encrypt the first chunk
+    // Encryption of all chunks except the last should use `encrypt_next`
     let mut ciphertext = encryptor
         .encrypt_next(Payload {
             msg: &message[..BLOCK_SIZE],
@@ -100,7 +165,7 @@ pub fn dem_stream_be32() {
         })
         .unwrap();
 
-    // encrypt the second and last chunk
+    // Encrypt the second and last chunk using `encrypt_last`
     ciphertext.extend_from_slice(
         &encryptor
             .encrypt_last(Payload {
@@ -115,7 +180,8 @@ pub fn dem_stream_be32() {
     // Instantiate a streaming decryptor
     let mut decryptor = SC::new(&secret_key).into_stream_decryptor_be32(&nonce);
 
-    // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
+    // Decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
+    // Decryption of all chunks except the last should use `decrypt_next`
     let mut plaintext = decryptor
         .decrypt_next(Payload {
             msg: &ciphertext[..BLOCK_SIZE + SC::MAC_LENGTH],
@@ -139,5 +205,5 @@ pub fn dem_stream_be32() {
         "Decryption failed"
     );
 
-    println!("Streaming DEM SUCCESS");
+    println!("XChaCha20Poly1305 streaming: OK");
 }

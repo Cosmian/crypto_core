@@ -1,2 +1,7 @@
+mod ecies;
+mod signature;
 mod symmetric_crypto;
-pub use symmetric_crypto::{dem_block_combined, dem_stream_be32};
+
+pub use self::signature::*;
+pub use ecies::*;
+pub use symmetric_crypto::*;
