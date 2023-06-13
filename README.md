@@ -1,4 +1,4 @@
-<h1>CryptoCore</h1>
+# CryptoCore
 
 ![Build status](https://github.com/Cosmian/crypto_core/actions/workflows/ci.yml/badge.svg)
 ![Build status](https://github.com/Cosmian/crypto_core/actions/workflows/audit.yml/badge.svg)
@@ -6,26 +6,30 @@
 
 This crate implements the cryptographic primitives (modern encryption and signature schemes) used in many other Cosmian products, such as the Cloudproof libraries and the KMS.
 
+<!-- toc -->
+
 - [Using](#using)
 - [Example usages](#example-usages)
 - [Building](#building)
 - [Further improving performance](#further-improving-performance)
 - [Running tests and benchmarks](#running-tests-and-benchmarks)
 - [Symmetric key encryption](#symmetric-key-encryption)
-  - [Symmetric key encryption of a vector of bytes in combined mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-combined-mode)
-  - [Symmetric key encryption of a vector of bytes in detached mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-detached-mode)
-  - [Symmetric key encryption of a stream of bytes](#symmetric-key-encryption-of-a-stream-of-bytes)
+  * [Symmetric key encryption of a vector of bytes in combined mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-combined-mode)
+  * [Symmetric key encryption of a vector of bytes in detached mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-detached-mode)
+  * [Symmetric key encryption of a stream of bytes](#symmetric-key-encryption-of-a-stream-of-bytes)
 - [ECIES - Elliptic Curve Integrated Encryption Scheme](#ecies---elliptic-curve-integrated-encryption-scheme)
-  - [ECIES encryption of a vector of bytes](#ecies-encryption-of-a-vector-of-bytes)
-  - [ECIES encryption of a stream of bytes](#ecies-encryption-of-a-stream-of-bytes)
+  * [ECIES encryption of a vector of bytes](#ecies-encryption-of-a-vector-of-bytes)
+  * [ECIES encryption of a stream of bytes](#ecies-encryption-of-a-stream-of-bytes)
 - [Signature](#signature)
-  - [Static implementation](#static-implementation)
-  - [Cached implementation](#cached-implementation)
-  - [Using a Keypair](#using-a-keypair)
+  * [Static implementation](#static-implementation)
+  * [Cached implementation](#cached-implementation)
+  * [Using a Keypair](#using-a-keypair)
 - [Cryptographically Secure Random Number Generator (CS-RNG)](#cryptographically-secure-random-number-generator-cs-rng)
 - [Key Derivation Function (KDF)](#key-derivation-function-kdf)
 - [Blake2 hashing](#blake2-hashing)
 - [Code documentation](#code-documentation)
+
+<!-- tocstop -->
 
 It is primarily a thin layer over the [RustCrypto](https://github.com/RustCrypto) libraries, exposing as far as possible more straightforward and more consistent Traits, for example:
 

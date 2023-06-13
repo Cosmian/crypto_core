@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [8.0.0] - 2023-06-13
+
+### Features
+
+- rework of base traits
+- get closer to RustCrypto
+- added ECIES
+- added streaming for ECIES and DEM
+- added Ed25519 signature
+- libsodium compatibility wherever possible
+
 ## [7.1.0] - 2023-05-02
 
 ### Features
