@@ -10,9 +10,9 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// Asymmetric private key based on Curve25519.
 ///
 /// This type wraps a scalar which is clamped to the curve.
-/// Curve25519PrivateKey should not be used directly
+/// `Curve25519PrivateKey` should not be used directly
 /// but rather re-used as a base type for other final types on the curve
-/// such as X22519PrivateKey.
+/// such as `X22519PrivateKey`.
 #[derive(Clone, Debug)]
 pub struct Curve25519PrivateKey(pub(crate) Scalar);
 

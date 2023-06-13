@@ -12,7 +12,7 @@ use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
 ///  - X25519
-///  - XChaCha20
+///  - `XChaCha20`
 ///  - Blake2b
 pub struct EciesX25519XChaCha20 {}
 
@@ -297,7 +297,7 @@ mod tests {
             Some(&b"Corrupted authenticated data"[..]),
         );
 
-        println!("{:?}", not_decrypted);
+        println!("{not_decrypted:?}");
 
         assert!(matches!(
             not_decrypted,

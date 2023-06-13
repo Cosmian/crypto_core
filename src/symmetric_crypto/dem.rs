@@ -29,7 +29,7 @@ pub trait Dem<
 {
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
 
-    /// Returns the RustCrypto Aead backend algorithm
+    /// Returns the `RustCrypto` Aead backend algorithm
     fn aead_backend(&self) -> &RustCryptoBackend;
 
     /// Encrypts a plaintext using the given symmetric key.
@@ -97,7 +97,7 @@ pub trait DemInPlace<
 {
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
 
-    /// Returns the RustCrypto Aead in place backend algorithm
+    /// Returns the `RustCrypto` Aead in place backend algorithm
     fn aead_in_place_backend(&self) -> &RustCryptoBackend;
 
     /// Encrypts a message in place using a secret key and a public nonce in
@@ -159,7 +159,7 @@ pub trait DemStream<
 {
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
 
-    /// Returns the RustCrypto Aead in place backend algorithm with stream capabilities
+    /// Returns the `RustCrypto` Aead in place backend algorithm with stream capabilities
     fn into_aead_stream_backend(self) -> RustCryptoBackend;
 
     fn into_stream_encryptor_be32(self, nonce: &Self::Nonce) -> EncryptorBE32<RustCryptoBackend> {

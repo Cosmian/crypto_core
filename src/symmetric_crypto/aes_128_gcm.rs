@@ -39,8 +39,8 @@ impl Aes128Gcm {
     pub const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
 }
 
-impl Instantiable<{ Aes128Gcm::KEY_LENGTH }> for Aes128Gcm {
-    type Secret = SymmetricKey<{ Aes128Gcm::KEY_LENGTH }>;
+impl Instantiable<{ Self::KEY_LENGTH }> for Aes128Gcm {
+    type Secret = SymmetricKey<{ Self::KEY_LENGTH }>;
 
     fn new(symmetric_key: &Self::Secret) -> Self {
         Self(Aes128GcmLib::new(GenericArray::from_slice(
@@ -49,45 +49,30 @@ impl Instantiable<{ Aes128Gcm::KEY_LENGTH }> for Aes128Gcm {
     }
 }
 
-impl
-    Dem<
-        { Aes128Gcm::KEY_LENGTH },
-        { Aes128Gcm::NONCE_LENGTH },
-        { Aes128Gcm::MAC_LENGTH },
-        Aes128GcmLib,
-    > for Aes128Gcm
+impl Dem<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes128GcmLib>
+    for Aes128Gcm
 {
-    type Nonce = Nonce<{ Aes128Gcm::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn aead_backend(&self) -> &Aes128GcmLib {
         &self.0
     }
 }
 
-impl
-    DemInPlace<
-        { Aes128Gcm::KEY_LENGTH },
-        { Aes128Gcm::NONCE_LENGTH },
-        { Aes128Gcm::MAC_LENGTH },
-        Aes128GcmLib,
-    > for Aes128Gcm
+impl DemInPlace<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes128GcmLib>
+    for Aes128Gcm
 {
-    type Nonce = Nonce<{ Aes128Gcm::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn aead_in_place_backend(&self) -> &Aes128GcmLib {
         &self.0
     }
 }
 
-impl
-    DemStream<
-        { Aes128Gcm::KEY_LENGTH },
-        { Aes128Gcm::NONCE_LENGTH },
-        { Aes128Gcm::MAC_LENGTH },
-        Aes128GcmLib,
-    > for Aes128Gcm
+impl DemStream<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes128GcmLib>
+    for Aes128Gcm
 {
-    type Nonce = Nonce<{ Aes128Gcm::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn into_aead_stream_backend(self) -> Aes128GcmLib {
         self.0

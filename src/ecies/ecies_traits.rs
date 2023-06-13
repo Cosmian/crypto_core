@@ -59,7 +59,7 @@ pub trait Ecies<PrivateKey, PublicKey> {
 ///
 /// - `PrivateKey`: the type representing a private key.
 /// - `PublicKey`: the type representing a public key.
-/// - `RustCryptoBackend`: the RustCrypto symmetric cryptographic backend
+/// - `RustCryptoBackend`: the `RustCrypto` symmetric cryptographic backend
 ///     used to perform operations.
 pub trait EciesStream<PrivateKey, PublicKey, RustCryptoBackend>
 where

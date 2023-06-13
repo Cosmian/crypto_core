@@ -266,7 +266,7 @@ mod tests {
             Some(&b"Corrupted authenticated data"[..]),
         );
 
-        println!("{:?}", not_decrypted);
+        println!("{not_decrypted:?}");
 
         assert!(matches!(
             not_decrypted,

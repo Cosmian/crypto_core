@@ -24,7 +24,7 @@ impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for X25519PublicKey {
 
 impl From<&X25519PrivateKey> for X25519PublicKey {
     fn from(sk: &X25519PrivateKey) -> Self {
-        X25519PublicKey(MontgomeryPoint::mul_base(&sk.0))
+        Self(MontgomeryPoint::mul_base(&sk.0))
     }
 }
 

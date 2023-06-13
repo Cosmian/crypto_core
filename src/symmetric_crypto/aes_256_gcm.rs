@@ -47,8 +47,8 @@ impl Debug for Aes256Gcm {
     }
 }
 
-impl Instantiable<{ Aes256Gcm::KEY_LENGTH }> for Aes256Gcm {
-    type Secret = SymmetricKey<{ Aes256Gcm::KEY_LENGTH }>;
+impl Instantiable<{ Self::KEY_LENGTH }> for Aes256Gcm {
+    type Secret = SymmetricKey<{ Self::KEY_LENGTH }>;
     fn new(symmetric_key: &Self::Secret) -> Self {
         Self(Aes256GcmLib::new(GenericArray::from_slice(
             symmetric_key.as_bytes(),
@@ -56,45 +56,30 @@ impl Instantiable<{ Aes256Gcm::KEY_LENGTH }> for Aes256Gcm {
     }
 }
 
-impl
-    Dem<
-        { Aes256Gcm::KEY_LENGTH },
-        { Aes256Gcm::NONCE_LENGTH },
-        { Aes256Gcm::MAC_LENGTH },
-        Aes256GcmLib,
-    > for Aes256Gcm
+impl Dem<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes256GcmLib>
+    for Aes256Gcm
 {
-    type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn aead_backend(&self) -> &Aes256GcmLib {
         &self.0
     }
 }
 
-impl
-    DemInPlace<
-        { Aes256Gcm::KEY_LENGTH },
-        { Aes256Gcm::NONCE_LENGTH },
-        { Aes256Gcm::MAC_LENGTH },
-        Aes256GcmLib,
-    > for Aes256Gcm
+impl DemInPlace<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes256GcmLib>
+    for Aes256Gcm
 {
-    type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn aead_in_place_backend(&self) -> &Aes256GcmLib {
         &self.0
     }
 }
 
-impl
-    DemStream<
-        { Aes256Gcm::KEY_LENGTH },
-        { Aes256Gcm::NONCE_LENGTH },
-        { Aes256Gcm::MAC_LENGTH },
-        Aes256GcmLib,
-    > for Aes256Gcm
+impl DemStream<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes256GcmLib>
+    for Aes256Gcm
 {
-    type Nonce = Nonce<{ Aes256Gcm::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn into_aead_stream_backend(self) -> Aes256GcmLib {
         self.0
@@ -179,8 +164,7 @@ mod tests {
         // encrypt using libsodium
         let secret_key_ptr = unsafe {
             // initialize the secret key
-            let secret_key_ptr: *mut libc::c_uchar =
-                secret_key_bytes.as_mut_ptr() as *mut libc::c_uchar;
+            let secret_key_ptr: *mut libc::c_uchar = secret_key_bytes.as_mut_ptr().cast::<u8>();
             libsodium_sys::crypto_aead_aes256gcm_keygen(secret_key_ptr);
             secret_key_ptr
         };
@@ -189,12 +173,12 @@ mod tests {
         let mut ciphertext_len: u64 = 0;
         unsafe {
             // generate the nonce
-            let nonce_ptr: *mut libc::c_uchar = nonce_bytes.as_mut_ptr() as *mut libc::c_uchar;
-            libsodium_sys::randombytes_buf(nonce_ptr as *mut libc::c_void, nonce_bytes.len());
+            let nonce_ptr: *mut libc::c_uchar = nonce_bytes.as_mut_ptr().cast::<u8>();
+            libsodium_sys::randombytes_buf(nonce_ptr.cast::<libc::c_void>(), nonce_bytes.len());
 
             // now the actual encryption
-            let message_ptr: *const libc::c_uchar = message.as_ptr() as *const libc::c_uchar;
-            let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr() as *mut libc::c_uchar;
+            let message_ptr: *const libc::c_uchar = message.as_ptr().cast::<u8>();
+            let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr().cast::<u8>();
             let ciphertext_len_ptr: *mut libc::c_ulonglong = &mut ciphertext_len;
             libsodium_sys::crypto_aead_aes256gcm_encrypt(
                 ciphertext_ptr,
@@ -248,13 +232,13 @@ mod tests {
         unsafe {
             // recover the nonce
             let nonce = nonce.as_bytes();
-            let nonce_ptr: *const libc::c_uchar = nonce.as_ptr() as *const libc::c_uchar;
+            let nonce_ptr: *const libc::c_uchar = nonce.as_ptr().cast::<u8>();
 
             // recover the ciphertext pointer
-            let ciphertext_ptr: *const libc::c_uchar = ciphertext.as_ptr() as *const libc::c_uchar;
+            let ciphertext_ptr: *const libc::c_uchar = ciphertext.as_ptr().cast::<u8>();
 
             // now the actual decryption
-            let plaintext_ptr: *mut libc::c_uchar = plaintext.as_mut_ptr() as *mut libc::c_uchar;
+            let plaintext_ptr: *mut libc::c_uchar = plaintext.as_mut_ptr().cast::<u8>();
             let plaintext_len_ptr: *mut libc::c_ulonglong = &mut plaintext_len;
             libsodium_sys::crypto_aead_aes256gcm_decrypt(
                 plaintext_ptr,

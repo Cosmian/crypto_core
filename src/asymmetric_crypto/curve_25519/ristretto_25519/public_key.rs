@@ -37,7 +37,7 @@ impl FixedSizeCBytes<32> for R25519PublicKey {
 
 impl From<&R25519PrivateKey> for R25519PublicKey {
     fn from(private_key: &R25519PrivateKey) -> Self {
-        R25519PublicKey(RistrettoPoint::mul_base(&private_key.0))
+        Self(RistrettoPoint::mul_base(&private_key.0))
     }
 }
 

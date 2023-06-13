@@ -41,29 +41,29 @@ pub enum CryptoCoreError {
 impl Display for CryptoCoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CryptoCoreError::DeserializationEmptyError => {
+            Self::DeserializationEmptyError => {
                 write!(f, "empty input when parsing bytes")
             }
-            CryptoCoreError::DeserializationSizeError { given, expected } => write!(
+            Self::DeserializationSizeError { given, expected } => write!(
                 f,
                 "wrong size when parsing bytes: {given} given should be {expected}"
             ),
-            CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
-            CryptoCoreError::GenericDeserializationError(err) => {
+            Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
+            Self::GenericDeserializationError(err) => {
                 write!(f, "deserialization error: {err}")
             }
-            CryptoCoreError::WriteLeb128Error { value, error } => {
+            Self::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
-            CryptoCoreError::SerializationIoError { bytes_len, error } => {
+            Self::SerializationIoError { bytes_len, error } => {
                 write!(f, "when writing {bytes_len} bytes, {error}")
             }
-            CryptoCoreError::PlaintextTooBigError { plaintext_len, max } => write!(
+            Self::PlaintextTooBigError { plaintext_len, max } => write!(
                 f,
                 "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
                  bytes"
             ),
-            CryptoCoreError::CiphertextTooSmallError {
+            Self::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
             } => write!(
@@ -71,7 +71,7 @@ impl Display for CryptoCoreError {
                 "when decrypting, ciphertext of {ciphertext_len} bytes is too small, min is {min} \
                  bytes"
             ),
-            CryptoCoreError::CiphertextTooBigError {
+            Self::CiphertextTooBigError {
                 ciphertext_len,
                 max,
             } => write!(
@@ -79,12 +79,12 @@ impl Display for CryptoCoreError {
                 "when decrypting, ciphertext of {ciphertext_len} bytes is too big, max is {max} \
                  bytes"
             ),
-            CryptoCoreError::ConversionError(err) => write!(f, "failed to convert: {err}"),
-            CryptoCoreError::EncryptionError => write!(f, "error during encryption"),
-            CryptoCoreError::DecryptionError => write!(f, "error during decryption"),
-            CryptoCoreError::InvalidBytesLength => write!(f, "invalid key length"),
-            CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
-            CryptoCoreError::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
+            Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
+            Self::EncryptionError => write!(f, "error during encryption"),
+            Self::DecryptionError => write!(f, "error during decryption"),
+            Self::InvalidBytesLength => write!(f, "invalid key length"),
+            Self::SignatureError(e) => write!(f, "error during signature: {e}"),
+            Self::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
         }
     }
 }
@@ -93,6 +93,6 @@ impl std::error::Error for CryptoCoreError {}
 
 impl From<aead::Error> for CryptoCoreError {
     fn from(e: aead::Error) -> Self {
-        CryptoCoreError::StreamCipherError(e.to_string())
+        Self::StreamCipherError(e.to_string())
     }
 }

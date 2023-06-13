@@ -1,5 +1,5 @@
 //! This file exposes the Chacha20 Poly1305 implemented
-//! in RustCrypto `<https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305>`
+//! in `RustCrypto` `<https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305>`
 use super::dem::{DemStream, Instantiable};
 use super::DemInPlace;
 use super::{key::SymmetricKey, nonce::Nonce, Dem};
@@ -27,8 +27,8 @@ impl Debug for ChaCha20Poly1305 {
     }
 }
 
-impl Instantiable<{ ChaCha20Poly1305::KEY_LENGTH }> for ChaCha20Poly1305 {
-    type Secret = SymmetricKey<{ ChaCha20Poly1305::KEY_LENGTH }>;
+impl Instantiable<{ Self::KEY_LENGTH }> for ChaCha20Poly1305 {
+    type Secret = SymmetricKey<{ Self::KEY_LENGTH }>;
 
     fn new(symmetric_key: &Self::Secret) -> Self {
         Self(ChaCha20Poly1305Lib::new(GenericArray::from_slice(
@@ -37,15 +37,10 @@ impl Instantiable<{ ChaCha20Poly1305::KEY_LENGTH }> for ChaCha20Poly1305 {
     }
 }
 
-impl
-    Dem<
-        { ChaCha20Poly1305::KEY_LENGTH },
-        { ChaCha20Poly1305::NONCE_LENGTH },
-        { ChaCha20Poly1305::MAC_LENGTH },
-        ChaCha20Poly1305Lib,
-    > for ChaCha20Poly1305
+impl Dem<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, ChaCha20Poly1305Lib>
+    for ChaCha20Poly1305
 {
-    type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn aead_backend(&self) -> &ChaCha20Poly1305Lib {
         &self.0
@@ -54,13 +49,13 @@ impl
 
 impl
     DemInPlace<
-        { ChaCha20Poly1305::KEY_LENGTH },
-        { ChaCha20Poly1305::NONCE_LENGTH },
-        { ChaCha20Poly1305::MAC_LENGTH },
+        { Self::KEY_LENGTH },
+        { Self::NONCE_LENGTH },
+        { Self::MAC_LENGTH },
         ChaCha20Poly1305Lib,
     > for ChaCha20Poly1305
 {
-    type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn aead_in_place_backend(&self) -> &ChaCha20Poly1305Lib {
         &self.0
@@ -69,13 +64,13 @@ impl
 
 impl
     DemStream<
-        { ChaCha20Poly1305::KEY_LENGTH },
-        { ChaCha20Poly1305::NONCE_LENGTH },
-        { ChaCha20Poly1305::MAC_LENGTH },
+        { Self::KEY_LENGTH },
+        { Self::NONCE_LENGTH },
+        { Self::MAC_LENGTH },
         ChaCha20Poly1305Lib,
     > for ChaCha20Poly1305
 {
-    type Nonce = Nonce<{ ChaCha20Poly1305::NONCE_LENGTH }>;
+    type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
 
     fn into_aead_stream_backend(self) -> ChaCha20Poly1305Lib {
         self.0
@@ -169,8 +164,7 @@ mod tests {
         // encrypt using libsodium
         let secret_key_ptr = unsafe {
             // initialize the secret key
-            let secret_key_ptr: *mut libc::c_uchar =
-                secret_key_bytes.as_mut_ptr() as *mut libc::c_uchar;
+            let secret_key_ptr: *mut libc::c_uchar = secret_key_bytes.as_mut_ptr().cast::<u8>();
             libsodium_sys::crypto_aead_chacha20poly1305_ietf_keygen(secret_key_ptr);
             secret_key_ptr
         };
@@ -179,12 +173,12 @@ mod tests {
         let mut ciphertext_len: u64 = 0;
         unsafe {
             // generate the nonce
-            let nonce_ptr: *mut libc::c_uchar = nonce_bytes.as_mut_ptr() as *mut libc::c_uchar;
-            libsodium_sys::randombytes_buf(nonce_ptr as *mut libc::c_void, nonce_bytes.len());
+            let nonce_ptr: *mut libc::c_uchar = nonce_bytes.as_mut_ptr().cast::<u8>();
+            libsodium_sys::randombytes_buf(nonce_ptr.cast::<libc::c_void>(), nonce_bytes.len());
 
             // now the actual encryption
-            let message_ptr: *const libc::c_uchar = message.as_ptr() as *const libc::c_uchar;
-            let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr() as *mut libc::c_uchar;
+            let message_ptr: *const libc::c_uchar = message.as_ptr().cast::<u8>();
+            let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr().cast::<u8>();
             let ciphertext_len_ptr: *mut libc::c_ulonglong = &mut ciphertext_len;
             libsodium_sys::crypto_aead_chacha20poly1305_ietf_encrypt(
                 ciphertext_ptr,
@@ -240,13 +234,13 @@ mod tests {
         unsafe {
             // recover the nonce
             let nonce = nonce.as_bytes();
-            let nonce_ptr: *const libc::c_uchar = nonce.as_ptr() as *const libc::c_uchar;
+            let nonce_ptr: *const libc::c_uchar = nonce.as_ptr().cast::<u8>();
 
             // recover the ciphertext pointer
-            let ciphertext_ptr: *const libc::c_uchar = ciphertext.as_ptr() as *const libc::c_uchar;
+            let ciphertext_ptr: *const libc::c_uchar = ciphertext.as_ptr().cast::<u8>();
 
             // now the actual decryption
-            let plaintext_ptr: *mut libc::c_uchar = plaintext.as_mut_ptr() as *mut libc::c_uchar;
+            let plaintext_ptr: *mut libc::c_uchar = plaintext.as_mut_ptr().cast::<u8>();
             let plaintext_len_ptr: *mut libc::c_ulonglong = &mut plaintext_len;
             libsodium_sys::crypto_aead_chacha20poly1305_ietf_decrypt(
                 plaintext_ptr,

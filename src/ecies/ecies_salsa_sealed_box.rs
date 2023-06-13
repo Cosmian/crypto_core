@@ -11,7 +11,7 @@ use crypto_box::{PublicKey, SecretKey};
 ///
 /// __Algorithm details__
 ///
-/// Sealed boxes leverage the crypto_box construction, which uses X25519 and XSalsa20-Poly1305.
+/// Sealed boxes leverage the `crypto_box` construction, which uses X25519 and XSalsa20-Poly1305.
 ///
 /// The format of a sealed box is:
 ///
@@ -140,15 +140,13 @@ mod tests {
         // encrypt using libsodium
         unsafe {
             // initialize the public and private key
-            let public_key_ptr: *mut libc::c_uchar =
-                public_key_bytes.as_mut_ptr() as *mut libc::c_uchar;
-            let private_key_ptr: *mut libc::c_uchar =
-                private_key_bytes.as_mut_ptr() as *mut libc::c_uchar;
+            let public_key_ptr: *mut libc::c_uchar = public_key_bytes.as_mut_ptr().cast::<u8>();
+            let private_key_ptr: *mut libc::c_uchar = private_key_bytes.as_mut_ptr().cast::<u8>();
             libsodium_sys::crypto_box_keypair(public_key_ptr, private_key_ptr);
 
             // encrypt using libsodium
-            let message_ptr: *const libc::c_uchar = message.as_ptr() as *const libc::c_uchar;
-            let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr() as *mut libc::c_uchar;
+            let message_ptr: *const libc::c_uchar = message.as_ptr().cast::<u8>();
+            let ciphertext_ptr: *mut libc::c_uchar = ciphertext.as_mut_ptr().cast::<u8>();
             libsodium_sys::crypto_box_seal(
                 ciphertext_ptr,
                 message_ptr,
@@ -173,12 +171,10 @@ mod tests {
         //decrypt using libsodium
         let mut plaintext_: Vec<u8> = vec![0; message.len()];
         unsafe {
-            let plaintext_ptr: *mut libc::c_uchar = plaintext_.as_mut_ptr() as *mut libc::c_uchar;
-            let ciphertext_ptr: *const libc::c_uchar = ciphertext.as_ptr() as *const libc::c_uchar;
-            let private_key_ptr: *const libc::c_uchar =
-                private_key_bytes.as_ptr() as *const libc::c_uchar;
-            let public_key_ptr: *const libc::c_uchar =
-                public_key_bytes.as_ptr() as *const libc::c_uchar;
+            let plaintext_ptr: *mut libc::c_uchar = plaintext_.as_mut_ptr().cast::<u8>();
+            let ciphertext_ptr: *const libc::c_uchar = ciphertext.as_ptr().cast::<u8>();
+            let private_key_ptr: *const libc::c_uchar = private_key_bytes.as_ptr().cast::<u8>();
+            let public_key_ptr: *const libc::c_uchar = public_key_bytes.as_ptr().cast::<u8>();
 
             libsodium_sys::crypto_box_seal_open(
                 plaintext_ptr,

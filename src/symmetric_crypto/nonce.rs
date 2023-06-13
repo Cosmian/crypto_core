@@ -41,6 +41,7 @@ impl<const LENGTH: usize> RandomFixedSizeCBytes<LENGTH> for Nonce<LENGTH> {
 }
 
 impl<const LENGTH: usize> Nonce<LENGTH> {
+    #[must_use]
     pub fn xor(&self, b2: &[u8]) -> Self {
         let mut n = self.0;
         for (ni, bi) in n.iter_mut().zip(b2) {
