@@ -18,7 +18,7 @@ pub fn ed25519_static() {
     let signature = private_key.try_sign(message).unwrap();
 
     // verify the signature with the public key
-    let public_key = Ed25519PublicKey::from(&private_key);
+    let public_key = Ed25519PublicKey::try_from(&private_key).unwrap();
     public_key.verify(message, &signature).unwrap();
 
     println!("Ed25519 static: OK")
@@ -41,7 +41,7 @@ pub fn ed25519_cached() {
     let cached_signer = Cached25519Signer::try_from(&private_key).unwrap();
 
     // verify the signatures
-    let public_key = Ed25519PublicKey::from(&private_key);
+    let public_key = Ed25519PublicKey::try_from(&private_key).unwrap();
 
     let message = b"Hello, world!";
     let signature = cached_signer.try_sign(message).unwrap();
@@ -66,7 +66,7 @@ pub fn ed25519_keypair() {
     let message = b"Hello, world!";
 
     // generate a keypair
-    let keypair = Ed25519Keypair::new(&mut rng);
+    let keypair = Ed25519Keypair::new(&mut rng).unwrap();
 
     // serialize the keypair
     let serialized_keypair = keypair.to_bytes();

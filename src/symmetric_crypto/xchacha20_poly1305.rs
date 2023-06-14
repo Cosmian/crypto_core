@@ -7,6 +7,7 @@ use crate::RandomFixedSizeCBytes;
 use aead::{generic_array::GenericArray, KeyInit};
 use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 use std::fmt::Debug;
+use std::ops::Deref;
 
 pub struct XChaCha20Poly1305(XChaCha20Poly1305Lib);
 
@@ -19,6 +20,14 @@ impl XChaCha20Poly1305 {
 
     /// Use a 128-bit MAC tag.
     pub const MAC_LENGTH: usize = 16;
+}
+
+impl Deref for XChaCha20Poly1305 {
+    type Target = XChaCha20Poly1305Lib;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl Debug for XChaCha20Poly1305 {
@@ -41,10 +50,6 @@ impl Dem<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, XCh
     for XChaCha20Poly1305
 {
     type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
-
-    fn aead_backend(&self) -> &XChaCha20Poly1305Lib {
-        &self.0
-    }
 }
 
 impl
@@ -56,10 +61,6 @@ impl
     > for XChaCha20Poly1305
 {
     type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
-
-    fn aead_in_place_backend(&self) -> &XChaCha20Poly1305Lib {
-        &self.0
-    }
 }
 
 impl

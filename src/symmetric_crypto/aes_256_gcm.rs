@@ -60,20 +60,12 @@ impl Dem<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes
     for Aes256Gcm
 {
     type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
-
-    fn aead_backend(&self) -> &Aes256GcmLib {
-        &self.0
-    }
 }
 
 impl DemInPlace<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes256GcmLib>
     for Aes256Gcm
 {
     type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
-
-    fn aead_in_place_backend(&self) -> &Aes256GcmLib {
-        &self.0
-    }
 }
 
 impl DemStream<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes256GcmLib>

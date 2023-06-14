@@ -32,7 +32,7 @@ pub fn bench_ed25519_signature(c: &mut Criterion) {
     });
 
     let signature = private_key.try_sign(&msg).unwrap();
-    let public_key = Ed25519PublicKey::from(&private_key);
+    let public_key = Ed25519PublicKey::try_from(&private_key).unwrap();
 
     c.bench_function("Ed25519 signature verification", |b| {
         b.iter(|| public_key.verify(&msg, &signature).unwrap())
@@ -42,7 +42,7 @@ pub fn bench_ed25519_signature(c: &mut Criterion) {
         b.iter(|| Ed25519Keypair::new(&mut rng))
     });
 
-    let key_pair = Ed25519Keypair::new(&mut rng);
+    let key_pair = Ed25519Keypair::new(&mut rng).unwrap();
 
     c.bench_function("Ed25519key key pair signature", |b| {
         b.iter(|| key_pair.try_sign(&msg).unwrap())

@@ -5,7 +5,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     asymmetric_crypto::{Ed25519PrivateKey, Ed25519PublicKey},
-    CBytes, FixedSizeCBytes, RandomFixedSizeCBytes,
+    CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
 
 /// An Ed25519 keypair which is compatible with the signature crate.
@@ -44,8 +44,8 @@ impl CBytes for Ed25519Keypair {}
 impl FixedSizeCBytes<{ Ed25519PrivateKey::LENGTH + Ed25519PublicKey::LENGTH }> for Ed25519Keypair {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         let mut bytes = [0; Self::LENGTH];
-        bytes[..Ed25519PrivateKey::LENGTH].copy_from_slice(&self.private_key.to_bytes());
-        bytes[Ed25519PrivateKey::LENGTH..].copy_from_slice(&self.public_key.to_bytes());
+        bytes[..Ed25519PrivateKey::LENGTH].copy_from_slice(self.private_key.as_bytes());
+        bytes[Ed25519PrivateKey::LENGTH..].copy_from_slice(self.public_key.as_bytes());
         bytes
     }
 
@@ -83,13 +83,12 @@ impl ZeroizeOnDrop for Ed25519Keypair {}
 
 impl Ed25519Keypair {
     /// Generates a new random key pair.
-    #[must_use]
-    pub fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+    pub fn new<R: CryptoRngCore>(rng: &mut R) -> Result<Self, CryptoCoreError> {
         let private_key = Ed25519PrivateKey::new(rng);
-        let public_key = Ed25519PublicKey::from(&private_key);
-        Self {
+        let public_key = Ed25519PublicKey::try_from(&private_key)?;
+        Ok(Self {
             private_key,
             public_key,
-        }
+        })
     }
 }

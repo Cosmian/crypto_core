@@ -12,7 +12,7 @@ use crate::{
 };
 use aead::{generic_array::GenericArray, KeyInit};
 use aes_gcm::Aes128Gcm as Aes128GcmLib;
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::Deref};
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 128 GCM.
@@ -49,24 +49,24 @@ impl Instantiable<{ Self::KEY_LENGTH }> for Aes128Gcm {
     }
 }
 
+impl Deref for Aes128Gcm {
+    type Target = Aes128GcmLib;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Dem<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes128GcmLib>
     for Aes128Gcm
 {
     type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
-
-    fn aead_backend(&self) -> &Aes128GcmLib {
-        &self.0
-    }
 }
 
 impl DemInPlace<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes128GcmLib>
     for Aes128Gcm
 {
     type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
-
-    fn aead_in_place_backend(&self) -> &Aes128GcmLib {
-        &self.0
-    }
 }
 
 impl DemStream<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, Aes128GcmLib>

@@ -10,10 +10,7 @@ use signature::Signer;
 /// signing multiple messages with the same key.
 impl Signer<ed25519::Signature> for Ed25519PrivateKey {
     fn try_sign(&self, message: &[u8]) -> Result<ed25519::Signature, signature::Error> {
-        let sk: EdSecretKey = self
-            .clone()
-            .try_into()
-            .map_err(|_| signature::Error::new())?;
+        let sk: EdSecretKey = EdSecretKey::try_from(self).map_err(|_| signature::Error::new())?;
         let public_key = EdPublicKey::from(&sk);
         let expanded: ExpandedSecretKey = (&sk).into();
         Ok(expanded.sign(message, &public_key))
@@ -35,10 +32,8 @@ impl TryFrom<&Ed25519PrivateKey> for Cached25519Signer {
     type Error = crate::CryptoCoreError;
 
     fn try_from(sk: &Ed25519PrivateKey) -> Result<Self, Self::Error> {
-        let sk: EdSecretKey = sk
-            .clone()
-            .try_into()
-            .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?;
+        let sk: EdSecretKey =
+            EdSecretKey::try_from(sk).map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?;
         let pk = EdPublicKey::from(&sk);
         let expanded: ExpandedSecretKey = (&sk).into();
         Ok(Self { pk, expanded })

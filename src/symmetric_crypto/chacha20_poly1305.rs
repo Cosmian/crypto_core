@@ -7,6 +7,7 @@ use crate::RandomFixedSizeCBytes;
 use aead::{generic_array::GenericArray, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305 as ChaCha20Poly1305Lib;
 use std::fmt::Debug;
+use std::ops::Deref;
 
 pub struct ChaCha20Poly1305(ChaCha20Poly1305Lib);
 
@@ -37,14 +38,18 @@ impl Instantiable<{ Self::KEY_LENGTH }> for ChaCha20Poly1305 {
     }
 }
 
+impl Deref for ChaCha20Poly1305 {
+    type Target = ChaCha20Poly1305Lib;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Dem<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }, ChaCha20Poly1305Lib>
     for ChaCha20Poly1305
 {
     type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
-
-    fn aead_backend(&self) -> &ChaCha20Poly1305Lib {
-        &self.0
-    }
 }
 
 impl
@@ -56,10 +61,6 @@ impl
     > for ChaCha20Poly1305
 {
     type Nonce = Nonce<{ Self::NONCE_LENGTH }>;
-
-    fn aead_in_place_backend(&self) -> &ChaCha20Poly1305Lib {
-        &self.0
-    }
 }
 
 impl

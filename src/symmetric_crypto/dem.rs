@@ -5,7 +5,10 @@ use aead::{
     Aead, AeadCore, AeadInPlace, KeyInit, Payload,
 };
 use core::fmt::Debug;
-use std::{ops::Sub, vec::Vec};
+use std::{
+    ops::{Deref, Sub},
+    vec::Vec,
+};
 
 use crate::{CryptoCoreError, RandomFixedSizeCBytes, SecretCBytes};
 
@@ -24,20 +27,16 @@ pub trait Dem<
     const NONCE_LENGTH: usize,
     const MAC_LENGTH: usize,
     RustCryptoBackend,
->: Instantiable<KEY_LENGTH> where
+>: Instantiable<KEY_LENGTH> + Deref<Target = RustCryptoBackend> where
     RustCryptoBackend: Aead + KeyInit,
 {
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
-
-    /// Returns the `RustCrypto` Aead backend algorithm
-    fn aead_backend(&self) -> &RustCryptoBackend;
 
     /// Encrypts a plaintext using the given symmetric key.
     ///
     /// The authentication tag is appended to the ciphertext.
     ///
     /// - `nonce`       : the Nonce to use
-    /// - `secret_key`  : secret symmetric key
     /// - `plaintext`   : plaintext message
     /// - `aad`         : optional data to use in the authentication method,
     /// must use the same for decryption
@@ -47,7 +46,7 @@ pub trait Dem<
         plaintext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        self.aead_backend()
+        self.deref()
             .encrypt(
                 nonce.as_bytes().into(),
                 Payload {
@@ -62,7 +61,7 @@ pub trait Dem<
     ///
     /// The authentication tag must be appended to the ciphertext.
     ///
-    /// - `secret_key`  : symmetric key
+    /// - `nonce`       : the Nonce to use
     /// - `ciphertext`  : ciphertext message
     /// - `aad`         : optional data to use in the authentication method,
     /// must use the same for encryption
@@ -72,7 +71,7 @@ pub trait Dem<
         ciphertext: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        self.aead_backend()
+        self.deref()
             .decrypt(
                 nonce.as_bytes().into(),
                 Payload {
@@ -92,13 +91,10 @@ pub trait DemInPlace<
     const NONCE_LENGTH: usize,
     const MAC_LENGTH: usize,
     RustCryptoBackend,
->: Instantiable<KEY_LENGTH> where
+>: Instantiable<KEY_LENGTH> + Deref<Target = RustCryptoBackend> where
     RustCryptoBackend: AeadInPlace + KeyInit,
 {
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
-
-    /// Returns the `RustCrypto` Aead in place backend algorithm
-    fn aead_in_place_backend(&self) -> &RustCryptoBackend;
 
     /// Encrypts a message in place using a secret key and a public nonce in
     /// detached mode: the tag authenticating both the confidential
@@ -111,7 +107,7 @@ pub trait DemInPlace<
         plaintext: &mut [u8],
         aad: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        self.aead_in_place_backend()
+        self.deref()
             .encrypt_in_place_detached(nonce.as_bytes().into(), aad.unwrap_or_default(), plaintext)
             .map_err(|_| CryptoCoreError::EncryptionError)
             .map(|tag| tag.to_vec())
@@ -131,7 +127,7 @@ pub trait DemInPlace<
         tag: &[u8],
         aad: Option<&[u8]>,
     ) -> Result<(), CryptoCoreError> {
-        self.aead_in_place_backend()
+        self.deref()
             .decrypt_in_place_detached(
                 nonce.as_bytes().into(),
                 aad.unwrap_or_default(),
@@ -150,7 +146,7 @@ pub trait DemStream<
     const NONCE_LENGTH: usize,
     const MAC_LENGTH: usize,
     RustCryptoBackend,
->: Instantiable<KEY_LENGTH> + Sized where
+>: Instantiable<KEY_LENGTH> + Sized + Deref<Target = RustCryptoBackend> where
     RustCryptoBackend: AeadInPlace + KeyInit,
     <RustCryptoBackend as AeadCore>::NonceSize: Sub<U5>,
     <RustCryptoBackend as AeadCore>::NonceSize: Sub<U4>,

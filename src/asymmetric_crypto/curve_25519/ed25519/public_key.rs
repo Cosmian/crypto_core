@@ -23,9 +23,16 @@ impl FixedSizeCBytes<32> for Ed25519PublicKey {
     }
 }
 
-impl From<&Ed25519PrivateKey> for Ed25519PublicKey {
-    fn from(sk: &Ed25519PrivateKey) -> Self {
-        Self(EdPublicKey::from(&EdSecretKey::from_bytes(sk.0.as_bytes()).expect("creating the Secret key should never fail since the correct amount of bytes is provided. It is unfortunate that the SecretKey field is private in ed25519.")))
+impl TryFrom<&Ed25519PrivateKey> for Ed25519PublicKey {
+    type Error = crate::CryptoCoreError;
+
+    fn try_from(sk: &Ed25519PrivateKey) -> Result<Self, Self::Error> {
+        Ok(Self(EdPublicKey::from(
+            // TODO: creating the Secret key should never fail since the correct amount of bytes is provided.
+            // TODO: It is unfortunate that the SecretKey field is private in ed25519.
+            &EdSecretKey::from_bytes(sk.0.as_bytes())
+                .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?,
+        )))
     }
 }
 
