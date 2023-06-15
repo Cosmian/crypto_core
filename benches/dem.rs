@@ -1,4 +1,3 @@
-/// Size of the message used in the benchmarks
 use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
     Aes128Gcm, Aes256Gcm, ChaCha20Poly1305, CsRng, Dem, DemInPlace, Instantiable, Nonce,
@@ -6,6 +5,7 @@ use cosmian_crypto_core::{
 };
 use criterion::Criterion;
 
+/// Size of the message used in the benchmarks
 const MSG_LENGTH: usize = 2048;
 
 pub fn bench_symmetric_encryption_combined(c: &mut Criterion) {
