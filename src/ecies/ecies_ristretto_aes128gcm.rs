@@ -14,7 +14,6 @@ use aes_gcm::Aes128Gcm as Aes128GcmLib;
 ///  - SHAKE256 (XOF)
 pub struct EciesR25519Aes128 {}
 
-#[inline]
 fn get_nonce<const NONCE_LENGTH: usize>(
     ephemeral_pk: &R25519PublicKey,
     recipient_pk: &R25519PublicKey,
@@ -26,7 +25,6 @@ fn get_nonce<const NONCE_LENGTH: usize>(
     ))
 }
 
-#[inline]
 fn get_ephemeral_key<const KEY_LENGTH: usize>(
     shared_point: &R25519PublicKey,
 ) -> SymmetricKey<KEY_LENGTH> {

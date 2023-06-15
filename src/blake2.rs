@@ -1,6 +1,9 @@
-pub use tiny_keccak::{Hasher, Shake};
-
 /// Blake2b 512 Variable Output Hash Function.
+///
+/// Blake2b is a cryptographic hash function defined in RFC 7693.
+/// `<https://www.rfc-editor.org/rfc/rfc7693.txt>`
+///
+/// Collision Security: 2^256 (in the classic setting)
 ///
 /// # Example
 ///
@@ -49,7 +52,12 @@ macro_rules! blake2b {
     };
 }
 
-/// Blake2s 256 Hash Function.
+/// Blake2s 256 Hash Function with Variable Output.
+///
+/// Blake2s is a cryptographic hash function defined in RFC 7693.
+/// `<https://www.rfc-editor.org/rfc/rfc7693.txt>`
+///
+/// Collision Security: 2^128 (in the classic setting)
 ///
 /// # Example
 ///
@@ -73,7 +81,7 @@ macro_rules! blake2b {
 /// # Parameters
 ///
 /// - `length`  : desired length (needs to be constant)
-/// - `bytes`   : KDF input
+/// - `bytes`   : Hash input
 #[macro_export]
 macro_rules! blake2s {
     ($length: expr, $($bytes: expr),+) => {

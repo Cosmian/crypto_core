@@ -1,11 +1,8 @@
 use crate::{CBytes, FixedSizeCBytes};
 use curve25519_dalek::MontgomeryPoint;
 use std::ops::Mul;
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use super::X25519PrivateKey;
-
-// pub const X25519_PUBLIC_KEY_LENGTH: usize = crypto_box::KEY_SIZE;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct X25519PublicKey(pub(crate) MontgomeryPoint);
@@ -25,21 +22,6 @@ impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for X25519PublicKey {
 impl From<&X25519PrivateKey> for X25519PublicKey {
     fn from(sk: &X25519PrivateKey) -> Self {
         Self(MontgomeryPoint::mul_base(&sk.0))
-    }
-}
-
-impl Zeroize for X25519PublicKey {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
-    }
-}
-
-impl ZeroizeOnDrop for X25519PublicKey {}
-
-// Implements `Drop` trait to follow R23.
-impl Drop for X25519PublicKey {
-    fn drop(&mut self) {
-        self.zeroize();
     }
 }
 

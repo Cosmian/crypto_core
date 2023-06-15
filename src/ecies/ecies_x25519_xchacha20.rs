@@ -16,7 +16,6 @@ use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 ///  - Blake2b
 pub struct EciesX25519XChaCha20 {}
 
-#[inline]
 fn get_nonce<const NONCE_LENGTH: usize>(
     ephemeral_pk: &X25519PublicKey,
     recipient_pk: &X25519PublicKey,
@@ -28,7 +27,6 @@ fn get_nonce<const NONCE_LENGTH: usize>(
     )?))
 }
 
-#[inline]
 fn get_ephemeral_key<const KEY_LENGTH: usize>(
     shared_point: &X25519PublicKey,
 ) -> Result<SymmetricKey<KEY_LENGTH>, CryptoCoreError> {
@@ -122,7 +120,7 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
         let ciphertext_plus_tag =
             XChaCha20Poly1305::new(&key).encrypt(&nonce, plaintext, authentication_data)?;
 
-        // Assemble the final encrypted message: R || nonce || c || d
+        // Assemble the final encrypted message: R || c || d
         let mut res = Vec::with_capacity(
             X25519PublicKey::LENGTH + plaintext.len() + XChaCha20Poly1305::MAC_LENGTH,
         );
@@ -144,13 +142,11 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
         let (key, nonce) = Self::recover_key_and_nonce(recipient_sk, &ephemeral_pk)?;
 
         // Decrypt and verify the message using AES-128-GCM
-        let decrypted_message = XChaCha20Poly1305::new(&key).decrypt(
+        XChaCha20Poly1305::new(&key).decrypt(
             &nonce,
             &ciphertext[X25519PublicKey::LENGTH..],
             authentication_data,
-        )?;
-
-        Ok(decrypted_message)
+        )
     }
 }
 

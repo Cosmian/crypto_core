@@ -4,7 +4,6 @@ use curve25519_dalek::{
     constants,
     ristretto::{CompressedRistretto, RistrettoPoint},
 };
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{bytes_ser_de::Serializable, CBytes, CryptoCoreError, FixedSizeCBytes};
 
@@ -86,21 +85,6 @@ impl<'a> Mul<&'a R25519PrivateKey> for &R25519PublicKey {
         R25519PublicKey(self.0 * rhs.0)
     }
 }
-
-impl Zeroize for R25519PublicKey {
-    fn zeroize(&mut self) {
-        self.0.zeroize()
-    }
-}
-
-// Implements `Drop` trait to follow R23.
-impl Drop for R25519PublicKey {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
-
-impl ZeroizeOnDrop for R25519PublicKey {}
 
 #[cfg(test)]
 mod test {

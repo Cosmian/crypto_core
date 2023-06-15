@@ -10,16 +10,15 @@ pub struct Ed25519PublicKey(pub(crate) EdPublicKey);
 
 impl CBytes for Ed25519PublicKey {}
 
-impl FixedSizeCBytes<32> for Ed25519PublicKey {
+impl FixedSizeCBytes<{ ed25519_dalek::PUBLIC_KEY_LENGTH }> for Ed25519PublicKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0.to_bytes()
     }
 
     fn try_from_bytes(bytes: [u8; crypto_box::KEY_SIZE]) -> Result<Self, crate::CryptoCoreError> {
-        Ok(Self(
-            EdPublicKey::from_bytes(&bytes)
-                .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?,
-        ))
+        EdPublicKey::from_bytes(&bytes)
+            .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)
+            .map(Self)
     }
 }
 
@@ -27,12 +26,12 @@ impl TryFrom<&Ed25519PrivateKey> for Ed25519PublicKey {
     type Error = crate::CryptoCoreError;
 
     fn try_from(sk: &Ed25519PrivateKey) -> Result<Self, Self::Error> {
-        Ok(Self(EdPublicKey::from(
-            // TODO: creating the Secret key should never fail since the correct amount of bytes is provided.
-            // TODO: It is unfortunate that the SecretKey field is private in ed25519.
-            &EdSecretKey::from_bytes(sk.0.as_bytes())
-                .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?,
-        )))
+        // TODO: creating the Secret key should never fail since the correct amount of bytes is provided.
+        // TODO: It is unfortunate that the SecretKey field is private in ed25519.
+        EdSecretKey::from_bytes(sk.0.as_bytes())
+            .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)
+            .map(|sk| EdPublicKey::from(&sk))
+            .map(Self)
     }
 }
 

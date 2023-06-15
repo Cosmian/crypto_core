@@ -1,6 +1,6 @@
 use crate::{
-    bytes_ser_de::Serializable, CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes,
-    SecretCBytes,
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
+    CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes,
 };
 use curve25519_dalek::Scalar;
 use rand_chacha::rand_core::CryptoRngCore;
@@ -13,7 +13,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// `Curve25519PrivateKey` should not be used directly
 /// but rather re-used as a base type for other final types on the curve
 /// such as `X22519PrivateKey`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Curve25519PrivateKey(pub(crate) Scalar);
 
 /// Zeroizes the private key.
@@ -33,16 +33,6 @@ impl Drop for Curve25519PrivateKey {
 /// Zeroizes the private key on drop.
 impl ZeroizeOnDrop for Curve25519PrivateKey {}
 
-/// Compares two private keys.
-impl PartialEq for Curve25519PrivateKey {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.to_bytes() == other.0.to_bytes()
-    }
-}
-
-/// Compares two private keys.
-impl Eq for Curve25519PrivateKey {}
-
 // Key traits implementations
 
 impl CBytes for Curve25519PrivateKey {}
@@ -59,9 +49,9 @@ impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
 
 impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-        let mut bytes = [0; Self::LENGTH];
+        let mut bytes = [0; Self::LENGTH * 2];
         rng.fill_bytes(&mut bytes);
-        Self(Scalar::from_bits_clamped(bytes))
+        Self(Scalar::from_bytes_mod_order_wide(&bytes))
     }
 
     fn as_bytes(&self) -> &[u8] {
@@ -79,11 +69,11 @@ impl Serializable for Curve25519PrivateKey {
         Self::LENGTH
     }
 
-    fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         ser.write_array(self.as_bytes())
     }
 
-    fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         let bytes = de.read_array::<{ Self::LENGTH }>()?;
         Self::try_from_bytes(bytes)
     }
