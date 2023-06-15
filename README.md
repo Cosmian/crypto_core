@@ -33,7 +33,7 @@ This crate implements the cryptographic primitives (modern encryption and signat
 
 It is primarily a thin layer over the [RustCrypto](https://github.com/RustCrypto) libraries, exposing as far as possible more straightforward and more consistent Traits, for example the lib:
 
-- the lib hides all confusing GenericArray types and uses[u8; N] arrays only,
+- hides all confusing `GenericArray` types and uses `[u8; N]` arrays only,
 - provides a single representation of curves' private keys,
 - ensures secrets are always wiped from memory after use,
 - adds examples for usage,
