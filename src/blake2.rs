@@ -32,7 +32,7 @@
 macro_rules! blake2b {
     ($length: expr, $($bytes: expr),+) => {
         {
-            use $crate::digest::VariableOutput;
+            use blake2::digest::VariableOutput;
             let mut res = [0; $length];
             let mut hasher = match blake2::Blake2bVar::new($length) {
                 Ok(hasher) => hasher,
@@ -86,7 +86,7 @@ macro_rules! blake2b {
 macro_rules! blake2s {
     ($length: expr, $($bytes: expr),+) => {
         {
-            use $crate::digest::VariableOutput;
+            use blake2::digest::VariableOutput;
             let mut res = [0; $length];
             let mut hasher = match blake2::Blake2sVar::new($length) {
                 Ok(hasher) => hasher,

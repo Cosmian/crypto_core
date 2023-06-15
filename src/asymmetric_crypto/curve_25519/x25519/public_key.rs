@@ -7,6 +7,12 @@ use super::X25519PrivateKey;
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct X25519PublicKey(pub(crate) MontgomeryPoint);
 
+impl X25519PublicKey {
+    pub fn as_bytes(&self) -> &[u8; crypto_box::KEY_SIZE] {
+        self.0.as_bytes()
+    }
+}
+
 impl CBytes for X25519PublicKey {}
 
 impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for X25519PublicKey {

@@ -49,9 +49,9 @@ impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
 
 impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-        let mut bytes = [0; Self::LENGTH * 2];
+        let mut bytes = [0; Self::LENGTH];
         rng.fill_bytes(&mut bytes);
-        Self(Scalar::from_bytes_mod_order_wide(&bytes))
+        Self(Scalar::from_bits_clamped(bytes))
     }
 
     fn as_bytes(&self) -> &[u8] {

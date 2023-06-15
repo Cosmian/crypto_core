@@ -22,8 +22,8 @@ fn get_nonce<const NONCE_LENGTH: usize>(
 ) -> Result<Nonce<NONCE_LENGTH>, CryptoCoreError> {
     Ok(Nonce(blake2b!(
         NONCE_LENGTH,
-        &ephemeral_pk.to_bytes(),
-        &recipient_pk.to_bytes()
+        ephemeral_pk.as_bytes(),
+        recipient_pk.as_bytes()
     )?))
 }
 

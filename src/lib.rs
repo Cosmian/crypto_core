@@ -18,8 +18,8 @@ pub mod reexport {
 }
 mod symmetric_crypto;
 
+pub use crate::blake2::*;
 pub use crate::error::CryptoCoreError;
-pub use ::blake2::*;
 pub use asymmetric_crypto::*;
 pub use ecies::*;
 pub use symmetric_crypto::*;
