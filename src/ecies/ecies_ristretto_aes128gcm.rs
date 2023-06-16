@@ -1,3 +1,5 @@
+use aes_gcm::Aes128Gcm as Aes128GcmLib;
+
 use super::ecies_traits::EciesStream;
 use crate::{
     asymmetric_crypto::{R25519PrivateKey, R25519PublicKey},
@@ -6,7 +8,6 @@ use crate::{
     symmetric_crypto::{Aes128Gcm, Dem, DemStream, Instantiable, Nonce, SymmetricKey},
     CryptoCoreError, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
-use aes_gcm::Aes128Gcm as Aes128GcmLib;
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
 ///  - the Ristretto group of Curve 25516
@@ -49,8 +50,8 @@ impl EciesR25519Aes128 {
         // Calculate the shared secret point (Px, Py) = P = r.Y
         let shared_point = recipient_pk * &ephemeral_sk;
 
-        // Generate the 128-bit symmetric encryption key k, derived using SHAKE256 eXtendable-Output-Function (XOF)
-        // such as: k = kdf(S || S1) where:
+        // Generate the 128-bit symmetric encryption key k, derived using SHAKE256
+        // eXtendable-Output-Function (XOF) such as: k = kdf(S || S1) where:
         // - S = Px. Note: ECIES formally uses S = Px rather than the serialization of P
         // - S1: if the user provided shared_encapsulation_data S1, then we append it to
         //   the shared_bytes S

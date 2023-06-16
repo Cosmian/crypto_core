@@ -1,21 +1,25 @@
+use crypto_box::{PublicKey, SecretKey};
+
 use crate::{
     asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
     reexport::rand_core::CryptoRngCore,
     Ecies,
 };
-use crypto_box::{PublicKey, SecretKey};
 
-/// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption Scheme (ECIES) functionality.
+/// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption
+/// Scheme (ECIES) functionality.
 ///
 /// This implementation is compatible with `libsodium` sealed box: `<https://doc.libsodium.org/public-key_cryptography/sealed_boxe>`
 ///
 /// __Algorithm details__
 ///
-/// Sealed boxes leverage the `crypto_box` construction, which uses X25519 and XSalsa20-Poly1305.
+/// Sealed boxes leverage the `crypto_box` construction, which uses X25519 and
+/// XSalsa20-Poly1305.
 ///
 /// The format of a sealed box is:
 ///
-/// `ephemeral_pk ‖ box(m, recipient_pk, ephemeral_sk, nonce=blake2b(ephemeral_pk ‖ recipient_pk))`
+/// `ephemeral_pk ‖ box(m, recipient_pk, ephemeral_sk,
+/// nonce=blake2b(ephemeral_pk ‖ recipient_pk))`
 ///
 /// # Examples
 ///
@@ -27,7 +31,7 @@ use crypto_box::{PublicKey, SecretKey};
 /// use cosmian_crypto_core::{
 ///     Ecies, EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey,
 ///    CsRng, RandomFixedSizeCBytes
-///};
+/// };
 ///
 /// // Instantiate a cryptographic random number generator
 /// let mut rng = CsRng::from_entropy();
@@ -54,7 +58,8 @@ use crypto_box::{PublicKey, SecretKey};
 /// assert_eq!(plaintext, &plaintext_[..]);
 /// ```
 ///
-/// The `new_from_rng` function allows the use of a custom random number generator.
+/// The `new_from_rng` function allows the use of a custom random number
+/// generator.
 pub struct EciesSalsaSealBox {}
 
 impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
@@ -64,7 +69,8 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
     /// using a Salsa sealed box which is compatible with the
     /// libsodium sealed box: `<https://doc.libsodium.org/public-key_cryptography/sealed_boxe>`
     ///
-    /// Note: the authentication data is not used by this algorithm and is ignored
+    /// Note: the authentication data is not used by this algorithm and is
+    /// ignored
     fn encrypt<R: CryptoRngCore>(
         rng: &mut R,
         public_key: &X25519PublicKey,
@@ -81,7 +87,8 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
     /// using a Salsa sealed box which is compatible with the
     /// libsodium sealed box: `<https://doc.libsodium.org/public-key_cryptography/sealed_boxe>`
     ///
-    /// Note: the authentication data is not used by this algorithm and is ignored
+    /// Note: the authentication data is not used by this algorithm and is
+    /// ignored
     fn decrypt(
         private_key: &X25519PrivateKey,
         ciphertext: &[u8],

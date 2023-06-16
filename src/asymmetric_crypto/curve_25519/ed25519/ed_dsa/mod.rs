@@ -1,5 +1,5 @@
-//! Edwards Digital Signature Algorithm (`EdDSA`) over Curve25519 as specified in RFC 8032.
-//! `<https://tools.ietf.org/html/rfc8032>`
+//! Edwards Digital Signature Algorithm (`EdDSA`) over Curve25519 as specified
+//! in RFC 8032. `<https://tools.ietf.org/html/rfc8032>`
 
 mod key_pair;
 mod signer;
@@ -11,6 +11,8 @@ pub use signer::Cached25519Signer;
 #[cfg(test)]
 mod tests {
 
+    use signature::{Signer, Verifier};
+
     use super::Cached25519Signer;
     use crate::{
         asymmetric_crypto::{
@@ -20,7 +22,6 @@ mod tests {
         reexport::rand_core::SeedableRng,
         CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
     };
-    use signature::{Signer, Verifier};
 
     #[test]
     fn ed25519_test() {

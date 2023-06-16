@@ -1,13 +1,14 @@
+use core::fmt::Debug;
+use std::{
+    ops::{Deref, Sub},
+    vec::Vec,
+};
+
 use aead::{
     consts::{U4, U5},
     generic_array::{ArrayLength, GenericArray},
     stream::{DecryptorBE32, DecryptorLE31, EncryptorBE32, EncryptorLE31},
     Aead, AeadCore, AeadInPlace, KeyInit, Payload,
-};
-use core::fmt::Debug;
-use std::{
-    ops::{Deref, Sub},
-    vec::Vec,
 };
 
 use crate::{CryptoCoreError, RandomFixedSizeCBytes, SecretCBytes};
@@ -116,8 +117,8 @@ pub trait DemInPlace<
     /// Decrypts a message in pace in detached mode.
     /// The bytes should not contain the authentication tag.
     ///
-    /// The provided additional data must match those provided during encryption for
-    /// the MAC to verify.
+    /// The provided additional data must match those provided during encryption
+    /// for the MAC to verify.
     ///
     /// Decryption will never be performed, even partially, before verification.
     fn decrypt_in_place_detached(
@@ -155,7 +156,8 @@ pub trait DemStream<
 {
     type Nonce: RandomFixedSizeCBytes<NONCE_LENGTH>;
 
-    /// Returns the `RustCrypto` Aead in place backend algorithm with stream capabilities
+    /// Returns the `RustCrypto` Aead in place backend algorithm with stream
+    /// capabilities
     fn into_aead_stream_backend(self) -> RustCryptoBackend;
 
     fn into_stream_encryptor_be32(self, nonce: &Self::Nonce) -> EncryptorBE32<RustCryptoBackend> {

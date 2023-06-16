@@ -2,16 +2,18 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
+use std::{
+    fmt::{self, Debug, Formatter},
+    ops::Deref,
+};
+
+use aead::{generic_array::GenericArray, KeyInit};
+use aes_gcm::Aes256Gcm as Aes256GcmLib;
+
 use super::dem::{DemInPlace, DemStream, Instantiable};
 use crate::{
     symmetric_crypto::{key::SymmetricKey, nonce::Nonce, Dem},
     RandomFixedSizeCBytes,
-};
-use aead::{generic_array::GenericArray, KeyInit};
-use aes_gcm::Aes256Gcm as Aes256GcmLib;
-use std::{
-    fmt::{self, Debug, Formatter},
-    ops::Deref,
 };
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
@@ -21,16 +23,14 @@ pub struct Aes256Gcm(Aes256GcmLib);
 impl Aes256Gcm {
     /// Use a 256-bit AES key.
     pub const KEY_LENGTH: usize = 32;
-
-    /// Use a 96-bit nonce.
-    pub const NONCE_LENGTH: usize = 12;
-
     /// Use a 128-bit MAC tag.
     pub const MAC_LENGTH: usize = 16;
-
     /// Plaintext size (in bytes) restriction from the NIST
     /// <https://csrc.nist.gov/publications/detail/sp/800-38d/final>
-    pub const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704; // (2 ^ 39 - 256) / 8
+    // (2 ^ 39 - 256) / 8
+    pub const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704;
+    /// Use a 96-bit nonce.
+    pub const NONCE_LENGTH: usize = 12;
 }
 
 impl Deref for Aes256Gcm {
@@ -49,6 +49,7 @@ impl Debug for Aes256Gcm {
 
 impl Instantiable<{ Self::KEY_LENGTH }> for Aes256Gcm {
     type Secret = SymmetricKey<{ Self::KEY_LENGTH }>;
+
     fn new(symmetric_key: &Self::Secret) -> Self {
         Self(Aes256GcmLib::new(GenericArray::from_slice(
             symmetric_key.as_bytes(),

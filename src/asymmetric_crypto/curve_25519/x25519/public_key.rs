@@ -1,8 +1,9 @@
-use crate::{CBytes, FixedSizeCBytes};
-use curve25519_dalek::MontgomeryPoint;
 use std::ops::Mul;
 
+use curve25519_dalek::MontgomeryPoint;
+
 use super::X25519PrivateKey;
+use crate::{CBytes, FixedSizeCBytes};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct X25519PublicKey(pub(crate) MontgomeryPoint);

@@ -1,7 +1,8 @@
-use crate::asymmetric_crypto::curve_25519::ed25519::Ed25519PrivateKey;
 use ed25519_dalek::{ed25519, ExpandedSecretKey};
 pub use ed25519_dalek::{PublicKey as EdPublicKey, SecretKey as EdSecretKey};
 use signature::Signer;
+
+use crate::asymmetric_crypto::curve_25519::ed25519::Ed25519PrivateKey;
 
 /// Signer implementation for Ed25519.
 ///

@@ -1,9 +1,11 @@
 //reexport the RustBox Ed25519 impl
 
+use std::ops::Deref;
+
+pub use ed25519_dalek::{PublicKey as EdPublicKey, SecretKey as EdSecretKey};
+
 use super::private_key::Ed25519PrivateKey;
 use crate::{CBytes, FixedSizeCBytes};
-pub use ed25519_dalek::{PublicKey as EdPublicKey, SecretKey as EdSecretKey};
-use std::ops::Deref;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519PublicKey(pub(crate) EdPublicKey);
@@ -32,8 +34,9 @@ impl TryFrom<&Ed25519PrivateKey> for Ed25519PublicKey {
     type Error = crate::CryptoCoreError;
 
     fn try_from(sk: &Ed25519PrivateKey) -> Result<Self, Self::Error> {
-        // TODO: creating the Secret key should never fail since the correct amount of bytes is provided.
-        // TODO: It is unfortunate that the SecretKey field is private in ed25519.
+        // TODO: creating the Secret key should never fail since the correct amount of
+        // bytes is provided. TODO: It is unfortunate that the SecretKey field
+        // is private in ed25519.
         EdSecretKey::from_bytes(sk.0.as_bytes())
             .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)
             .map(|sk| EdPublicKey::from(&sk))

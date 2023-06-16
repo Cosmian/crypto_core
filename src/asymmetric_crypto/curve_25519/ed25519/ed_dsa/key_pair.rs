@@ -1,10 +1,10 @@
-use aead::rand_core::CryptoRngCore;
 use ed25519_dalek::ed25519;
 use signature::{Keypair, Signer, Verifier};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     asymmetric_crypto::{Ed25519PrivateKey, Ed25519PublicKey},
+    reexport::rand_core::CryptoRngCore,
     CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
 
