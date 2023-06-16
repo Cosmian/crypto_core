@@ -3,25 +3,6 @@ use core::fmt::Display;
 /// Error type for this crate.
 #[derive(Debug)]
 pub enum CryptoCoreError {
-    DeserialisationEmptyError,
-    DeserialisationSizeError {
-        given: usize,
-        expected: usize,
-    },
-    ReadLeb128Error(leb128::read::Error),
-    GenericDeserialisationError(String),
-    WriteLeb128Error {
-        value: u64,
-        error: std::io::Error,
-    },
-    SerialisationIoError {
-        bytes_len: usize,
-        error: std::io::Error,
-    },
-    PlaintextTooBigError {
-        plaintext_len: usize,
-        max: u64,
-    },
     CiphertextTooSmallError {
         ciphertext_len: usize,
         min: u64,
@@ -31,24 +12,50 @@ pub enum CryptoCoreError {
         max: u64,
     },
     ConversionError(String),
-    EncryptionError,
     DecryptionError,
+    DeserializationEmptyError,
+    DeserializationSizeError {
+        given: usize,
+        expected: usize,
+    },
+    EncryptionError,
+    GenericDeserializationError(String),
+    InvalidBytesLength,
+    PlaintextTooBigError {
+        plaintext_len: usize,
+        max: u64,
+    },
+    ReadLeb128Error(leb128::read::Error),
+    SerializationIoError {
+        bytes_len: usize,
+        error: std::io::Error,
+    },
+    SignatureError(String),
+    StreamCipherError(String),
+    WriteLeb128Error {
+        value: u64,
+        error: std::io::Error,
+    },
 }
 
 impl Display for CryptoCoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::DeserialisationEmptyError => write!(f, "empty input when parsing bytes"),
-            Self::DeserialisationSizeError { given, expected } => write!(
+            Self::DeserializationEmptyError => {
+                write!(f, "empty input when parsing bytes")
+            }
+            Self::DeserializationSizeError { given, expected } => write!(
                 f,
                 "wrong size when parsing bytes: {given} given should be {expected}"
             ),
             Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
-            Self::GenericDeserialisationError(err) => write!(f, "deserialization error: {err}"),
+            Self::GenericDeserializationError(err) => {
+                write!(f, "deserialization error: {err}")
+            }
             Self::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
-            Self::SerialisationIoError { bytes_len, error } => {
+            Self::SerializationIoError { bytes_len, error } => {
                 write!(f, "when writing {bytes_len} bytes, {error}")
             }
             Self::PlaintextTooBigError { plaintext_len, max } => write!(
@@ -75,8 +82,17 @@ impl Display for CryptoCoreError {
             Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
             Self::EncryptionError => write!(f, "error during encryption"),
             Self::DecryptionError => write!(f, "error during decryption"),
+            Self::InvalidBytesLength => write!(f, "invalid key length"),
+            Self::SignatureError(e) => write!(f, "error during signature: {e}"),
+            Self::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
         }
     }
 }
 
 impl std::error::Error for CryptoCoreError {}
+
+impl From<aead::Error> for CryptoCoreError {
+    fn from(e: aead::Error) -> Self {
+        Self::StreamCipherError(e.to_string())
+    }
+}
