@@ -10,7 +10,7 @@ use crate::{
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
-///  - the Ristretto group of Curve 25516
+///  - the Ristretto group of Curve 25519
 ///  - AES 128 GCM
 ///  - SHAKE256 (XOF)
 pub struct EciesR25519Aes128 {}

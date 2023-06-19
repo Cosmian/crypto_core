@@ -11,7 +11,7 @@ pub mod bytes_ser_de;
 mod ecies;
 #[cfg(feature = "sha3")]
 mod kdf;
-#[cfg(any(feature = "aes", feature = "chacha"))]
+#[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;
 
 mod error;
@@ -60,7 +60,7 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
     fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
         slice
             .try_into()
-            .map_err(|_| CryptoCoreError::InvalidBytesLength)
+            .map_err(CryptoCoreError::TryFromSliceError)
             .and_then(Self::try_from_bytes)
     }
 

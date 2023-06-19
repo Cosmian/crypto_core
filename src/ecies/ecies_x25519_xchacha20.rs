@@ -36,11 +36,9 @@ fn get_ephemeral_key<const KEY_LENGTH: usize>(
         &GenericArray::default(),
     );
 
-    Ok(SymmetricKey(
-        key.as_slice()
-            .try_into()
-            .map_err(|_| CryptoCoreError::InvalidBytesLength)?,
-    ))
+    Ok(SymmetricKey(key.as_slice().try_into().map_err(|_| {
+        CryptoCoreError::InvalidBytesLength("get ephemeral key".to_string(), KEY_LENGTH, None)
+    })?))
 }
 
 impl EciesX25519XChaCha20 {

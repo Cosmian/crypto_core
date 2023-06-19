@@ -51,14 +51,22 @@ impl FixedSizeCBytes<{ Ed25519PrivateKey::LENGTH + Ed25519PublicKey::LENGTH }> f
 
     fn try_from_bytes(bytes: [u8; Self::LENGTH]) -> Result<Self, crate::CryptoCoreError> {
         let private_key = Ed25519PrivateKey::try_from_bytes(
-            bytes[..Ed25519PrivateKey::LENGTH]
-                .try_into()
-                .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?,
+            bytes[..Ed25519PrivateKey::LENGTH].try_into().map_err(|_| {
+                crate::CryptoCoreError::InvalidBytesLength(
+                    "key pair (private key)".to_string(),
+                    Ed25519PrivateKey::LENGTH,
+                    None,
+                )
+            })?,
         )?;
         let public_key = Ed25519PublicKey::try_from_bytes(
-            bytes[Ed25519PrivateKey::LENGTH..]
-                .try_into()
-                .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)?,
+            bytes[Ed25519PrivateKey::LENGTH..].try_into().map_err(|_| {
+                crate::CryptoCoreError::InvalidBytesLength(
+                    "key pair (public key)".to_string(),
+                    Ed25519PrivateKey::LENGTH,
+                    None,
+                )
+            })?,
         )?;
         Ok(Self {
             private_key,
