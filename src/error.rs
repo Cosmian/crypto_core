@@ -1,4 +1,5 @@
 use core::fmt::Display;
+use std::array::TryFromSliceError;
 
 /// Error type for this crate.
 #[derive(Debug)]
@@ -20,7 +21,7 @@ pub enum CryptoCoreError {
     },
     EncryptionError,
     GenericDeserializationError(String),
-    InvalidBytesLength,
+    InvalidBytesLength(String, usize, Option<usize>),
     PlaintextTooBigError {
         plaintext_len: usize,
         max: u64,
@@ -33,6 +34,7 @@ pub enum CryptoCoreError {
     },
     SignatureError(String),
     StreamCipherError(String),
+    TryFromSliceError(TryFromSliceError),
     WriteLeb128Error {
         value: u64,
         error: std::io::Error,
@@ -84,9 +86,18 @@ impl Display for CryptoCoreError {
             Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
             Self::EncryptionError => write!(f, "error during encryption"),
             Self::DecryptionError => write!(f, "error during decryption"),
-            Self::InvalidBytesLength => write!(f, "invalid key length"),
+            Self::InvalidBytesLength(message, given, expected) => match expected {
+                Some(expected_length) => write!(
+                    f,
+                    "{message}: invalid key length: got {given}, expected: {expected_length}",
+                ),
+                None => {
+                    write!(f, "{message}: invalid key length: got {given}")
+                }
+            },
             Self::SignatureError(e) => write!(f, "error during signature: {e}"),
             Self::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
+            Self::TryFromSliceError(e) => write!(f, "try from slice error: {e}"),
         }
     }
 }
@@ -97,5 +108,11 @@ impl std::error::Error for CryptoCoreError {}
 impl From<aead::Error> for CryptoCoreError {
     fn from(e: aead::Error) -> Self {
         Self::StreamCipherError(e.to_string())
+    }
+}
+
+impl From<TryFromSliceError> for CryptoCoreError {
+    fn from(e: TryFromSliceError) -> Self {
+        Self::TryFromSliceError(e)
     }
 }

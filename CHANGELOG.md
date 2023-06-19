@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - added streaming for ECIES and DEM
 - added Ed25519 signature
 - libsodium compatibility wherever possible
+- symmetric key wrapping RFC-5649 impl
 
 ## [7.1.0] - 2023-05-02
 

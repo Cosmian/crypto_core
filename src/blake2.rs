@@ -36,7 +36,7 @@ macro_rules! blake2b {
             let mut res = [0; $length];
             let mut hasher = match blake2::Blake2bVar::new($length) {
                 Ok(hasher) => hasher,
-                Err(_) => return Err(CryptoCoreError::InvalidBytesLength),
+                Err(_) => return Err(CryptoCoreError::InvalidBytesLength("blake2b".to_string(), $length, None)),
             };
             $(
                 <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, $bytes);
@@ -45,7 +45,7 @@ macro_rules! blake2b {
                     hasher, &mut res,
                 ).is_err()
             {
-                return Err(CryptoCoreError::InvalidBytesLength);
+                return Err(CryptoCoreError::InvalidBytesLength("blake2b: finalize".to_string(), $length, None));
             }
             Result::<_, CryptoCoreError>::Ok(res)
         }
@@ -90,7 +90,7 @@ macro_rules! blake2s {
             let mut res = [0; $length];
             let mut hasher = match blake2::Blake2sVar::new($length) {
                 Ok(hasher) => hasher,
-                Err(_) => return Err(CryptoCoreError::InvalidBytesLength),
+                Err(_) => return Err(CryptoCoreError::InvalidBytesLength("blake2s".to_string(), $length, None)),
             };
             $(
                 <blake2::Blake2sVar as blake2::digest::Update>::update(&mut hasher, $bytes);
@@ -99,7 +99,7 @@ macro_rules! blake2s {
                     hasher, &mut res,
                 ).is_err()
             {
-                return Err(CryptoCoreError::InvalidBytesLength);
+                return Err(CryptoCoreError::InvalidBytesLength("blake2s".to_string(), $length, None));
             }
             Result::<_, CryptoCoreError>::Ok(res)
         }
@@ -125,7 +125,13 @@ mod tests {
 
             let mut hasher = match blake2::Blake2bVar::new(LENGTH) {
                 Ok(hasher) => hasher,
-                Err(_) => return Err(CryptoCoreError::InvalidBytesLength),
+                Err(_) => {
+                    return Err(CryptoCoreError::InvalidBytesLength(
+                        "blake2b test".to_string(),
+                        LENGTH,
+                        None,
+                    ))
+                }
             };
             <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, msg1);
             <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, msg2);
@@ -134,7 +140,11 @@ mod tests {
             )
             .is_err()
             {
-                return Err(CryptoCoreError::InvalidBytesLength);
+                return Err(CryptoCoreError::InvalidBytesLength(
+                    "blake2".to_string(),
+                    LENGTH,
+                    None,
+                ));
             }
             Result::<_, CryptoCoreError>::Ok(res)
         }?;
@@ -155,14 +165,17 @@ mod tests {
         let res1 = {
             let mut res = [0_u8; LENGTH];
 
-            let mut hasher =
-                blake2::Blake2sVar::new(LENGTH).map_err(|_| CryptoCoreError::InvalidBytesLength)?;
+            let mut hasher = blake2::Blake2sVar::new(LENGTH).map_err(|_| {
+                CryptoCoreError::InvalidBytesLength("blake2s".to_string(), LENGTH, None)
+            })?;
             <blake2::Blake2sVar as blake2::digest::Update>::update(&mut hasher, msg1);
             <blake2::Blake2sVar as blake2::digest::Update>::update(&mut hasher, msg2);
             <blake2::Blake2sVar as blake2::digest::VariableOutput>::finalize_variable(
                 hasher, &mut res,
             )
-            .map_err(|_| CryptoCoreError::InvalidBytesLength)?;
+            .map_err(|_| {
+                CryptoCoreError::InvalidBytesLength("blake2s test".to_string(), LENGTH, None)
+            })?;
             Result::<_, CryptoCoreError>::Ok(res)
         }?;
         // use the macro

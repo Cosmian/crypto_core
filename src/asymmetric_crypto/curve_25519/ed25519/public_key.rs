@@ -26,7 +26,13 @@ impl FixedSizeCBytes<{ ed25519_dalek::PUBLIC_KEY_LENGTH }> for Ed25519PublicKey 
 
     fn try_from_bytes(bytes: [u8; crypto_box::KEY_SIZE]) -> Result<Self, crate::CryptoCoreError> {
         EdPublicKey::from_bytes(&bytes)
-            .map_err(|_| crate::CryptoCoreError::InvalidBytesLength)
+            .map_err(|_| {
+                crate::CryptoCoreError::InvalidBytesLength(
+                    "public key from bytes".to_string(),
+                    bytes.len(),
+                    None,
+                )
+            })
             .map(Self)
     }
 }
