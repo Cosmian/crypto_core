@@ -15,6 +15,7 @@ name = "cosmian_crypto_core"
 path = "src/lib.rs"
 
 [features]
+default = ['aes', 'chacha', 'ecies', 'curve25519', 'ser', 'blake', 'sha3']
 aes = ['aead', 'aes-gcm']
 chacha = ['aead', 'chacha20poly1305', 'chacha20']
 ecies = ['aead']
