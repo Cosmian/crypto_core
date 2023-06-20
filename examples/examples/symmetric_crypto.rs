@@ -65,7 +65,7 @@ pub fn dem_vector_combined() {
 ///  - the plaintext is a single vector of bytes and
 ///  - the ciphertext is a newly allocated vector that combines the encrypted
 ///    data and the MAC
-#[cfg(all(feature = "chacha"))]
+#[cfg(feature = "chacha")]
 pub fn dem_vector_detached() {
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, DemInPlace, FixedSizeCBytes, Instantiable, Nonce,
