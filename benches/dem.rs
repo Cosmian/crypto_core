@@ -1,3 +1,4 @@
+#![cfg(feature = "default")]
 use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
     Aes128Gcm, Aes256Gcm, ChaCha20Poly1305, CsRng, Dem, DemInPlace, Instantiable, Nonce,

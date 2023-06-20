@@ -85,7 +85,7 @@ impl Ed25519Keypair {
     /// Generates a new random key pair.
     pub fn new<R: CryptoRngCore>(rng: &mut R) -> Result<Self, CryptoCoreError> {
         let private_key = Ed25519PrivateKey::new(rng);
-        let public_key = Ed25519PublicKey::try_from(&private_key)?;
+        let public_key = Ed25519PublicKey::from(&private_key);
         Ok(Self {
             private_key,
             public_key,

@@ -1,3 +1,4 @@
+#![cfg(feature = "default")]
 use cosmian_crypto_core::{
     CsRng, Ecies, EciesR25519Aes128, EciesSalsaSealBox, EciesX25519XChaCha20, R25519PrivateKey,
     R25519PublicKey, RandomFixedSizeCBytes, X25519PrivateKey, X25519PublicKey,

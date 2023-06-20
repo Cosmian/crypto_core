@@ -1,3 +1,4 @@
+#![cfg(feature = "default")]
 /// Size of the message used in the benchmarks
 use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
