@@ -2,11 +2,11 @@ mod examples;
 
 /// Run all examples.
 fn main() {
-    #[cfg(all(feature = "chacha"))]
+    #[cfg(feature = "chacha")]
     self::examples::dem_vector_combined();
-    #[cfg(all(feature = "chacha"))]
+    #[cfg(feature = "chacha")]
     self::examples::dem_vector_detached();
-    #[cfg(all(feature = "chacha"))]
+    #[cfg(feature = "chacha")]
     self::examples::dem_stream_be32();
 
     #[cfg(all(
