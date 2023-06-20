@@ -1,0 +1,40 @@
+---
+name: Cargo tests features
+
+on:
+  workflow_call:
+    inputs:
+      toolchain:
+        required: true
+        type: string
+      features:
+        required: true
+        type: string
+
+jobs:
+  cargo-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Set up cargo cache
+        id: cargo_cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ inputs.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-${{ inputs.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Test ${{ inputs.features }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: ${{ inputs.features }}

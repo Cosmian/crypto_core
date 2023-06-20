@@ -31,6 +31,41 @@ jobs:
         with:
           command: build
           args: --verbose --target wasm32-unknown-unknown
+  cargo-aes:
+    uses: ./.github/workflows/cargo_tests.yml
+    with:
+      toolchain: stable
+      features: --no-default-features --features aes
+  cargo-chacha:
+    uses: ./.github/workflows/cargo_tests.yml
+    with:
+      toolchain: stable
+      features: --no-default-features --features chacha
+  cargo-ecies:
+    uses: ./.github/workflows/cargo_tests.yml
+    with:
+      toolchain: stable
+      features: --no-default-features --features ecies
+  cargo-curve25519:
+    uses: ./.github/workflows/cargo_tests.yml
+    with:
+      toolchain: stable
+      features: --no-default-features --features curve25519
+  cargo-set:
+    uses: ./.github/workflows/cargo_tests.yml
+    with:
+      toolchain: stable
+      features: --no-default-features --features set
+  cargo-blake:
+    uses: ./.github/workflows/cargo_tests.yml
+    with:
+      toolchain: stable
+      features: --no-default-features --features blake
+  cargo-sha3:
+    uses: ./.github/workflows/cargo_tests.yml
+    with:
+      toolchain: stable
+      features: --no-default-features --features sha3
 
   cargo-publish:
     needs:
