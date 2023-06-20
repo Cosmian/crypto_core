@@ -25,10 +25,10 @@ fn main() {
     ))]
     self::examples::ecies_x25519_xchacha20_stream();
 
-    #[cfg(all(feature = "curve25519"))]
+    #[cfg(feature = "curve25519")]
     self::examples::ed25519_static();
-    #[cfg(all(feature = "curve25519"))]
+    #[cfg(feature = "curve25519")]
     self::examples::ed25519_cached();
-    #[cfg(all(feature = "curve25519"))]
+    #[cfg(feature = "curve25519")]
     self::examples::ed25519_keypair();
 }
