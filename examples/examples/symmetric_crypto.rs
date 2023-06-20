@@ -129,7 +129,7 @@ pub fn dem_vector_detached() {
 
 /// Demonstrates how to use symmetric encryption
 /// with a stream of data
-#[cfg(all(feature = "chacha"))]
+#[cfg(feature = "chacha")]
 pub fn dem_stream_be32() {
     use cosmian_crypto_core::{
         reexport::{aead::Payload, rand_core::SeedableRng},
