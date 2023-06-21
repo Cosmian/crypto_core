@@ -18,7 +18,7 @@ mod error;
 pub mod reexport {
     #[cfg(any(feature = "aes", feature = "chacha"))]
     pub use aead;
-    pub use rand_chacha::rand_core;
+    pub use rand_core;
     #[cfg(feature = "curve25519")]
     pub use signature;
 }
