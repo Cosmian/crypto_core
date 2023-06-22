@@ -5,9 +5,10 @@ use curve25519_dalek::{
     ristretto::{CompressedRistretto, RistrettoPoint},
 };
 
-use crate::{bytes_ser_de::Serializable, CBytes, CryptoCoreError, FixedSizeCBytes};
-
 use super::R25519PrivateKey;
+#[cfg(feature = "ser")]
+use crate::bytes_ser_de::Serializable;
+use crate::{CBytes, CryptoCoreError, FixedSizeCBytes};
 
 /// Asymmetric public key based on the Ristretto Curve25519.
 ///
@@ -40,6 +41,7 @@ impl From<&R25519PrivateKey> for R25519PublicKey {
     }
 }
 
+#[cfg(feature = "ser")]
 impl Serializable for R25519PublicKey {
     type Error = CryptoCoreError;
 

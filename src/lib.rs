@@ -1,32 +1,40 @@
 //! This crate implements crypto primitives which are used in many other
 //! Cosmian cryptographic resources.
 
+#[cfg(feature = "curve25519")]
 mod asymmetric_crypto;
+#[cfg(feature = "blake")]
 mod blake2;
+#[cfg(feature = "ser")]
 pub mod bytes_ser_de;
+#[cfg(feature = "ecies")]
 mod ecies;
-mod error;
+#[cfg(feature = "sha3")]
 mod kdf;
-pub mod reexport {
-    // reexport `rand_core` so that the PRNGs implement the correct version of
-    // the traits
-    pub use rand_chacha::rand_core;
-    // reexport the signature Traits
-    pub use signature;
-    // reexport the aead traits
-    pub use aead;
-}
+#[cfg(any(feature = "aes", feature = "chacha"))]
 mod symmetric_crypto;
 
+mod error;
+pub mod reexport {
+    #[cfg(any(feature = "aes", feature = "chacha"))]
+    pub use aead;
+    pub use rand_core;
+    #[cfg(feature = "curve25519")]
+    pub use signature;
+}
+
+#[cfg(feature = "curve25519")]
+pub use asymmetric_crypto::*;
+#[cfg(feature = "ecies")]
+pub use ecies::*;
+use reexport::rand_core::CryptoRngCore;
+#[cfg(any(feature = "aes", feature = "chacha"))]
+pub use symmetric_crypto::*;
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
+#[cfg(feature = "blake")]
 pub use crate::blake2::*;
 pub use crate::error::CryptoCoreError;
-pub use asymmetric_crypto::*;
-pub use ecies::*;
-pub use symmetric_crypto::*;
-
-use reexport::rand_core::CryptoRngCore;
-
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
 pub type CsRng = rand_chacha::ChaCha12Rng;
@@ -74,7 +82,8 @@ pub trait RandomFixedSizeCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> {
     fn as_bytes(&self) -> &[u8];
 }
 
-/// Secret array of bytes such as a symmetric key or an elliptic curve private key.
+/// Secret array of bytes such as a symmetric key or an elliptic curve private
+/// key.
 ///
 /// These bytes must be zeroized on drop.
 pub trait SecretCBytes<const LENGTH: usize>:

@@ -3,13 +3,13 @@
 /// Demonstrates how to use symmetric encryption in combined mode
 /// where
 ///  - the plaintext is a single vector of bytes and
-///  - the ciphertext is a newly allocated vector
-///    that combines the encrypted data and the MAC
+///  - the ciphertext is a newly allocated vector that combines the encrypted
+///    data and the MAC
+#[cfg(feature = "chacha")]
 pub fn dem_vector_combined() {
-    use cosmian_crypto_core::XChaCha20Poly1305;
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, Dem, FixedSizeCBytes, Instantiable, Nonce,
-        RandomFixedSizeCBytes, SymmetricKey,
+        RandomFixedSizeCBytes, SymmetricKey, XChaCha20Poly1305,
     };
 
     // Choose one of these DEMs depending on your use case
@@ -27,7 +27,8 @@ pub fn dem_vector_combined() {
     // which is shared between the sender and the recipient
     let secret_key = SymmetricKey::new(&mut rng);
 
-    // the additional data shared between the sender and the recipient to authenticate the message
+    // the additional data shared between the sender and the recipient to
+    // authenticate the message
     let additional_data = Some(b"additional data".as_slice());
 
     // the sender generate a Nonce and encrypts the message
@@ -35,11 +36,12 @@ pub fn dem_vector_combined() {
     let dem = SC::new(&secret_key);
     let ciphertext = dem.encrypt(&nonce, message, additional_data).unwrap();
 
-    // to transmit the message, the sender can concatenate the nonce and the ciphertext
-    // and send the concatenated result to the recipient
+    // to transmit the message, the sender can concatenate the nonce and the
+    // ciphertext and send the concatenated result to the recipient
     let ciphertext = [nonce.as_bytes(), ciphertext.as_slice()].concat();
 
-    // the ciphertext size is the message size plus the nonce size plus the authentication tag size
+    // the ciphertext size is the message size plus the nonce size plus the
+    // authentication tag size
     assert_eq!(
         ciphertext.len(),
         message.len() + SC::NONCE_LENGTH + SC::MAC_LENGTH
@@ -61,12 +63,12 @@ pub fn dem_vector_combined() {
 /// Demonstrates how to use symmetric encryption in combined mode
 /// where
 ///  - the plaintext is a single vector of bytes and
-///  - the ciphertext is a newly allocated vector
-///    that combines the encrypted data and the MAC
+///  - the ciphertext is a newly allocated vector that combines the encrypted
+///    data and the MAC
+#[cfg(feature = "chacha")]
 pub fn dem_vector_detached() {
-    use cosmian_crypto_core::DemInPlace;
     use cosmian_crypto_core::{
-        reexport::rand_core::SeedableRng, CsRng, FixedSizeCBytes, Instantiable, Nonce,
+        reexport::rand_core::SeedableRng, CsRng, DemInPlace, FixedSizeCBytes, Instantiable, Nonce,
         RandomFixedSizeCBytes, SymmetricKey, XChaCha20Poly1305,
     };
 
@@ -85,7 +87,8 @@ pub fn dem_vector_detached() {
     // which is shared between the sender and the recipient
     let secret_key = SymmetricKey::new(&mut rng);
 
-    // the additional data shared between the sender and the recipient to authenticate the message
+    // the additional data shared between the sender and the recipient to
+    // authenticate the message
     let additional_data = Some(b"additional data".as_slice());
 
     // the sender generate a Nonce and encrypts the message in place
@@ -97,17 +100,19 @@ pub fn dem_vector_detached() {
         .encrypt_in_place_detached(&nonce, &mut bytes, additional_data)
         .unwrap();
 
-    // to transmit the message, the sender can concatenate the nonce, the encrypted data and the MAC
-    // then send the concatenated result to the recipient
+    // to transmit the message, the sender can concatenate the nonce, the encrypted
+    // data and the MAC then send the concatenated result to the recipient
     let ciphertext = [nonce.as_bytes(), bytes.as_slice(), tag.as_slice()].concat();
 
-    // the ciphertext size is the message size plus the nonce size plus the authentication tag size
+    // the ciphertext size is the message size plus the nonce size plus the
+    // authentication tag size
     assert_eq!(
         ciphertext.len(),
         message.len() + SC::NONCE_LENGTH + SC::MAC_LENGTH
     );
 
-    // the recipient extracts the nonce, message and the tag/MAC then decrypt the message in place
+    // the recipient extracts the nonce, message and the tag/MAC then decrypt the
+    // message in place
     let nonce = Nonce::try_from_slice(&ciphertext[..SC::NONCE_LENGTH]).unwrap();
     let mut bytes = ciphertext[SC::NONCE_LENGTH..ciphertext.len() - SC::MAC_LENGTH].to_vec();
     let tag = ciphertext[ciphertext.len() - SC::MAC_LENGTH..].to_vec();
@@ -124,11 +129,12 @@ pub fn dem_vector_detached() {
 
 /// Demonstrates how to use symmetric encryption
 /// with a stream of data
+#[cfg(feature = "chacha")]
 pub fn dem_stream_be32() {
-    use cosmian_crypto_core::XChaCha20Poly1305;
     use cosmian_crypto_core::{
         reexport::{aead::Payload, rand_core::SeedableRng},
         CsRng, DemStream, Instantiable, Nonce, RandomFixedSizeCBytes, SymmetricKey,
+        XChaCha20Poly1305,
     };
 
     // Choose one of these streaming DEMs depending on your use case
@@ -140,7 +146,8 @@ pub fn dem_stream_be32() {
     let message = b"Hello, World!";
 
     // The message will be encrypted in 2 chunks, one of size 8 and one of size 5
-    // In real life, the block size should be much larger and typically a multiple of 4096
+    // In real life, the block size should be much larger and typically a multiple
+    // of 4096
     const BLOCK_SIZE: usize = 8;
 
     // use some additional data to authenticate the message

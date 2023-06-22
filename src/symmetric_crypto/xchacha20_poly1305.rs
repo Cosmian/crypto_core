@@ -1,25 +1,27 @@
 //! This file exposes the `XChacha20` Poly1305 implemented
 //! in `RustCrypto` `<https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305>`.
-use super::dem::{DemStream, Instantiable};
-use super::DemInPlace;
-use super::{key::SymmetricKey, nonce::Nonce, Dem};
-use crate::RandomFixedSizeCBytes;
+use std::{fmt::Debug, ops::Deref};
+
 use aead::{generic_array::GenericArray, KeyInit};
 use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
-use std::fmt::Debug;
-use std::ops::Deref;
+
+use super::{
+    dem::{DemStream, Instantiable},
+    key::SymmetricKey,
+    nonce::Nonce,
+    Dem, DemInPlace,
+};
+use crate::RandomFixedSizeCBytes;
 
 pub struct XChaCha20Poly1305(XChaCha20Poly1305Lib);
 
 impl XChaCha20Poly1305 {
     /// Use a 256-bit key.
     pub const KEY_LENGTH: usize = 32;
-
-    /// Use a 192-bit nonce.
-    pub const NONCE_LENGTH: usize = 24;
-
     /// Use a 128-bit MAC tag.
     pub const MAC_LENGTH: usize = 16;
+    /// Use a 192-bit nonce.
+    pub const NONCE_LENGTH: usize = 24;
 }
 
 impl Deref for XChaCha20Poly1305 {

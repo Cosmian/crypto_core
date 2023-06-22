@@ -1,3 +1,4 @@
+#[cfg(all(feature = "chacha", feature = "blake", feature = "curve25519"))]
 pub fn ecies_x25519_xchacha20_combined() {
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, Ecies, EciesX25519XChaCha20,
@@ -32,6 +33,7 @@ pub fn ecies_x25519_xchacha20_combined() {
     println!("ECIES Vector X25519 XChaCha20: OK")
 }
 
+#[cfg(all(feature = "chacha", feature = "blake", feature = "curve25519"))]
 pub fn ecies_x25519_xchacha20_stream() {
     use aead::Payload;
     use cosmian_crypto_core::{

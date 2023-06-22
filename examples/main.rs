@@ -1,17 +1,34 @@
 mod examples;
-use examples::{
-    dem_stream_be32, dem_vector_combined, dem_vector_detached, ecies_x25519_xchacha20_combined,
-    ecies_x25519_xchacha20_stream, ed25519_cached, ed25519_keypair, ed25519_static,
-};
 
 /// Run all examples.
 fn main() {
-    dem_vector_combined();
-    dem_vector_detached();
-    dem_stream_be32();
-    ecies_x25519_xchacha20_combined();
-    ecies_x25519_xchacha20_stream();
-    ed25519_static();
-    ed25519_cached();
-    ed25519_keypair();
+    #[cfg(feature = "chacha")]
+    self::examples::dem_vector_combined();
+    #[cfg(feature = "chacha")]
+    self::examples::dem_vector_detached();
+    #[cfg(feature = "chacha")]
+    self::examples::dem_stream_be32();
+
+    #[cfg(all(
+        feature = "ecies",
+        feature = "chacha",
+        feature = "blake",
+        feature = "curve25519"
+    ))]
+    self::examples::ecies_x25519_xchacha20_combined();
+
+    #[cfg(all(
+        feature = "ecies",
+        feature = "chacha",
+        feature = "blake",
+        feature = "curve25519"
+    ))]
+    self::examples::ecies_x25519_xchacha20_stream();
+
+    #[cfg(feature = "curve25519")]
+    self::examples::ed25519_static();
+    #[cfg(feature = "curve25519")]
+    self::examples::ed25519_cached();
+    #[cfg(feature = "curve25519")]
+    self::examples::ed25519_keypair();
 }

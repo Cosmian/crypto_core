@@ -1,10 +1,10 @@
-use aead::rand_core::CryptoRngCore;
 use ed25519_dalek::ed25519;
 use signature::{Keypair, Signer, Verifier};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     asymmetric_crypto::{Ed25519PrivateKey, Ed25519PublicKey},
+    reexport::rand_core::CryptoRngCore,
     CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
 
@@ -85,7 +85,7 @@ impl Ed25519Keypair {
     /// Generates a new random key pair.
     pub fn new<R: CryptoRngCore>(rng: &mut R) -> Result<Self, CryptoCoreError> {
         let private_key = Ed25519PrivateKey::new(rng);
-        let public_key = Ed25519PublicKey::try_from(&private_key)?;
+        let public_key = Ed25519PublicKey::from(&private_key);
         Ok(Self {
             private_key,
             public_key,

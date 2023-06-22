@@ -1,3 +1,4 @@
+#![cfg(feature = "default")]
 use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
     Aes128Gcm, Aes256Gcm, ChaCha20Poly1305, CsRng, Dem, DemInPlace, Instantiable, Nonce,
@@ -56,7 +57,8 @@ pub fn bench_symmetric_encryption_combined(c: &mut Criterion) {
     let xchacha20_poly1305 = XChaCha20Poly1305::new(&key32);
     let nonce = Nonce::new(&mut rng);
     c.bench_function(
-        "XChaCha20 Poly1305 DEM encryption combined of a 2048-bytes message without additional data",
+        "XChaCha20 Poly1305 DEM encryption combined of a 2048-bytes message without additional \
+         data",
         |b| b.iter(|| xchacha20_poly1305.encrypt(&nonce, &msg, None).unwrap()),
     );
 }
@@ -112,7 +114,8 @@ pub fn bench_symmetric_decryption_combined(c: &mut Criterion) {
     let nonce = Nonce::new(&mut rng);
     let enc_xchacha20_poly1305 = xchacha20_poly1305.encrypt(&nonce, &msg, None).unwrap();
     c.bench_function(
-        "XChaCha20 Poly1305 DEM decryption combined of a 2048-bytes message without additional data",
+        "XChaCha20 Poly1305 DEM decryption combined of a 2048-bytes message without additional \
+         data",
         |b| {
             b.iter(|| {
                 xchacha20_poly1305
@@ -189,7 +192,8 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
     let xchacha20_poly1305 = XChaCha20Poly1305::new(&key32);
     let nonce = Nonce::new(&mut rng);
     c.bench_function(
-        "XChaCha20 Poly1305 DEM encryption in place of a 2048-bytes message without additional data",
+        "XChaCha20 Poly1305 DEM encryption in place of a 2048-bytes message without additional \
+         data",
         |b| {
             b.iter(|| {
                 xchacha20_poly1305
@@ -271,7 +275,8 @@ pub fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
         .encrypt_in_place_detached(&nonce, &mut bytes, None)
         .unwrap();
     c.bench_function(
-        "XChaCha20 Poly1305 DEM decryption in place of a 2048-bytes message without additional data",
+        "XChaCha20 Poly1305 DEM decryption in place of a 2048-bytes message without additional \
+         data",
         |b| {
             b.iter(|| {
                 xchacha20_poly1305

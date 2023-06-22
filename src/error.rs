@@ -25,6 +25,7 @@ pub enum CryptoCoreError {
         plaintext_len: usize,
         max: u64,
     },
+    #[cfg(feature = "ser")]
     ReadLeb128Error(leb128::read::Error),
     SerializationIoError {
         bytes_len: usize,
@@ -48,6 +49,7 @@ impl Display for CryptoCoreError {
                 f,
                 "wrong size when parsing bytes: {given} given should be {expected}"
             ),
+            #[cfg(feature = "ser")]
             Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
             Self::GenericDeserializationError(err) => {
                 write!(f, "deserialization error: {err}")
@@ -91,6 +93,7 @@ impl Display for CryptoCoreError {
 
 impl std::error::Error for CryptoCoreError {}
 
+#[cfg(feature = "aead")]
 impl From<aead::Error> for CryptoCoreError {
     fn from(e: aead::Error) -> Self {
         Self::StreamCipherError(e.to_string())

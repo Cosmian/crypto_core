@@ -1,11 +1,12 @@
-use crate::{
-    bytes_ser_de::{Deserializer, Serializable, Serializer},
-    CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes,
-};
+use std::ops::{Add, Div, Mul, Sub};
+
 use curve25519_dalek::Scalar;
 use rand_chacha::rand_core::CryptoRngCore;
-use std::ops::{Add, Div, Mul, Sub};
 use zeroize::{Zeroize, ZeroizeOnDrop};
+
+#[cfg(feature = "ser")]
+use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
+use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes};
 
 /// Asymmetric private key based on Curve25519.
 ///
@@ -62,6 +63,7 @@ impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
 impl SecretCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {}
 
 /// Key Serialization framework
+#[cfg(feature = "ser")]
 impl Serializable for Curve25519PrivateKey {
     type Error = CryptoCoreError;
 

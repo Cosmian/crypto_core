@@ -233,9 +233,8 @@ pub fn to_leb128_len(n: usize) -> usize {
 mod tests {
     use super::{to_leb128_len, Deserializer, Serializable, Serializer};
     use crate::{
-        asymmetric_crypto::R25519PrivateKey,
         reexport::rand_core::{RngCore, SeedableRng},
-        CryptoCoreError, CsRng, RandomFixedSizeCBytes,
+        CryptoCoreError, CsRng,
     };
 
     /// We don't have a non-fixed size implementation of Serializable inside
@@ -297,6 +296,13 @@ mod tests {
         assert_eq!(a2, a2_);
         let a3_ = de.read_vec()?;
         assert_eq!(a3, a3_);
+        Ok(())
+    }
+
+    #[cfg(feature = "curve25519")]
+    #[test]
+    fn test_r25519_serialization() -> Result<(), CryptoCoreError> {
+        use crate::{asymmetric_crypto::R25519PrivateKey, RandomFixedSizeCBytes};
 
         let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
         let serialized_key = key.serialize()?;
@@ -312,11 +318,6 @@ mod tests {
 
         assert_eq!(deserialized_dummy.bytes, dummy.bytes);
 
-        Ok(())
-    }
-
-    #[test]
-    fn test_deserialization_errors() -> Result<(), CryptoCoreError> {
         {
             let empty_error = R25519PrivateKey::deserialize(&[]);
 
@@ -350,7 +351,11 @@ mod tests {
                 })
             ));
         }
+        Ok(())
+    }
 
+    #[test]
+    fn test_deserialization_errors() -> Result<(), CryptoCoreError> {
         {
             let empty_error = DummyLeb128Serializable::deserialize(&[]);
 

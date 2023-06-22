@@ -1,3 +1,4 @@
+#![cfg(feature = "default")]
 use cosmian_crypto_core::{
     blake2b, blake2s, kdf128, kdf256,
     reexport::rand_core::{RngCore, SeedableRng},

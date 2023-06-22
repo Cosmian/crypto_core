@@ -1,3 +1,7 @@
+use aead::{consts::U10, generic_array::GenericArray};
+use chacha20::hchacha;
+use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
+
 use super::ecies_traits::EciesStream;
 use crate::{
     asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
@@ -6,9 +10,6 @@ use crate::{
     symmetric_crypto::{Dem, DemStream, Instantiable, Nonce, SymmetricKey, XChaCha20Poly1305},
     CryptoCoreError, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
 };
-use aead::{consts::U10, generic_array::GenericArray};
-use chacha20::hchacha;
-use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
 ///  - X25519
@@ -60,8 +61,8 @@ impl EciesX25519XChaCha20 {
         // Calculate the shared secret point (Px, Py) = P = r.Y
         let shared_point = recipient_pk * &ephemeral_sk;
 
-        // Generate the 128-bit symmetric encryption key k, derived using SHAKE256 eXtendable-Output-Function (XOF)
-        // such as: k = kdf(S || S1) where:
+        // Generate the 128-bit symmetric encryption key k, derived using SHAKE256
+        // eXtendable-Output-Function (XOF) such as: k = kdf(S || S1) where:
         // - S = Px. Note: ECIES formally uses S = Px rather than the serialization of P
         // - S1: if the user provided shared_encapsulation_data S1, then we append it to
         //   the shared_bytes S
