@@ -22,27 +22,29 @@
 /// const ikm: &str = "asdf34@!dsa@grq5e$2ASGy5";
 ///
 /// // derive a 32-bytes key
-/// let key = kdf128!(KEY_LENGTH, ikm.as_bytes());
+/// let mut key = [0; KEY_LENGTH];
+/// kdf128!(&mut key, ikm.as_bytes());
 ///
 /// assert_eq!(KEY_LENGTH, key.len());
-/// assert_eq!(key, kdf128!(KEY_LENGTH, ikm.as_bytes()));
+///
+/// let mut key2 = [0; KEY_LENGTH];
+/// kdf128!(&mut key2, ikm.as_bytes());
+/// assert_eq!(key, key2);
 /// ```
 ///
 /// # Parameters
 ///
-/// - `length`  : desired length (needs to be constant)
+/// - `res`     : output to be updated in-place
 /// - `bytes`   : KDF input
 #[macro_export]
 macro_rules! kdf128 {
-    ($length: expr, $($bytes: expr),+) => {
+    ($res: expr, $($bytes: expr),+) => {
         {
-            let mut res = [0; $length];
             let mut hasher = tiny_keccak::Shake::v128();
             $(
                 <tiny_keccak::Shake as tiny_keccak::Hasher>::update(&mut hasher, $bytes);
             )*
-            <tiny_keccak::Shake as tiny_keccak::Hasher>::finalize(hasher, &mut res);
-            res
+            <tiny_keccak::Shake as tiny_keccak::Hasher>::finalize(hasher, $res);
         }
     };
 }
@@ -71,27 +73,29 @@ macro_rules! kdf128 {
 /// const ikm: &str = "asdf34@!dsa@grq5e$2ASGy5";
 ///
 /// // derive a 32-bytes key
-/// let key = kdf256!(KEY_LENGTH, ikm.as_bytes());
+/// let mut key = [0; KEY_LENGTH];
+/// kdf256!(&mut key, ikm.as_bytes());
 ///
 /// assert_eq!(KEY_LENGTH, key.len());
-/// assert_eq!(key, kdf256!(KEY_LENGTH, ikm.as_bytes()));
+///
+/// let mut key2 = [0; KEY_LENGTH];
+/// kdf256!(&mut key2, ikm.as_bytes());
+/// assert_eq!(key, key2);
 /// ```
 ///
 /// # Parameters
 ///
-/// - `length`  : desired length (needs to be constant)
+/// - `res`     : output to be updated in-place
 /// - `bytes`   : KDF input
 #[macro_export]
 macro_rules! kdf256 {
-    ($length: expr, $($bytes: expr),+) => {
+    ($res: expr, $($bytes: expr),+) => {
         {
-            let mut res = [0; $length];
             let mut hasher = tiny_keccak::Shake::v256();
             $(
                 <tiny_keccak::Shake as tiny_keccak::Hasher>::update(&mut hasher, $bytes);
             )*
-            <tiny_keccak::Shake as tiny_keccak::Hasher>::finalize(hasher, &mut res);
-            res
+            <tiny_keccak::Shake as tiny_keccak::Hasher>::finalize(hasher, $res);
         }
     };
 }

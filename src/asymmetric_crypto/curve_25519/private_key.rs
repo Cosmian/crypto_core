@@ -14,27 +14,8 @@ use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, Sec
 /// `Curve25519PrivateKey` should not be used directly
 /// but rather re-used as a base type for other final types on the curve
 /// such as `X22519PrivateKey`.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct Curve25519PrivateKey(pub(crate) Scalar);
-
-/// Zeroizes the private key.
-impl Zeroize for Curve25519PrivateKey {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
-    }
-}
-
-// Implements `Drop` trait to follow R23.
-impl Drop for Curve25519PrivateKey {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
-
-/// Zeroizes the private key on drop.
-impl ZeroizeOnDrop for Curve25519PrivateKey {}
-
-// Key traits implementations
 
 impl CBytes for Curve25519PrivateKey {}
 

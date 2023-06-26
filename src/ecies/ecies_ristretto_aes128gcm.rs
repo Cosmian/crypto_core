@@ -19,17 +19,21 @@ fn get_nonce<const NONCE_LENGTH: usize>(
     ephemeral_pk: &R25519PublicKey,
     recipient_pk: &R25519PublicKey,
 ) -> Nonce<NONCE_LENGTH> {
-    Nonce(kdf128!(
-        NONCE_LENGTH,
+    let mut nonce = Nonce([0; NONCE_LENGTH]);
+    kdf128!(
+        &mut nonce.0,
         &ephemeral_pk.to_bytes(),
         &recipient_pk.to_bytes()
-    ))
+    );
+    nonce
 }
 
 fn get_ephemeral_key<const KEY_LENGTH: usize>(
     shared_point: &R25519PublicKey,
 ) -> SymmetricKey<KEY_LENGTH> {
-    SymmetricKey(kdf128!(KEY_LENGTH, &shared_point.to_bytes()))
+    let mut key = SymmetricKey([0; KEY_LENGTH]);
+    kdf128!(&mut key.0, &shared_point.to_bytes());
+    key
 }
 
 impl EciesR25519Aes128 {

@@ -47,11 +47,23 @@ fn bench_kdf(c: &mut Criterion) {
     rng.fill_bytes(&mut ikm_64);
     c.bench_function(
         "Hashers: KDF 128bit derivation of a 32-byte IKM into a 16-bytes key",
-        |b| b.iter(|| kdf128!(16, &ikm_32, b"KDF derivation")),
+        |b| {
+            b.iter(|| {
+                let mut res = [0; 16];
+                kdf128!(&mut res, &ikm_32, b"KDF derivation");
+                res
+            })
+        },
     );
     c.bench_function(
         "Hashers: KDF 256bit derivation of a 64-byte IKM into a 32-bytes key",
-        |b| b.iter(|| kdf256!(32, &ikm_64, b"KDF derivation")),
+        |b| {
+            b.iter(|| {
+                let mut res = [0; 32];
+                kdf256!(&mut res, &ikm_64, b"KDF derivation");
+                res
+            })
+        },
     );
 }
 
@@ -63,11 +75,23 @@ fn bench_blake2(c: &mut Criterion) {
     rng.fill_bytes(&mut ikm_64);
     c.bench_function(
         "Hashers: Blake2s 256 derivation of a 32-byte IKM into a 16-bytes key",
-        |b| b.iter(|| blake2s!(16, &ikm_32, b"Blake2 derivation")),
+        |b| {
+            b.iter(|| {
+                let mut res = [0; 16];
+                blake2s!(res, &ikm_32, b"Blake2 derivation").unwrap();
+                res
+            })
+        },
     );
     c.bench_function(
         "Hashers: Blake2b 512 derivation of a 64-byte IKM into a 32-bytes key",
-        |b| b.iter(|| blake2b!(32, &ikm_64, b"Blake2 derivation")),
+        |b| {
+            b.iter(|| {
+                let mut res = [0; 32];
+                blake2b!(res, &ikm_64, b"Blake2 derivation").unwrap();
+                res
+            })
+        },
     );
 }
 

@@ -21,11 +21,9 @@ fn get_nonce<const NONCE_LENGTH: usize>(
     ephemeral_pk: &X25519PublicKey,
     recipient_pk: &X25519PublicKey,
 ) -> Result<Nonce<NONCE_LENGTH>, CryptoCoreError> {
-    Ok(Nonce(blake2b!(
-        NONCE_LENGTH,
-        ephemeral_pk.as_bytes(),
-        recipient_pk.as_bytes()
-    )?))
+    let mut nonce = Nonce([0; NONCE_LENGTH]);
+    blake2b!(nonce.0, ephemeral_pk.as_bytes(), recipient_pk.as_bytes())?;
+    Ok(nonce)
 }
 
 fn get_ephemeral_key<const KEY_LENGTH: usize>(

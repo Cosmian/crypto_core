@@ -1,8 +1,12 @@
-//! Implement the `Serializer` and `Deserializer` objects using LEB128.
+//! Implement the0izer` and `Deserializer` objects using LEB128.
 
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write},
+    ops::DerefMut,
+};
 
 use leb128;
+use zeroize::Zeroizing;
 
 use crate::CryptoCoreError;
 
@@ -25,7 +29,7 @@ pub trait Serializable: Sized {
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error>;
 
     /// Serializes the object. Allocates the correct capacity if it is known.
-    fn serialize(&self) -> Result<Vec<u8>, Self::Error> {
+    fn serialize(&self) -> Result<Zeroizing<Vec<u8>>, Self::Error> {
         let mut ser = Serializer::with_capacity(self.length());
         ser.write(self)?;
         Ok(ser.finalize())
@@ -124,30 +128,27 @@ impl<'a> Deserializer<'a> {
     }
 }
 
-pub struct Serializer {
-    writable: Vec<u8>,
-}
+// Implement `ZeroizeOnDrop` not to leak serialized sercrets.
+pub struct Serializer(Zeroizing<Vec<u8>>);
 
 impl Serializer {
     /// Generates a new `Serializer`.
     #[must_use]
-    pub const fn new() -> Self {
-        Self { writable: vec![] }
+    pub fn new() -> Self {
+        Self(Zeroizing::new(vec![]))
     }
 
     /// Generates a new `Serializer` with the given capacity.
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            writable: Vec::with_capacity(capacity),
-        }
+        Self(Zeroizing::new(Vec::with_capacity(capacity)))
     }
 
     /// Writes a `u64` to the `Serializer`.
     ///
     /// - `n`   : `u64` to write
     pub fn write_leb128_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
-        leb128::write::unsigned(&mut self.writable, n)
+        leb128::write::unsigned(self.0.deref_mut(), n)
             .map_err(|error| CryptoCoreError::WriteLeb128Error { value: n, error })
     }
 
@@ -155,7 +156,7 @@ impl Serializer {
     ///
     /// - `array`   : array of bytes to write
     pub fn write_array(&mut self, array: &[u8]) -> Result<usize, CryptoCoreError> {
-        self.writable
+        self.0
             .write(array)
             .map_err(|error| CryptoCoreError::SerializationIoError {
                 bytes_len: array.len(),
@@ -189,8 +190,8 @@ impl Serializer {
 
     /// Consumes the `Serializer` and returns the serialized bytes.
     #[must_use]
-    pub fn finalize(self) -> Vec<u8> {
-        self.writable
+    pub fn finalize(self) -> Zeroizing<Vec<u8>> {
+        self.0
     }
 }
 
@@ -287,9 +288,9 @@ mod tests {
         assert_eq!(7, ser.write_vec(&a1)?);
         assert_eq!(1, ser.write_vec(&a2)?);
         assert_eq!(41, ser.write_vec(&a3)?);
-        assert_eq!(49, ser.writable.len());
+        assert_eq!(49, ser.0.len());
 
-        let mut de = Deserializer::new(&ser.writable);
+        let mut de = Deserializer::new(&ser.0);
         let a1_ = de.read_vec()?;
         assert_eq!(a1, a1_);
         let a2_ = de.read_vec()?;
