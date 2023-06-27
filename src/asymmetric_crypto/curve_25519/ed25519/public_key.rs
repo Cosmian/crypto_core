@@ -16,6 +16,7 @@ pub struct Ed25519PublicKey(pub(crate) EdPublicKey);
 impl CBytes for Ed25519PublicKey {}
 
 impl Ed25519PublicKey {
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; ed25519_dalek::PUBLIC_KEY_LENGTH] {
         self.0.as_bytes()
     }

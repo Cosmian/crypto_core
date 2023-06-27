@@ -37,6 +37,7 @@ impl Aes128Gcm {
     pub const MAX_PLAINTEXT_LENGTH: u64 = 68_719_476_704;
     /// Use a 96-bit nonce.
     pub const NONCE_LENGTH: usize = 12;
+    pub const ENCRYPTION_OVERHEAD: usize = Self::MAC_LENGTH + Self::NONCE_LENGTH;
 }
 
 impl Instantiable<{ Self::KEY_LENGTH }> for Aes128Gcm {

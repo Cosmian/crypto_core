@@ -27,7 +27,7 @@ rfc5649 = ['aes', 'chacha']
 
 [dependencies]
 aead = { version = "0.5", features = ["stream"], optional = true }
-aes-gcm = { version = "0.10", optional = true }
+aes-gcm = { version = "0.10", optional = true, features = ["zeroize"] }
 blake2 = { version = "0.10", optional = true }
 chacha20 = { version = "0.9", optional = true }
 chacha20poly1305 = { version = "0.10", optional = true }
