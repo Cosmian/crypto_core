@@ -30,7 +30,7 @@ impl<const LENGTH: usize> FixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH> {
 
 impl<const LENGTH: usize> RandomFixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH> {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-        let mut key = SymmetricKey([0; LENGTH]);
+        let mut key = Self([0; LENGTH]);
         rng.fill_bytes(&mut key.0);
         key
     }

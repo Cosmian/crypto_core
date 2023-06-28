@@ -1,9 +1,6 @@
 //! Implement the0izer` and `Deserializer` objects using LEB128.
 
-use std::{
-    io::{Read, Write},
-    ops::DerefMut,
-};
+use std::io::{Read, Write};
 
 use leb128;
 use zeroize::Zeroizing;
@@ -148,7 +145,7 @@ impl Serializer {
     ///
     /// - `n`   : `u64` to write
     pub fn write_leb128_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
-        leb128::write::unsigned(self.0.deref_mut(), n)
+        leb128::write::unsigned(&mut *self.0, n)
             .map_err(|error| CryptoCoreError::WriteLeb128Error { value: n, error })
     }
 
