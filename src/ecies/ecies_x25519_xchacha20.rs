@@ -55,7 +55,7 @@ impl EciesX25519XChaCha20 {
         let ephemeral_pk = X25519PublicKey::from(&ephemeral_sk);
 
         // Calculate the shared secret point (Px, Py) = P = r.Y
-        let shared_point = recipient_pk * &ephemeral_sk;
+        let shared_point = recipient_pk.dh(&ephemeral_sk);
 
         // Generate the 128-bit symmetric encryption key k, derived using SHAKE256
         // eXtendable-Output-Function (XOF) such as: k = kdf(S || S1) where:
@@ -82,7 +82,7 @@ impl EciesX25519XChaCha20 {
         CryptoCoreError,
     > {
         // Calculate the shared secret point (Px, Py) = P = R.y = r.G.y = r.Y
-        let shared_point = ephemeral_public_key * recipient_sk;
+        let shared_point = ephemeral_public_key.dh(recipient_sk);
 
         // Generate the 128-bit symmetric encryption key k, derived using SHAKE256 XOF
         // such as: k = kdf(S || S1) where:

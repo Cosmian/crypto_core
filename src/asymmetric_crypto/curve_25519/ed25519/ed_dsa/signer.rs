@@ -11,8 +11,7 @@ use crate::asymmetric_crypto::curve_25519::ed25519::Ed25519PrivateKey;
 /// signing multiple messages with the same key.
 impl Signer<ed25519::Signature> for Ed25519PrivateKey {
     fn try_sign(&self, message: &[u8]) -> Result<ed25519::Signature, signature::Error> {
-        let sk: EdSecretKey = EdSecretKey::try_from(self).map_err(|_| signature::Error::new())?;
-        let signing_key = SigningKey::from(sk);
+        let signing_key = SigningKey::from_bytes(&self.0);
         signing_key.try_sign(message)
     }
 }
@@ -29,8 +28,7 @@ impl TryFrom<&Ed25519PrivateKey> for Cached25519Signer {
     type Error = crate::CryptoCoreError;
 
     fn try_from(sk: &Ed25519PrivateKey) -> Result<Self, Self::Error> {
-        let sk: EdSecretKey = EdSecretKey::try_from(sk)?;
-        let signing_key = SigningKey::from(sk);
+        let signing_key = SigningKey::from_bytes(&sk.0);
         Ok(Self(signing_key))
     }
 }

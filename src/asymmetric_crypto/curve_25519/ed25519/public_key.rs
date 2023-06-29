@@ -39,7 +39,7 @@ impl FixedSizeCBytes<{ ed25519_dalek::PUBLIC_KEY_LENGTH }> for Ed25519PublicKey 
 
 impl From<&Ed25519PrivateKey> for Ed25519PublicKey {
     fn from(sk: &Ed25519PrivateKey) -> Self {
-        Self(EdPublicKey::from(&SigningKey::from(sk.0.as_bytes())))
+        Self(EdPublicKey::from(&SigningKey::from_bytes(&sk.0)))
     }
 }
 

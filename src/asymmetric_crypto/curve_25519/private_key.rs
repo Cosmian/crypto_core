@@ -1,6 +1,3 @@
-use std::ops::{Add, Div, Mul, Sub};
-
-use curve25519_dalek::Scalar;
 use rand_chacha::rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -15,17 +12,17 @@ use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, Sec
 /// but rather re-used as a base type for other final types on the curve
 /// such as `X22519PrivateKey`.
 #[derive(Hash, Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
-pub struct Curve25519PrivateKey(pub(crate) Scalar);
+pub struct Curve25519PrivateKey(pub(crate) [u8; crypto_box::KEY_SIZE]);
 
 impl CBytes for Curve25519PrivateKey {}
 
 impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
-        self.0.to_bytes()
+        self.0
     }
 
-    fn try_from_bytes(slice: [u8; Self::LENGTH]) -> Result<Self, CryptoCoreError> {
-        Ok(Self(Scalar::from_bits_clamped(slice)))
+    fn try_from_bytes(bytes: [u8; Self::LENGTH]) -> Result<Self, CryptoCoreError> {
+        Ok(Self(bytes))
     }
 }
 
@@ -33,11 +30,11 @@ impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; Self::LENGTH];
         rng.fill_bytes(&mut bytes);
-        Self(Scalar::from_bits_clamped(bytes))
+        Self(bytes)
     }
 
     fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        &self.0
     }
 }
 
@@ -59,40 +56,5 @@ impl Serializable for Curve25519PrivateKey {
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         let bytes = de.read_array::<{ Self::LENGTH }>()?;
         Self::try_from_bytes(bytes)
-    }
-}
-
-// Curve arithmetic
-
-impl<'a> Add<&'a Curve25519PrivateKey> for &Curve25519PrivateKey {
-    type Output = Curve25519PrivateKey;
-
-    fn add(self, rhs: &Curve25519PrivateKey) -> Self::Output {
-        Curve25519PrivateKey(self.0 + rhs.0)
-    }
-}
-
-impl<'a> Sub<&'a Curve25519PrivateKey> for &Curve25519PrivateKey {
-    type Output = Curve25519PrivateKey;
-
-    fn sub(self, rhs: &Curve25519PrivateKey) -> Self::Output {
-        Curve25519PrivateKey(self.0 - rhs.0)
-    }
-}
-
-impl<'a> Mul<&'a Curve25519PrivateKey> for &Curve25519PrivateKey {
-    type Output = Curve25519PrivateKey;
-
-    fn mul(self, rhs: &Curve25519PrivateKey) -> Self::Output {
-        Curve25519PrivateKey(self.0 * rhs.0)
-    }
-}
-
-impl<'a> Div<&'a Curve25519PrivateKey> for &Curve25519PrivateKey {
-    type Output = Curve25519PrivateKey;
-
-    fn div(self, rhs: &Curve25519PrivateKey) -> Self::Output {
-        #[allow(clippy::suspicious_arithmetic_impl)]
-        Curve25519PrivateKey(self.0 * rhs.0.invert())
     }
 }
