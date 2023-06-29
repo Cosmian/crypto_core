@@ -5,6 +5,8 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
 use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes};
 
+const PRIVATE_KEY_LENGTH: usize = 32;
+
 /// Asymmetric private key based on Curve25519.
 ///
 /// This type wraps a scalar which is clamped to the curve.
@@ -12,11 +14,11 @@ use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, Sec
 /// but rather re-used as a base type for other final types on the curve
 /// such as `X22519PrivateKey`.
 #[derive(Hash, Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
-pub struct Curve25519PrivateKey(pub(crate) [u8; crypto_box::KEY_SIZE]);
+pub struct Curve25519PrivateKey(pub(crate) [u8; PRIVATE_KEY_LENGTH]);
 
 impl CBytes for Curve25519PrivateKey {}
 
-impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
+impl FixedSizeCBytes<{ PRIVATE_KEY_LENGTH }> for Curve25519PrivateKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0
     }
@@ -26,7 +28,7 @@ impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     }
 }
 
-impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
+impl RandomFixedSizeCBytes<{ PRIVATE_KEY_LENGTH }> for Curve25519PrivateKey {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; Self::LENGTH];
         rng.fill_bytes(&mut bytes);
@@ -38,7 +40,7 @@ impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
     }
 }
 
-impl SecretCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {}
+impl SecretCBytes<{ PRIVATE_KEY_LENGTH }> for Curve25519PrivateKey {}
 
 /// Key Serialization framework
 #[cfg(feature = "ser")]

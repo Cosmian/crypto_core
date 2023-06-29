@@ -8,6 +8,8 @@ pub use ed25519_dalek::{SecretKey as EdSecretKey, VerifyingKey as EdPublicKey};
 use super::private_key::Ed25519PrivateKey;
 use crate::{CBytes, FixedSizeCBytes};
 
+const PUBLIC_KEY_LENGTH: usize = 32;
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Ed25519PublicKey(pub(crate) EdPublicKey);
 
@@ -24,7 +26,7 @@ impl FixedSizeCBytes<{ ed25519_dalek::PUBLIC_KEY_LENGTH }> for Ed25519PublicKey 
         self.0.to_bytes()
     }
 
-    fn try_from_bytes(bytes: [u8; crypto_box::KEY_SIZE]) -> Result<Self, crate::CryptoCoreError> {
+    fn try_from_bytes(bytes: [u8; PUBLIC_KEY_LENGTH]) -> Result<Self, crate::CryptoCoreError> {
         EdPublicKey::from_bytes(&bytes)
             .map_err(|_| {
                 crate::CryptoCoreError::InvalidBytesLength(

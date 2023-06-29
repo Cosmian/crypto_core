@@ -4,17 +4,18 @@ use curve25519_dalek::Scalar;
 use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::{
-    bytes_ser_de::{Deserializer, Serializable, Serializer},
-    CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes,
-};
+#[cfg(feature = "ser")]
+use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
+use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes};
+
+const PRIVATE_KEY_LENGTH: usize = 32;
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct R25519PrivateKey(pub(crate) Scalar);
 
 impl CBytes for R25519PrivateKey {}
 
-impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for R25519PrivateKey {
+impl FixedSizeCBytes<{ PRIVATE_KEY_LENGTH }> for R25519PrivateKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0.to_bytes()
     }
@@ -30,7 +31,7 @@ impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for R25519PrivateKey {
     }
 }
 
-impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for R25519PrivateKey {
+impl RandomFixedSizeCBytes<{ PRIVATE_KEY_LENGTH }> for R25519PrivateKey {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; 2 * Self::LENGTH];
         rng.fill_bytes(&mut bytes);
@@ -42,7 +43,7 @@ impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for R25519PrivateKey {
     }
 }
 
-impl SecretCBytes<{ crypto_box::KEY_SIZE }> for R25519PrivateKey {}
+impl SecretCBytes<{ PRIVATE_KEY_LENGTH }> for R25519PrivateKey {}
 
 /// Key Serialization framework
 #[cfg(feature = "ser")]

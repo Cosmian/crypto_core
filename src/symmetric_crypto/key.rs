@@ -1,6 +1,7 @@
 //! Defines a symmetric key object of variable size.
 
 use core::{hash::Hash, ops::Deref};
+use std::ops::DerefMut;
 
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -47,6 +48,12 @@ impl<const LENGTH: usize> Deref for SymmetricKey<LENGTH> {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<const LENGTH: usize> DerefMut for SymmetricKey<LENGTH> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
