@@ -1,4 +1,4 @@
-//! Implement the0izer` and `Deserializer` objects using LEB128.
+//! Implements the `Serializer` and `Deserializer` objects using LEB128.
 
 use std::io::{Read, Write};
 
