@@ -1,73 +1,30 @@
 //! Defines the `SymmetricCrypto` and `DEM` traits and provides an
-//! implementation based on AES256-GCM.
+//! implementations of DEMs such as AES 128 GCM and AES 256 GCM
 
-pub mod aes_256_gcm_pure;
-pub mod key;
-pub mod nonce;
+#[cfg(feature = "aes")]
+mod aes_128_gcm;
+#[cfg(feature = "aes")]
+mod aes_256_gcm;
+#[cfg(feature = "chacha")]
+mod chacha20_poly1305;
+mod dem;
+mod key;
+#[cfg(feature = "rfc5649")]
+mod key_wrapping_rfc_5649;
+mod nonce;
+#[cfg(feature = "chacha")]
+mod xchacha20_poly1305;
 
-use core::{fmt::Debug, hash::Hash};
-use std::vec::Vec;
-
-use nonce::NonceTrait;
-
-use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, KeyTrait};
-
-/// Defines a symmetric encryption key.
-pub trait SymKey<const LENGTH: usize>: KeyTrait<LENGTH> + Hash {
-    /// Converts the given key into a byte slice.
-    #[must_use]
-    fn as_bytes(&self) -> &[u8];
-
-    /// Consumes the key to return the underlying bytes.
-    #[must_use]
-    fn into_bytes(self) -> [u8; LENGTH];
-
-    /// Converts the given bytes into a key.
-    #[must_use]
-    fn from_bytes(bytes: [u8; LENGTH]) -> Self;
-}
-
-/// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the
-/// [ISO 2004](https://www.shoup.net/iso/std6.pdf).
-pub trait Dem<const KEY_LENGTH: usize>: Debug + PartialEq {
-    /// Number of bytes added to the message length in the encapsulation.
-    const ENCRYPTION_OVERHEAD: usize = Self::Nonce::LENGTH + Self::MAC_LENGTH;
-
-    /// MAC tag length
-    const MAC_LENGTH: usize;
-
-    /// Symmetric key length
-    const KEY_LENGTH: usize = KEY_LENGTH;
-
-    /// Associated nonce type
-    type Nonce: NonceTrait;
-
-    /// Associated key type
-    type Key: SymKey<KEY_LENGTH>;
-
-    /// Encrypts data using the given symmetric key.
-    ///
-    /// - `rng`         : secure random number generator
-    /// - `secret_key`  : secret symmetric key
-    /// - `plaintext`   : plaintext message
-    /// - `aad`         : optional data to use in the authentication method,
-    /// must use the same for decryption
-    fn encrypt<R: CryptoRngCore>(
-        rng: &mut R,
-        secret_key: &Self::Key,
-        plaintext: &[u8],
-        aad: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoCoreError>;
-
-    /// Decrypts data using the given symmetric key.
-    ///
-    /// - `secret_key`  : symmetric key
-    /// - `ciphertext`  : ciphertext message
-    /// - `aad`         : optional data to use in the authentication method,
-    /// must use the same for encryption
-    fn decrypt(
-        secret_key: &Self::Key,
-        ciphertext: &[u8],
-        aad: Option<&[u8]>,
-    ) -> Result<Vec<u8>, CryptoCoreError>;
-}
+#[cfg(feature = "aes")]
+pub use aes_128_gcm::Aes128Gcm;
+#[cfg(feature = "aes")]
+pub use aes_256_gcm::Aes256Gcm;
+#[cfg(feature = "chacha")]
+pub use chacha20_poly1305::ChaCha20Poly1305;
+pub use dem::{Dem, DemInPlace, DemStream, Instantiable};
+pub use key::SymmetricKey;
+#[cfg(feature = "rfc5649")]
+pub use key_wrapping_rfc_5649::{unwrap, unwrap_64, wrap, wrap_64};
+pub use nonce::Nonce;
+#[cfg(feature = "chacha")]
+pub use xchacha20_poly1305::XChaCha20Poly1305;

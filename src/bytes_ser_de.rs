@@ -1,12 +1,13 @@
-//! Implement the `Serializer` and `Deserializer` objects using LEB128.
+//! Implements the `Serializer` and `Deserializer` objects using LEB128.
 
 use std::io::{Read, Write};
 
 use leb128;
+use zeroize::Zeroizing;
 
 use crate::CryptoCoreError;
 
-/// A `Serializable` object can easily be serialized and derserialized into an
+/// A `Serializable` object can easily be serialized and deserialized into an
 /// array of bytes.
 pub trait Serializable: Sized {
     /// Error type returned by the serialization.
@@ -25,22 +26,22 @@ pub trait Serializable: Sized {
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error>;
 
     /// Serializes the object. Allocates the correct capacity if it is known.
-    fn try_to_bytes(&self) -> Result<Vec<u8>, Self::Error> {
+    fn serialize(&self) -> Result<Zeroizing<Vec<u8>>, Self::Error> {
         let mut ser = Serializer::with_capacity(self.length());
         ser.write(self)?;
         Ok(ser.finalize())
     }
 
     /// Deserializes the object.
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, Self::Error> {
+    fn deserialize(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.is_empty() {
-            return Err(CryptoCoreError::DeserialisationEmptyError.into());
+            return Err(CryptoCoreError::DeserializationEmptyError.into());
         }
 
         let mut de = Deserializer::new(bytes);
         match de.read::<Self>() {
             Ok(result) if !de.finalize().is_empty() => {
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: bytes.len(),
                     expected: result.length(),
                 })?
@@ -72,7 +73,7 @@ impl<'a> Deserializer<'a> {
     pub fn read_array<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], CryptoCoreError> {
         let mut buf = [0; LENGTH];
         self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::DeserialisationSizeError {
+            CryptoCoreError::DeserializationSizeError {
                 given: self.readable.len(),
                 expected: LENGTH,
             }
@@ -92,13 +93,13 @@ impl<'a> Deserializer<'a> {
             return Ok(vec![]);
         };
         let len = usize::try_from(len_u64).map_err(|_| {
-            CryptoCoreError::GenericDeserialisationError(format!(
+            CryptoCoreError::GenericDeserializationError(format!(
                 "size of vector is too big for architecture: {len_u64} bytes",
             ))
         })?;
         let mut buf = vec![0_u8; len];
         self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::DeserialisationSizeError {
+            CryptoCoreError::DeserializationSizeError {
                 expected: len + to_leb128_len(len),
                 given: original_length,
             }
@@ -124,30 +125,27 @@ impl<'a> Deserializer<'a> {
     }
 }
 
-pub struct Serializer {
-    writable: Vec<u8>,
-}
+// Implement `ZeroizeOnDrop` not to leak serialized sercrets.
+pub struct Serializer(Zeroizing<Vec<u8>>);
 
 impl Serializer {
     /// Generates a new `Serializer`.
     #[must_use]
-    pub const fn new() -> Self {
-        Self { writable: vec![] }
+    pub fn new() -> Self {
+        Self(Zeroizing::new(vec![]))
     }
 
     /// Generates a new `Serializer` with the given capacity.
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            writable: Vec::with_capacity(capacity),
-        }
+        Self(Zeroizing::new(Vec::with_capacity(capacity)))
     }
 
     /// Writes a `u64` to the `Serializer`.
     ///
     /// - `n`   : `u64` to write
     pub fn write_leb128_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
-        leb128::write::unsigned(&mut self.writable, n)
+        leb128::write::unsigned(&mut *self.0, n)
             .map_err(|error| CryptoCoreError::WriteLeb128Error { value: n, error })
     }
 
@@ -155,9 +153,9 @@ impl Serializer {
     ///
     /// - `array`   : array of bytes to write
     pub fn write_array(&mut self, array: &[u8]) -> Result<usize, CryptoCoreError> {
-        self.writable
+        self.0
             .write(array)
-            .map_err(|error| CryptoCoreError::SerialisationIoError {
+            .map_err(|error| CryptoCoreError::SerializationIoError {
                 bytes_len: array.len(),
                 error,
             })
@@ -189,8 +187,8 @@ impl Serializer {
 
     /// Consumes the `Serializer` and returns the serialized bytes.
     #[must_use]
-    pub fn finalize(self) -> Vec<u8> {
-        self.writable
+    pub fn finalize(self) -> Zeroizing<Vec<u8>> {
+        self.0
     }
 }
 
@@ -233,7 +231,6 @@ pub fn to_leb128_len(n: usize) -> usize {
 mod tests {
     use super::{to_leb128_len, Deserializer, Serializable, Serializer};
     use crate::{
-        asymmetric_crypto::curve25519::X25519PrivateKey,
         reexport::rand_core::{RngCore, SeedableRng},
         CryptoCoreError, CsRng,
     };
@@ -288,76 +285,82 @@ mod tests {
         assert_eq!(7, ser.write_vec(&a1)?);
         assert_eq!(1, ser.write_vec(&a2)?);
         assert_eq!(41, ser.write_vec(&a3)?);
-        assert_eq!(49, ser.writable.len());
+        assert_eq!(49, ser.0.len());
 
-        let mut de = Deserializer::new(&ser.writable);
+        let mut de = Deserializer::new(&ser.0);
         let a1_ = de.read_vec()?;
         assert_eq!(a1, a1_);
         let a2_ = de.read_vec()?;
         assert_eq!(a2, a2_);
         let a3_ = de.read_vec()?;
         assert_eq!(a3, a3_);
+        Ok(())
+    }
 
-        let serialized_key = vec![1; 32];
-        let key = X25519PrivateKey::try_from_bytes(&serialized_key)?;
-        let reserialized_key = key.try_to_bytes()?;
+    #[cfg(feature = "curve25519")]
+    #[test]
+    fn test_r25519_serialization() -> Result<(), CryptoCoreError> {
+        use crate::{asymmetric_crypto::R25519PrivateKey, RandomFixedSizeCBytes};
 
-        assert_eq!(reserialized_key, serialized_key);
+        let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
+        let serialized_key = key.serialize()?;
+        let key_ = R25519PrivateKey::deserialize(&serialized_key)?;
+        assert_eq!(key, key_);
+        assert_eq!(serialized_key, key_.serialize()?);
 
         let dummy = DummyLeb128Serializable {
             bytes: vec![1; 512],
         };
-        let serialized_dummy = dummy.try_to_bytes()?;
-        let deserialized_dummy = DummyLeb128Serializable::try_from_bytes(&serialized_dummy)?;
+        let serialized_dummy = dummy.serialize()?;
+        let deserialized_dummy = DummyLeb128Serializable::deserialize(&serialized_dummy)?;
 
         assert_eq!(deserialized_dummy.bytes, dummy.bytes);
 
-        Ok(())
-    }
-
-    #[test]
-    fn test_deserialization_errors() -> Result<(), CryptoCoreError> {
         {
-            let empty_error = X25519PrivateKey::try_from_bytes(&[]);
+            let empty_error = R25519PrivateKey::deserialize(&[]);
 
             dbg!(&empty_error);
             assert!(matches!(
                 empty_error,
-                Err(CryptoCoreError::DeserialisationEmptyError)
+                Err(CryptoCoreError::DeserializationEmptyError)
             ));
         }
         {
-            let too_small_error = X25519PrivateKey::try_from_bytes(&[1, 2, 3]);
+            let too_small_error = R25519PrivateKey::deserialize(&[1, 2, 3]);
 
             dbg!(&too_small_error);
             assert!(matches!(
                 too_small_error,
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: 3,
                     expected: 32
                 })
             ));
         }
         {
-            let too_big_error = X25519PrivateKey::try_from_bytes(&[1; 34]);
+            let too_big_error = R25519PrivateKey::deserialize(&[1; 34]);
 
             dbg!(&too_big_error);
             assert!(matches!(
                 too_big_error,
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: 34,
                     expected: 32
                 })
             ));
         }
+        Ok(())
+    }
 
+    #[test]
+    fn test_deserialization_errors() -> Result<(), CryptoCoreError> {
         {
-            let empty_error = DummyLeb128Serializable::try_from_bytes(&[]);
+            let empty_error = DummyLeb128Serializable::deserialize(&[]);
 
             dbg!(&empty_error);
             assert!(matches!(
                 empty_error,
-                Err(CryptoCoreError::DeserialisationEmptyError)
+                Err(CryptoCoreError::DeserializationEmptyError)
             ));
         }
 
@@ -366,28 +369,28 @@ mod tests {
         };
 
         {
-            let mut bytes = dummy.try_to_bytes()?;
+            let mut bytes = dummy.serialize()?;
             bytes.pop();
-            let too_small_error = DummyLeb128Serializable::try_from_bytes(&bytes);
+            let too_small_error = DummyLeb128Serializable::deserialize(&bytes);
 
             dbg!(&too_small_error);
             assert!(matches!(
                 too_small_error,
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: 513,
                     expected: 514
                 })
             ));
         }
         {
-            let mut bytes = dummy.try_to_bytes()?;
+            let mut bytes = dummy.serialize()?;
             bytes.push(42);
-            let too_big_error = DummyLeb128Serializable::try_from_bytes(&bytes);
+            let too_big_error = DummyLeb128Serializable::deserialize(&bytes);
 
             dbg!(&too_big_error);
             assert!(matches!(
                 too_big_error,
-                Err(CryptoCoreError::DeserialisationSizeError {
+                Err(CryptoCoreError::DeserializationSizeError {
                     given: 515,
                     expected: 514
                 })

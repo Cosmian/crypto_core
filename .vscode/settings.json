@@ -1,0 +1,28 @@
+{
+  "cSpell.words": [
+    "blake",
+    "chacha",
+    "ciphertext",
+    "Cloudproof",
+    "cosmian",
+    "Cosmian",
+    "decryptor",
+    "Decryptor",
+    "decryptors",
+    "ecies",
+    "Ecies",
+    "encryptor",
+    "Encryptor",
+    "encryptors",
+    "hasher",
+    "hashers",
+    "keypair",
+    "libsodium",
+    "sealbox",
+    "Seedable",
+    "xchacha",
+    "zeroize",
+    "zeroized"
+  ],
+  "rust-analyzer.check.command": "clippy"
+}

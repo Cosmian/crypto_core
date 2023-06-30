@@ -31,7 +31,21 @@ jobs:
         with:
           command: build
           args: --verbose --target wasm32-unknown-unknown
-
+  hack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Install cargo-hack
+        run: cargo install --locked cargo-hack || true
+      - name: Test all feature combinations
+        uses: actions-rs/cargo@v1
+        with:
+          command: hack
+          args: test --feature-powerset
   cargo-publish:
     needs:
       - cargo-lint

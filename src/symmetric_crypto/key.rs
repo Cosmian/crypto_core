@@ -1,73 +1,49 @@
 //! Defines a symmetric key object of variable size.
 
-use core::{convert::TryFrom, hash::Hash, ops::Deref};
+use core::{hash::Hash, ops::Deref};
+use std::ops::DerefMut;
 
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
-    reexport::rand_core::CryptoRngCore, symmetric_crypto::SymKey, CryptoCoreError, KeyTrait,
+    reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
+    RandomFixedSizeCBytes, SecretCBytes,
 };
 
-/// Symmetric key of a given size.
+/// A type that holds symmetric key of a fixed  size.
 ///
 /// It is internally built using an array of bytes of the given length.
-#[derive(Debug, Hash, Clone, PartialEq, Eq)]
-pub struct Key<const LENGTH: usize>([u8; LENGTH]);
+#[derive(Debug, Hash, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+pub struct SymmetricKey<const LENGTH: usize>(pub(crate) [u8; LENGTH]);
 
-impl<const LENGTH: usize> KeyTrait<LENGTH> for Key<LENGTH> {
-    /// Generates a new symmetric random `Key`.
-    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-        let mut key = [0; LENGTH];
-        rng.fill_bytes(&mut key);
-        Self(key)
-    }
+impl<const LENGTH: usize> CBytes for SymmetricKey<LENGTH> {}
 
-    /// Converts the given key into bytes.
+impl<const LENGTH: usize> FixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH> {
     fn to_bytes(&self) -> [u8; LENGTH] {
-        self.0.to_owned()
+        self.0
     }
 
-    /// Tries to convert the given bytes into a key.
-    fn try_from_bytes(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
-        let bytes = <[u8; LENGTH]>::try_from(bytes)
-            .map_err(|e| CryptoCoreError::ConversionError(e.to_string()))?;
+    fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError> {
         Ok(Self(bytes))
     }
 }
 
-impl<const LENGTH: usize> SymKey<LENGTH> for Key<LENGTH> {
-    /// Converts the given key into a byte slice.
+impl<const LENGTH: usize> RandomFixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH> {
+    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+        let mut key = Self([0; LENGTH]);
+        rng.fill_bytes(&mut key.0);
+        key
+    }
+
     fn as_bytes(&self) -> &[u8] {
-        &self.0
-    }
-
-    /// Consumes the key to return underlying bytes.
-    fn into_bytes(self) -> [u8; LENGTH] {
-        self.0
-    }
-
-    /// Converts the given bytes with correct size into a key.
-    fn from_bytes(bytes: [u8; LENGTH]) -> Self {
-        Self(bytes)
+        self.as_ref()
     }
 }
 
-impl<const LENGTH: usize> Zeroize for Key<LENGTH> {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
-    }
-}
+/// The symmetric key is a secret and must be zeroized.
+impl<const LENGTH: usize> SecretCBytes<LENGTH> for SymmetricKey<LENGTH> {}
 
-// Implements `Drop` trait to follow R23.
-impl<const LENGTH: usize> Drop for Key<LENGTH> {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
-
-impl<const LENGTH: usize> ZeroizeOnDrop for Key<LENGTH> {}
-
-impl<const LENGTH: usize> Deref for Key<LENGTH> {
+impl<const LENGTH: usize> Deref for SymmetricKey<LENGTH> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -75,19 +51,34 @@ impl<const LENGTH: usize> Deref for Key<LENGTH> {
     }
 }
 
+impl<const LENGTH: usize> DerefMut for SymmetricKey<LENGTH> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<const LENGTH: usize> Default for SymmetricKey<LENGTH> {
+    fn default() -> Self {
+        Self([0; LENGTH])
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
-    use crate::{reexport::rand_core::SeedableRng, symmetric_crypto::key::Key, CsRng, KeyTrait};
+    use crate::{
+        reexport::rand_core::SeedableRng, symmetric_crypto::key::SymmetricKey, CsRng,
+        RandomFixedSizeCBytes,
+    };
 
     const KEY_LENGTH: usize = 32;
 
     #[test]
     fn test_key() {
         let mut cs_rng = CsRng::from_entropy();
-        let key_1 = Key::<KEY_LENGTH>::new(&mut cs_rng);
+        let key_1 = SymmetricKey::<KEY_LENGTH>::new(&mut cs_rng);
         assert_eq!(KEY_LENGTH, key_1.len());
-        let key_2 = Key::new(&mut cs_rng);
+        let key_2 = SymmetricKey::new(&mut cs_rng);
         assert_eq!(KEY_LENGTH, key_2.len());
         assert_ne!(key_1, key_2);
     }
