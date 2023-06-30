@@ -18,8 +18,8 @@ path = "src/lib.rs"
 default = ['aes', 'chacha', 'ecies', 'curve25519', 'ser', 'blake', 'sha3', 'rfc5649']
 aes = ['aead', 'aes-gcm']
 chacha = ['aead', 'chacha20poly1305', 'chacha20']
-ecies = ['aead']
-curve25519 = ['crypto_box', 'curve25519-dalek', 'ed25519-dalek', 'signature']
+ecies = ['aead', 'crypto_box']
+curve25519 = ['curve25519-dalek', 'ed25519-dalek', 'signature']
 ser = ['leb128']
 blake = ['blake2']
 sha3 = ['tiny-keccak']
@@ -27,13 +27,13 @@ rfc5649 = ['aes', 'chacha']
 
 [dependencies]
 aead = { version = "0.5", features = ["stream"], optional = true }
-aes-gcm = { version = "0.10", optional = true }
+aes-gcm = { version = "0.10", optional = true, features = ["zeroize"] }
 blake2 = { version = "0.10", optional = true }
 chacha20 = { version = "0.9", optional = true }
 chacha20poly1305 = { version = "0.10", optional = true }
-crypto_box = { version = "0.9.0-rc.0", features = ["seal"], optional = true }
-curve25519-dalek = { version = "4.0.0-rc.2", optional = true }
-ed25519-dalek = { version = "2.0.0-rc.2", optional = true }
+crypto_box = { version = "0.9.0-rc.1", features = ["seal"], optional = true }
+curve25519-dalek = { version = "4.0.0-rc.3", optional = true }
+ed25519-dalek = { version = "2.0.0-rc.3", optional = true }
 # needed to compile into WASM
 getrandom = { version = "0.2", features = ["js"] }
 leb128 = { version = "0.2", optional = true }
@@ -41,7 +41,7 @@ rand_chacha = "0.3"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 signature = { version = "2.1", optional = true }
 tiny-keccak = { version = "2.0.2", features = ["shake"], optional = true }
-zeroize = "1.5"
+zeroize = { version = "1.6", features = ["zeroize_derive"] }
 
 [dev-dependencies]
 criterion = "0.5"

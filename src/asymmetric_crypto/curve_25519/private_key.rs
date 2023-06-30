@@ -1,6 +1,3 @@
-use std::ops::{Add, Div, Mul, Sub};
-
-use curve25519_dalek::Scalar;
 use rand_chacha::rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -8,59 +5,42 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
 use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes};
 
+const PRIVATE_KEY_LENGTH: usize = 32;
+
 /// Asymmetric private key based on Curve25519.
 ///
 /// This type wraps a scalar which is clamped to the curve.
 /// `Curve25519PrivateKey` should not be used directly
 /// but rather re-used as a base type for other final types on the curve
 /// such as `X22519PrivateKey`.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Curve25519PrivateKey(pub(crate) Scalar);
-
-/// Zeroizes the private key.
-impl Zeroize for Curve25519PrivateKey {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
-    }
-}
-
-// Implements `Drop` trait to follow R23.
-impl Drop for Curve25519PrivateKey {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
-
-/// Zeroizes the private key on drop.
-impl ZeroizeOnDrop for Curve25519PrivateKey {}
-
-// Key traits implementations
+#[derive(Hash, Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+pub struct Curve25519PrivateKey(pub(crate) [u8; PRIVATE_KEY_LENGTH]);
 
 impl CBytes for Curve25519PrivateKey {}
 
-impl FixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
+impl FixedSizeCBytes<{ PRIVATE_KEY_LENGTH }> for Curve25519PrivateKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
-        self.0.to_bytes()
+        self.0
     }
 
-    fn try_from_bytes(slice: [u8; Self::LENGTH]) -> Result<Self, CryptoCoreError> {
-        Ok(Self(Scalar::from_bits_clamped(slice)))
+    fn try_from_bytes(bytes: [u8; Self::LENGTH]) -> Result<Self, CryptoCoreError> {
+        Ok(Self(bytes))
     }
 }
 
-impl RandomFixedSizeCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {
+impl RandomFixedSizeCBytes<{ PRIVATE_KEY_LENGTH }> for Curve25519PrivateKey {
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
         let mut bytes = [0; Self::LENGTH];
         rng.fill_bytes(&mut bytes);
-        Self(Scalar::from_bits_clamped(bytes))
+        Self(bytes)
     }
 
     fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        &self.0
     }
 }
 
-impl SecretCBytes<{ crypto_box::KEY_SIZE }> for Curve25519PrivateKey {}
+impl SecretCBytes<{ PRIVATE_KEY_LENGTH }> for Curve25519PrivateKey {}
 
 /// Key Serialization framework
 #[cfg(feature = "ser")]
@@ -78,40 +58,5 @@ impl Serializable for Curve25519PrivateKey {
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         let bytes = de.read_array::<{ Self::LENGTH }>()?;
         Self::try_from_bytes(bytes)
-    }
-}
-
-// Curve arithmetic
-
-impl<'a> Add<&'a Curve25519PrivateKey> for &Curve25519PrivateKey {
-    type Output = Curve25519PrivateKey;
-
-    fn add(self, rhs: &Curve25519PrivateKey) -> Self::Output {
-        Curve25519PrivateKey(self.0 + rhs.0)
-    }
-}
-
-impl<'a> Sub<&'a Curve25519PrivateKey> for &Curve25519PrivateKey {
-    type Output = Curve25519PrivateKey;
-
-    fn sub(self, rhs: &Curve25519PrivateKey) -> Self::Output {
-        Curve25519PrivateKey(self.0 - rhs.0)
-    }
-}
-
-impl<'a> Mul<&'a Curve25519PrivateKey> for &Curve25519PrivateKey {
-    type Output = Curve25519PrivateKey;
-
-    fn mul(self, rhs: &Curve25519PrivateKey) -> Self::Output {
-        Curve25519PrivateKey(self.0 * rhs.0)
-    }
-}
-
-impl<'a> Div<&'a Curve25519PrivateKey> for &Curve25519PrivateKey {
-    type Output = Curve25519PrivateKey;
-
-    fn div(self, rhs: &Curve25519PrivateKey) -> Self::Output {
-        #[allow(clippy::suspicious_arithmetic_impl)]
-        Curve25519PrivateKey(self.0 * rhs.0.invert())
     }
 }

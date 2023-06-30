@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - added Ed25519 signature
 - libsodium compatibility wherever possible
 - symmetric key wrapping RFC-5649 impl
+- harden zeroization
 
 ## [7.1.0] - 2023-05-02
 

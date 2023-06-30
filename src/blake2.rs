@@ -1,3 +1,5 @@
+pub use blake2::{Blake2b512, Blake2s256, Digest};
+
 /// Blake2b 512 Variable Output Hash Function.
 ///
 /// Blake2b is a cryptographic hash function defined in RFC 7693.
@@ -16,7 +18,9 @@
 /// fn hash_with_blake2b() -> Result<[u8; LENGTH], CryptoCoreError> {
 ///     let msg1 = b"asdf34@!dsa@grq5e$2ASGy5";
 ///     let msg2 = b"oiu54%6uhg1@34";
-///     blake2b!(LENGTH, msg1, msg2)
+///     let mut out = [0; LENGTH];
+///     blake2b!(out, msg1, msg2)?;
+///     Ok(out)
 /// }
 ///
 /// let res = hash_with_blake2b().unwrap();
@@ -26,28 +30,24 @@
 ///
 /// # Parameters
 ///
-/// - `length`  : desired length (needs to be constant)
+/// - `res`     : output to be updated in-place
 /// - `bytes`   : Hash input
 #[macro_export]
 macro_rules! blake2b {
-    ($length: expr, $($bytes: expr),+) => {
+    ($res: expr, $($bytes: expr),+) => {
         {
-            use blake2::digest::VariableOutput;
-            let mut res = [0; $length];
-            let mut hasher = match blake2::Blake2bVar::new($length) {
-                Ok(hasher) => hasher,
-                Err(_) => return Err(CryptoCoreError::InvalidBytesLength("blake2b".to_string(), $length, None)),
-            };
-            $(
-                <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, $bytes);
-            )*
-            if <blake2::Blake2bVar as blake2::digest::VariableOutput>::finalize_variable(
-                    hasher, &mut res,
-                ).is_err()
-            {
-                return Err(CryptoCoreError::InvalidBytesLength("blake2b: finalize".to_string(), $length, None));
+            let length = $res.len();
+            if length <= 64 {
+                let mut hasher = <$crate::blake2::Blake2b512 as $crate::blake2::Digest>::new();
+                $(
+                    <$crate::blake2::Blake2b512 as $crate::blake2::Digest>::update(&mut hasher, $bytes);
+                )*
+                let h = <$crate::blake2::Blake2b512 as $crate::blake2::Digest>::finalize(hasher);
+                $res.copy_from_slice(&h[..length]);
+                Ok(())
+            } else {
+                Err(CryptoCoreError::InvalidBytesLength("blake2b".to_string(), length, None))
             }
-            Result::<_, CryptoCoreError>::Ok(res)
         }
     };
 }
@@ -70,7 +70,9 @@ macro_rules! blake2b {
 /// fn hash_with_blake2s() -> Result<[u8; LENGTH], CryptoCoreError> {
 ///     let msg1 = b"asdf34@!dsa@grq5e$2ASGy5";
 ///     let msg2 = b"oiu54%6uhg1@34";
-///     blake2s!(LENGTH, msg1, msg2)
+///     let mut out = [0; LENGTH];
+///     blake2s!(out, msg1, msg2)?;
+///     Ok(out)
 /// }
 ///
 /// let res = hash_with_blake2s().unwrap();
@@ -80,28 +82,24 @@ macro_rules! blake2b {
 ///
 /// # Parameters
 ///
-/// - `length`  : desired length (needs to be constant)
+/// - `res`     : output to be updated in-place
 /// - `bytes`   : Hash input
 #[macro_export]
 macro_rules! blake2s {
-    ($length: expr, $($bytes: expr),+) => {
+    ($res: expr, $($bytes: expr),+) => {
         {
-            use blake2::digest::VariableOutput;
-            let mut res = [0; $length];
-            let mut hasher = match blake2::Blake2sVar::new($length) {
-                Ok(hasher) => hasher,
-                Err(_) => return Err(CryptoCoreError::InvalidBytesLength("blake2s".to_string(), $length, None)),
-            };
-            $(
-                <blake2::Blake2sVar as blake2::digest::Update>::update(&mut hasher, $bytes);
-            )*
-            if  <blake2::Blake2sVar as blake2::digest::VariableOutput>::finalize_variable(
-                    hasher, &mut res,
-                ).is_err()
-            {
-                return Err(CryptoCoreError::InvalidBytesLength("blake2s".to_string(), $length, None));
+            let length = $res.len();
+            if length <= 32 {
+                let mut hasher = <$crate::blake2::Blake2s256 as $crate::blake2::Digest>::new();
+                $(
+                    <$crate::blake2::Blake2s256 as $crate::blake2::Digest>::update(&mut hasher, $bytes);
+                )*
+                let h = <$crate::blake2::Blake2s256 as $crate::blake2::Digest>::finalize(hasher);
+                $res.copy_from_slice(&h[..length]);
+                Ok(())
+            } else {
+                Err(CryptoCoreError::InvalidBytesLength("blake2b".to_string(), length, None))
             }
-            Result::<_, CryptoCoreError>::Ok(res)
         }
     };
 }
@@ -109,8 +107,7 @@ macro_rules! blake2s {
 #[cfg(test)]
 mod tests {
 
-    use blake2::digest::VariableOutput;
-
+    use super::*;
     use crate::CryptoCoreError;
 
     #[test]
@@ -120,38 +117,20 @@ mod tests {
         let msg1 = b"asdf34@!dsa@grq5e$2ASGy5";
         let msg2 = b"oiu54%6uhg1@34";
 
-        let res1 = {
-            let mut res = [0_u8; LENGTH];
+        let mut res1 = [0; LENGTH];
 
-            let mut hasher = match blake2::Blake2bVar::new(LENGTH) {
-                Ok(hasher) => hasher,
-                Err(_) => {
-                    return Err(CryptoCoreError::InvalidBytesLength(
-                        "blake2b test".to_string(),
-                        LENGTH,
-                        None,
-                    ))
-                }
-            };
-            <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, msg1);
-            <blake2::Blake2bVar as blake2::digest::Update>::update(&mut hasher, msg2);
-            if <blake2::Blake2bVar as blake2::digest::VariableOutput>::finalize_variable(
-                hasher, &mut res,
-            )
-            .is_err()
-            {
-                return Err(CryptoCoreError::InvalidBytesLength(
-                    "blake2".to_string(),
-                    LENGTH,
-                    None,
-                ));
-            }
-            Result::<_, CryptoCoreError>::Ok(res)
-        }?;
-        // use the macro
-        let res2 = blake2b!(LENGTH, msg1, msg2)?;
+        {
+            let mut hasher = Blake2b512::new();
+            hasher.update(msg1);
+            hasher.update(msg2);
+            let h = hasher.finalize();
+            res1.copy_from_slice(&h[..LENGTH]);
+        }
+
+        let mut res2 = [0; LENGTH];
+        blake2b!(res2, msg1, msg2)?;
+
         assert_eq!(res1, res2);
-
         Ok(())
     }
 
@@ -162,26 +141,20 @@ mod tests {
         let msg1 = b"asdf34@!dsa@grq5e$2ASGy5";
         let msg2 = b"oiu54%6uhg1@34";
 
-        let res1 = {
-            let mut res = [0_u8; LENGTH];
+        let mut res1 = [0; LENGTH];
 
-            let mut hasher = blake2::Blake2sVar::new(LENGTH).map_err(|_| {
-                CryptoCoreError::InvalidBytesLength("blake2s".to_string(), LENGTH, None)
-            })?;
-            <blake2::Blake2sVar as blake2::digest::Update>::update(&mut hasher, msg1);
-            <blake2::Blake2sVar as blake2::digest::Update>::update(&mut hasher, msg2);
-            <blake2::Blake2sVar as blake2::digest::VariableOutput>::finalize_variable(
-                hasher, &mut res,
-            )
-            .map_err(|_| {
-                CryptoCoreError::InvalidBytesLength("blake2s test".to_string(), LENGTH, None)
-            })?;
-            Result::<_, CryptoCoreError>::Ok(res)
-        }?;
-        // use the macro
-        let res2 = blake2s!(LENGTH, msg1, msg2)?;
+        {
+            let mut hasher = Blake2s256::new();
+            hasher.update(msg1);
+            hasher.update(msg2);
+            let h = hasher.finalize();
+            res1.copy_from_slice(&h[..LENGTH]);
+        }
+
+        let mut res2 = [0; LENGTH];
+        blake2s!(res2, msg1, msg2)?;
+
         assert_eq!(res1, res2);
-
         Ok(())
     }
 }

@@ -4,7 +4,7 @@
 #[cfg(feature = "curve25519")]
 mod asymmetric_crypto;
 #[cfg(feature = "blake")]
-mod blake2;
+pub mod blake2;
 #[cfg(feature = "ser")]
 pub mod bytes_ser_de;
 #[cfg(feature = "ecies")]
@@ -32,8 +32,6 @@ use reexport::rand_core::CryptoRngCore;
 pub use symmetric_crypto::*;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[cfg(feature = "blake")]
-pub use crate::blake2::*;
 pub use crate::error::CryptoCoreError;
 
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
@@ -49,7 +47,7 @@ pub trait CBytes: Eq + PartialEq + Send + Sync {}
 ///
 /// This may be the compressed version of a public key for instance
 pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
-    /// Key length
+    /// Key length.
     const LENGTH: usize = LENGTH;
 
     /// Converts the given key into an array of LENGTH bytes.
@@ -73,12 +71,11 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
 ///
 /// This may be a Nonce for instance
 pub trait RandomFixedSizeCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> {
-    /// Generate a new random array of LENGTH bytes
+    /// Generates a new random array of LENGTH bytes
     #[must_use]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self;
 
-    /// Access the underlying slice of bytes (avoiding a copy).
-    #[must_use]
+    /// Returns a slice over the array bytes.
     fn as_bytes(&self) -> &[u8];
 }
 
