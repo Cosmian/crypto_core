@@ -22,7 +22,6 @@ impl ChaCha20Poly1305 {
     pub const MAC_LENGTH: usize = 16;
     /// Use a 96-bit nonce.
     pub const NONCE_LENGTH: usize = 12;
-    pub const ENCRYPTION_OVERHEAD: usize = Self::MAC_LENGTH + Self::NONCE_LENGTH;
 }
 
 impl Debug for ChaCha20Poly1305 {
