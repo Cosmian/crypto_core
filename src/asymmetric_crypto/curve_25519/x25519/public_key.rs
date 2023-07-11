@@ -9,6 +9,7 @@ const PUBLIC_KEY_LENGTH: usize = 32;
 pub struct X25519PublicKey(pub(crate) MontgomeryPoint);
 
 impl X25519PublicKey {
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; PUBLIC_KEY_LENGTH] {
         self.0.as_bytes()
     }
@@ -35,7 +36,8 @@ impl From<&X25519PrivateKey> for X25519PublicKey {
 }
 
 impl X25519PublicKey {
+    #[must_use]
     pub fn dh(&self, rhs: &X25519PrivateKey) -> Self {
-        X25519PublicKey(self.0 * Scalar::from_bytes_mod_order(clamp_integer(rhs.0)))
+        Self(self.0 * Scalar::from_bytes_mod_order(clamp_integer(rhs.0)))
     }
 }

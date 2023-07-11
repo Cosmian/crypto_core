@@ -35,11 +35,17 @@ fn check_iv(iv: u64, data: &[u8]) -> bool {
 /// KEK stands for `Key-Encryption Key`
 /// The function name matches the one used in the RFC and has no link to the
 /// unwrap function in Rust
-pub fn wrap(plain: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
+pub fn key_wrap(plain: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
     let n = plain.len();
     let m = n % 8;
 
-    let padded_plain = [plain, &vec![0u8; 8 - m]].concat();
+    let padded_plain = if m != 0 {
+        // Pad the plaintext octet string on the right with zeros
+        let missing_bytes = 8 - m;
+        [plain.to_vec(), vec![0u8; missing_bytes]].concat()
+    } else {
+        plain.to_vec()
+    };
 
     if n <= 8 {
         // (C[0] | C[1]) = ENC(K, A | P[1]).
@@ -82,7 +88,7 @@ pub fn wrap(plain: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
 /// Follows RFC 5649
 /// The function name matches the one used in the RFC and has no link to the
 /// unwrap function in Rust
-pub fn unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
+pub fn key_unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
     let n = ciphertext.len();
 
     if n % 8 != 0 || n < 16 {
@@ -158,7 +164,7 @@ pub fn unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError>
 /// Follows RFC 3394
 /// The function name matches the one used in the RFC and has no link to the
 /// unwrap function in Rust
-pub fn wrap_64(plain: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
+pub fn key_wrap_64(plain: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
     _wrap_64(plain, kek, None)
 }
 
@@ -241,7 +247,7 @@ fn _wrap_64(plain: &[u8], kek: &[u8], iv: Option<u64>) -> Result<Vec<u8>, Crypto
 /// Follows RFC 3394
 /// The function name matches the one used in the RFC and has no link to the
 /// unwrap function in Rust
-pub fn unwrap_64(cipher: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
+pub fn key_unwrap_64(cipher: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
     let (iv, plain) = _unwrap_64(cipher, kek)?;
 
     if iv != DEFAULT_IV {
@@ -328,7 +334,40 @@ fn _unwrap_64(ciphertext: &[u8], kek: &[u8]) -> Result<(u64, Vec<u8>), CryptoCor
 
 #[cfg(test)]
 mod tests {
-    use crate::symmetric_crypto::key_wrapping_rfc_5649::{unwrap, unwrap_64, wrap, wrap_64};
+    use crate::symmetric_crypto::key_wrapping_rfc_5649::{
+        key_unwrap, key_unwrap_64, key_wrap, key_wrap_64,
+    };
+
+    #[test]
+    pub fn test_wrap() {
+        let kek = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
+        let key_to_wrap =
+             b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
+        let wrapped_key = [
+            199, 131, 191, 63, 110, 233, 156, 72, 218, 187, 196, 16, 226, 132, 197, 44, 191, 117,
+            133, 120, 152, 157, 225, 138, 50, 148, 201, 164, 209, 151, 200, 162, 98, 112, 72, 139,
+            28, 233, 128, 22,
+        ];
+
+        assert_eq!(
+            key_wrap(key_to_wrap, kek).expect("Fail to wrap"),
+            wrapped_key
+        );
+        assert_eq!(
+            key_unwrap(&wrapped_key, kek).expect("Fail to unwrap"),
+            key_to_wrap
+        );
+
+        const TEST_SIZE_LIMIT: usize = 100;
+        for size in 1..=TEST_SIZE_LIMIT {
+            let key_to_wrap = &[0u8; TEST_SIZE_LIMIT][..size];
+            let ciphertext = key_wrap(key_to_wrap, kek).expect("Fail to wrap");
+            assert_eq!(
+                key_unwrap(&ciphertext, kek).expect("Fail to unwrap"),
+                key_to_wrap
+            );
+        }
+    }
 
     #[test]
     pub fn test_wrap64() {
@@ -340,12 +379,12 @@ mod tests {
         ];
 
         assert_eq!(
-            wrap_64(key_to_wrap, kek).expect("Fail to wrap"),
+            key_wrap_64(key_to_wrap, kek).expect("Fail to wrap"),
             wrapped_key
         );
 
         assert_eq!(
-            unwrap_64(&wrapped_key, kek).expect("Fail to unwrap"),
+            key_unwrap_64(&wrapped_key, kek).expect("Fail to unwrap"),
             key_to_wrap
         );
     }
@@ -359,9 +398,9 @@ mod tests {
             0x8a, 0x2a, 0x93, 0xc8, 0x19, 0x1e, 0x7d, 0x6e, 0x8a, 0xe7,
         ];
 
-        assert!(wrap_64(key_to_wrap, kek).is_err());
+        assert!(key_wrap_64(key_to_wrap, kek).is_err());
 
-        assert!(unwrap_64(&wrapped_key, kek).is_err());
+        assert!(key_unwrap_64(&wrapped_key, kek).is_err());
     }
 
     #[test]
@@ -373,9 +412,9 @@ mod tests {
             0x8a, 0x2a, 0x93, 0xc8, 0x19, 0x1e, 0x7d, 0x6e, 0x8a,
         ];
 
-        assert!(wrap_64(key_to_wrap, kek).is_err());
+        assert!(key_wrap_64(key_to_wrap, kek).is_err());
 
-        assert!(unwrap_64(&wrapped_key, kek).is_err());
+        assert!(key_unwrap_64(&wrapped_key, kek).is_err());
     }
 
     #[test]
@@ -386,7 +425,7 @@ mod tests {
             0x8a, 0x2a, 0x93, 0xc8, 0x19, 0x1e, 0x7d, 0x6e, 0x8a, 0xe8,
         ];
 
-        assert!(unwrap_64(&wrapped_key, kek).is_err());
+        assert!(key_unwrap_64(&wrapped_key, kek).is_err());
     }
 
     #[test]
@@ -400,9 +439,12 @@ mod tests {
             0xfa, 0x54, 0x3b, 0x6a,
         ];
 
-        assert_eq!(wrap(key_to_wrap, kek).expect("Fail to wrap"), wrapped_key);
         assert_eq!(
-            unwrap(&wrapped_key, kek).expect("Fail to unwrap"),
+            key_wrap(key_to_wrap, kek).expect("Fail to wrap"),
+            wrapped_key
+        );
+        assert_eq!(
+            key_unwrap(&wrapped_key, kek).expect("Fail to unwrap"),
             key_to_wrap
         );
     }
@@ -416,9 +458,12 @@ mod tests {
             0x4f,
         ];
 
-        assert_eq!(wrap(key_to_wrap, kek).expect("Fail to wrap"), wrapped_key);
         assert_eq!(
-            unwrap(&wrapped_key, kek).expect("Fail to unwrap"),
+            key_wrap(key_to_wrap, kek).expect("Fail to wrap"),
+            wrapped_key
+        );
+        assert_eq!(
+            key_unwrap(&wrapped_key, kek).expect("Fail to unwrap"),
             key_to_wrap
         );
     }
@@ -433,8 +478,8 @@ mod tests {
             0x4f,
         ];
 
-        assert!(wrap(key_to_wrap, kek).is_err());
-        assert!(unwrap(&wrapped_key, kek).is_err());
+        assert!(key_wrap(key_to_wrap, kek).is_err());
+        assert!(key_unwrap(&wrapped_key, kek).is_err());
 
         // Large input
         let kek = b"\x00";
@@ -446,8 +491,8 @@ mod tests {
             0xfa, 0x54, 0x3b, 0x6a,
         ];
 
-        assert!(wrap(key_to_wrap, kek).is_err());
-        assert!(unwrap(&wrapped_key, kek).is_err());
+        assert!(key_wrap(key_to_wrap, kek).is_err());
+        assert!(key_unwrap(&wrapped_key, kek).is_err());
     }
 
     #[test]
@@ -457,7 +502,7 @@ mod tests {
             0xaf, 0xbe, 0xb0, 0xf0, 0x7d, 0xfb, 0xf5, 0x41, 0x92, 0x0, 0xf2, 0xcc, 0xb5, 0xb, 0xb2,
         ];
 
-        assert!(unwrap(&wrapped_key, kek).is_err());
+        assert!(key_unwrap(&wrapped_key, kek).is_err());
     }
 
     #[test]
@@ -468,7 +513,7 @@ mod tests {
             0x4a,
         ];
 
-        assert!(unwrap(&wrapped_key, kek).is_err());
+        assert!(key_unwrap(&wrapped_key, kek).is_err());
 
         let wrapped_key = [
             0x13, 0x8b, 0xde, 0xaa, 0x9b, 0x8f, 0xa7, 0xfc, 0x61, 0xf9, 0x77, 0x42, 0xe7, 0x22,
@@ -476,6 +521,6 @@ mod tests {
             0xfa, 0x54, 0x3b, 0x6b,
         ];
 
-        assert!(unwrap(&wrapped_key, kek).is_err());
+        assert!(key_unwrap(&wrapped_key, kek).is_err());
     }
 }
