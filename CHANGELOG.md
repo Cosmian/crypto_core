@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.0.0] - 2023-07-11
+
+### Fixed
+
+- Revert RFC 5649 changes on wrap function
+
 ## [8.0.0] - 2023-06-13
 
 ### Features

@@ -24,7 +24,7 @@ pub use chacha20_poly1305::ChaCha20Poly1305;
 pub use dem::{Dem, DemInPlace, DemStream, Instantiable};
 pub use key::SymmetricKey;
 #[cfg(feature = "rfc5649")]
-pub use key_wrapping_rfc_5649::{unwrap, unwrap_64, wrap, wrap_64};
+pub use key_wrapping_rfc_5649::{key_unwrap, key_unwrap_64, key_wrap, key_wrap_64};
 pub use nonce::Nonce;
 #[cfg(feature = "chacha")]
 pub use xchacha20_poly1305::XChaCha20Poly1305;

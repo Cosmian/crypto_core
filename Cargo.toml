@@ -1,6 +1,6 @@
 [package]
 name = "cosmian_crypto_core"
-version = "8.0.0"
+version = "9.0.0"
 authors = [
   "Bruno Grieder <bruno.grieder@cosmian.com>",
   "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
@@ -15,7 +15,16 @@ name = "cosmian_crypto_core"
 path = "src/lib.rs"
 
 [features]
-default = ['aes', 'chacha', 'ecies', 'curve25519', 'ser', 'blake', 'sha3', 'rfc5649']
+default = [
+  'aes',
+  'chacha',
+  'ecies',
+  'curve25519',
+  'ser',
+  'blake',
+  'sha3',
+  'rfc5649',
+]
 aes = ['aead', 'aes-gcm']
 chacha = ['aead', 'chacha20poly1305', 'chacha20']
 ecies = ['aead', 'crypto_box']
