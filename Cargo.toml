@@ -6,7 +6,7 @@ authors = [
   "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
 ]
 edition = "2021"
-license = "AGPL-3.0-only OR Commercial Use"
+license-file = "LICENSE.md"
 repository = "https://github.com/Cosmian/crypto_core/"
 description = "Cosmian base cryptographic library"
 
