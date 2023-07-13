@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.0.1] - 2023-07-13
+
+### Bug Fixes
+
+- Mismatch license in Cargo.toml
+
 ## [9.0.0] - 2023-07-11
 
 ### Fixed
