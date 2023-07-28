@@ -24,5 +24,9 @@
     "zeroize",
     "zeroized"
   ],
-  "rust-analyzer.check.command": "clippy"
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#8b830a",
+    "titleBar.activeBackground": "#88910e",
+    "titleBar.activeForeground": "#E9FEFA"
+  }
 }

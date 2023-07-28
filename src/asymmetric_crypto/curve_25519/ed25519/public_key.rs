@@ -32,13 +32,7 @@ impl FixedSizeCBytes<{ ED25519_PUBLIC_KEY_LENGTH }> for Ed25519PublicKey {
         bytes: [u8; ED25519_PUBLIC_KEY_LENGTH],
     ) -> Result<Self, crate::CryptoCoreError> {
         EdPublicKey::from_bytes(&bytes)
-            .map_err(|_| {
-                crate::CryptoCoreError::InvalidBytesLength(
-                    "public key from bytes".to_string(),
-                    bytes.len(),
-                    None,
-                )
-            })
+            .map_err(|e| crate::CryptoCoreError::ConversionError(e.to_string()))
             .map(Self)
     }
 }

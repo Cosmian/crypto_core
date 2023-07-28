@@ -18,11 +18,15 @@ mod error;
 pub mod reexport {
     #[cfg(any(feature = "aes", feature = "chacha"))]
     pub use aead;
+    #[cfg(feature = "certificate")]
+    pub use pkcs8;
     pub use rand_core;
     #[cfg(feature = "curve25519")]
     pub use signature;
     #[cfg(feature = "sha3")]
     pub use tiny_keccak;
+    #[cfg(feature = "certificate")]
+    pub use x509_cert;
     pub use zeroize;
 }
 
