@@ -13,7 +13,7 @@ pub const CURVE_25519_PRIVATE_KEY_LENGTH: usize = 32;
 /// This type wraps a scalar which is clamped to the curve.
 /// `Curve25519PrivateKey` should not be used directly
 /// but rather re-used as a base type for other final types on the curve
-/// such as `X22519PrivateKey`.
+/// such as `X25519PrivateKey`.
 #[derive(Hash, Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct Curve25519PrivateKey(pub(crate) [u8; CURVE_25519_PRIVATE_KEY_LENGTH]);
 

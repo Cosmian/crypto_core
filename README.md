@@ -315,7 +315,7 @@ All these implementations have similar performance (about 70µs for encryption/d
 
 A later version offering a hybrid encryption scheme with post-quantum resistance will be released.
 
-All these implementations use the same format for the Curve 25519 Private key; their public key implementations under the various representations (Edwards, Montgomery, and Ristretto) are available in the [`asymmetric_cypto`](./src/asymmetric_crypto/curve_25519/) folder.
+All these implementations use the same format for the Curve 25519 Private key; their public key implementations under the various representations (Edwards, Montgomery, and Ristretto) are available in the [`asymmetric_crypto`](./src/asymmetric_crypto/curve_25519/) folder.
 
 ### ECIES encryption of a vector of bytes
 

@@ -24,7 +24,7 @@ pub fn bench_symmetric_encryption_combined(c: &mut Criterion) {
     let nonce = Nonce::new(&mut rng);
 
     c.bench_function("AES 128 GCM instantiation", |b| {
-        b.iter(|| Aes128Gcm::new(&key16))
+        b.iter(|| Aes128Gcm::new(&key16));
     });
 
     //AES 128 GCM
@@ -36,7 +36,7 @@ pub fn bench_symmetric_encryption_combined(c: &mut Criterion) {
     );
 
     c.bench_function("AES 256 GCM instantiation", |b| {
-        b.iter(|| Aes256Gcm::new(&key32))
+        b.iter(|| Aes256Gcm::new(&key32));
     });
 
     // AES 256 GCM
@@ -105,7 +105,7 @@ pub fn bench_symmetric_decryption_combined(c: &mut Criterion) {
                 chacha20_poly1305
                     .decrypt(&nonce, &enc_chacha20_poly1305, None)
                     .unwrap()
-            })
+            });
         },
     );
 
@@ -121,7 +121,7 @@ pub fn bench_symmetric_decryption_combined(c: &mut Criterion) {
                 xchacha20_poly1305
                     .decrypt(&nonce, &enc_xchacha20_poly1305, None)
                     .unwrap()
-            })
+            });
         },
     );
 }
@@ -141,7 +141,7 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
     let nonce = Nonce::new(&mut rng);
 
     c.bench_function("AES 128 GCM instantiation", |b| {
-        b.iter(|| Aes128Gcm::new(&key16))
+        b.iter(|| Aes128Gcm::new(&key16));
     });
 
     //AES 128 GCM
@@ -154,12 +154,12 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
                 aes_128_gcm
                     .encrypt_in_place_detached(&nonce, &mut msg, None)
                     .unwrap()
-            })
+            });
         },
     );
 
     c.bench_function("AES 256 GCM instantiation", |b| {
-        b.iter(|| Aes256Gcm::new(&key32))
+        b.iter(|| Aes256Gcm::new(&key32));
     });
 
     // AES 256 GCM
@@ -171,7 +171,7 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
                 aes_256_gcm
                     .encrypt_in_place_detached(&nonce, &mut msg, None)
                     .unwrap()
-            })
+            });
         },
     );
 
@@ -184,7 +184,7 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
                 chacha20_poly1305
                     .encrypt_in_place_detached(&nonce, &mut msg, None)
                     .unwrap()
-            })
+            });
         },
     );
 
@@ -199,7 +199,7 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
                 xchacha20_poly1305
                     .encrypt_in_place_detached(&nonce, &mut msg, None)
                     .unwrap()
-            })
+            });
         },
     );
 }
@@ -230,8 +230,8 @@ pub fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
             b.iter(|| {
                 aes_128_gcm
                     .decrypt_in_place_detached(&nonce, &mut bytes, &tag_aes_128_gcm, None)
-                    .unwrap()
-            })
+                    .unwrap();
+            });
         },
     );
 
@@ -247,8 +247,8 @@ pub fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
             b.iter(|| {
                 aes_256_gcm
                     .decrypt_in_place_detached(&nonce, &mut bytes, &tag_aes_256_gcm, None)
-                    .unwrap()
-            })
+                    .unwrap();
+            });
         },
     );
 
@@ -263,8 +263,8 @@ pub fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
             b.iter(|| {
                 chacha20_poly1305
                     .decrypt_in_place_detached(&nonce, &mut bytes, &tag_chacha20_poly1305, None)
-                    .unwrap()
-            })
+                    .unwrap();
+            });
         },
     );
 
@@ -281,8 +281,8 @@ pub fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
             b.iter(|| {
                 xchacha20_poly1305
                     .decrypt_in_place_detached(&nonce, &mut bytes, &tag_xchacha20_poly1305, None)
-                    .unwrap()
-            })
+                    .unwrap();
+            });
         },
     );
 }

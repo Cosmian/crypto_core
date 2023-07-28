@@ -30,7 +30,7 @@ pub fn ecies_x25519_xchacha20_combined() {
     // Check if the decrypted message is the same as the original message
     assert_eq!(plaintext, &plaintext_[..]);
 
-    println!("ECIES Vector X25519 XChaCha20: OK")
+    println!("ECIES Vector X25519 XChaCha20: OK");
 }
 
 #[cfg(all(feature = "chacha", feature = "blake", feature = "curve25519"))]
@@ -120,5 +120,5 @@ pub fn ecies_x25519_xchacha20_stream() {
         "Decryption failed"
     );
 
-    println!("ECIES Stream X25519 XChaCha20: OK")
+    println!("ECIES Stream X25519 XChaCha20: OK");
 }

@@ -45,7 +45,7 @@ impl<const LENGTH: usize> Nonce<LENGTH> {
     pub fn xor(&self, b2: &[u8]) -> Self {
         let mut n = self.0;
         for (ni, bi) in n.iter_mut().zip(b2) {
-            *ni ^= bi
+            *ni ^= bi;
         }
         Self(n)
     }

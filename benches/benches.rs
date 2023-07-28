@@ -35,7 +35,7 @@ fn bench_dh_r25519(c: &mut Criterion) {
 /// OS needs to gather enough entropy.
 fn bench_rng_generation(c: &mut Criterion) {
     c.bench_function("generation of a cryptographic RNG", |b| {
-        b.iter(CsRng::from_entropy)
+        b.iter(CsRng::from_entropy);
     });
 }
 
@@ -52,7 +52,7 @@ fn bench_kdf(c: &mut Criterion) {
                 let mut res = [0; 16];
                 kdf128!(&mut res, &ikm_32, b"KDF derivation");
                 res
-            })
+            });
         },
     );
     c.bench_function(
@@ -62,7 +62,7 @@ fn bench_kdf(c: &mut Criterion) {
                 let mut res = [0; 32];
                 kdf256!(&mut res, &ikm_64, b"KDF derivation");
                 res
-            })
+            });
         },
     );
 }
@@ -80,7 +80,7 @@ fn bench_blake2(c: &mut Criterion) {
                 let mut res = [0; 16];
                 blake2s!(res, &ikm_32, b"Blake2 derivation").unwrap();
                 res
-            })
+            });
         },
     );
     c.bench_function(
@@ -90,7 +90,7 @@ fn bench_blake2(c: &mut Criterion) {
                 let mut res = [0; 32];
                 blake2b!(res, &ikm_64, b"Blake2 derivation").unwrap();
                 res
-            })
+            });
         },
     );
 }

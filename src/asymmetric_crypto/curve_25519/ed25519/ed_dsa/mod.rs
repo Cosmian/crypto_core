@@ -5,7 +5,7 @@ mod key_pair;
 mod signer;
 mod verifier;
 
-pub use key_pair::Ed25519Keypair;
+pub use key_pair::{Ed25519Keypair, Ed25519Signature};
 pub use signer::Cached25519Signer;
 
 #[cfg(test)]

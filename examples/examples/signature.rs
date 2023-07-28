@@ -21,7 +21,7 @@ pub fn ed25519_static() {
     let public_key = Ed25519PublicKey::try_from(&private_key).unwrap();
     public_key.verify(message, &signature).unwrap();
 
-    println!("Ed25519 static: OK")
+    println!("Ed25519 static: OK");
 }
 
 pub fn ed25519_cached() {
@@ -51,7 +51,7 @@ pub fn ed25519_cached() {
     let signature = cached_signer.try_sign(message).unwrap();
     public_key.verify(message, &signature).unwrap();
 
-    println!("Ed25519 cached: OK")
+    println!("Ed25519 cached: OK");
 }
 
 pub fn ed25519_keypair() {
@@ -83,5 +83,5 @@ pub fn ed25519_keypair() {
     // verify the signature
     keypair.verify(message, &signature).unwrap();
 
-    println!("Ed25519 keypair: OK")
+    println!("Ed25519 keypair: OK");
 }
