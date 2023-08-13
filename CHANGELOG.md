@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.0.2] - 2023-08-13
+
+### Bug Fixes
+
+- make `kdf` public again
+
 ## [9.0.1] - 2023-07-13
 
 ### Bug Fixes

@@ -27,6 +27,8 @@ pub mod reexport {
 pub use asymmetric_crypto::*;
 #[cfg(feature = "ecies")]
 pub use ecies::*;
+#[cfg(feature = "sha3")]
+pub use kdf::*;
 use reexport::rand_core::CryptoRngCore;
 #[cfg(any(feature = "aes", feature = "chacha"))]
 pub use symmetric_crypto::*;
