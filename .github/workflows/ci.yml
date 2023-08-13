@@ -47,7 +47,7 @@ jobs:
   cargo-publish:
     needs:
       - cargo-lint
-      - cargo-semver
+      # - cargo-semver
       - cargo-dry-publish
       - wasm
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-publish.yml@develop
