@@ -10,8 +10,6 @@ jobs:
       toolchain: stable
   cargo-semver:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-semver.yml@develop
-    with:
-      toolchain: stable
   cargo-dry-publish:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-publish.yml@develop
     with:
