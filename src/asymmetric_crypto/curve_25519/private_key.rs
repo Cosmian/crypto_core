@@ -5,7 +5,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
 use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes};
 
-const PRIVATE_KEY_LENGTH: usize = 32;
+pub const PRIVATE_KEY_LENGTH: usize = 32;
 
 /// Asymmetric private key based on Curve25519.
 ///
