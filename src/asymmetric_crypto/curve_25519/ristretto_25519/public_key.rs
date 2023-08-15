@@ -19,12 +19,16 @@ pub struct R25519PublicKey(pub(crate) RistrettoPoint);
 
 impl CBytes for R25519PublicKey {}
 
-impl FixedSizeCBytes<32> for R25519PublicKey {
+pub const R25519_PUBLIC_KEY_LENGTH: usize = 32;
+
+impl FixedSizeCBytes<R25519_PUBLIC_KEY_LENGTH> for R25519PublicKey {
     fn to_bytes(&self) -> [u8; Self::LENGTH] {
         self.0.compress().to_bytes()
     }
 
-    fn try_from_bytes(bytes: [u8; 32]) -> Result<Self, crate::CryptoCoreError> {
+    fn try_from_bytes(
+        bytes: [u8; R25519_PUBLIC_KEY_LENGTH],
+    ) -> Result<Self, crate::CryptoCoreError> {
         Ok(Self(CompressedRistretto(bytes).decompress().ok_or_else(
             || {
                 CryptoCoreError::ConversionError(
