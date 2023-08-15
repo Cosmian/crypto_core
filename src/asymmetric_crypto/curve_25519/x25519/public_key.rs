@@ -3,6 +3,7 @@ use curve25519_dalek::{scalar::clamp_integer, MontgomeryPoint, Scalar};
 use super::X25519PrivateKey;
 use crate::{CBytes, FixedSizeCBytes};
 
+/// Length of a X25519 public key in bytes.
 pub const X25519_PUBLIC_KEY_LENGTH: usize = 32;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

@@ -19,6 +19,7 @@ pub struct R25519PublicKey(pub(crate) RistrettoPoint);
 
 impl CBytes for R25519PublicKey {}
 
+/// Length of a Ristretto public key in bytes.
 pub const R25519_PUBLIC_KEY_LENGTH: usize = 32;
 
 impl FixedSizeCBytes<R25519_PUBLIC_KEY_LENGTH> for R25519PublicKey {

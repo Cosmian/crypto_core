@@ -8,6 +8,7 @@ pub use ed25519_dalek::{SecretKey as EdSecretKey, VerifyingKey as EdPublicKey};
 use super::private_key::Ed25519PrivateKey;
 use crate::{CBytes, FixedSizeCBytes};
 
+/// Length of a Ed25519 public key in bytes.
 pub const ED25519_PUBLIC_KEY_LENGTH: usize = ed25519_dalek::PUBLIC_KEY_LENGTH;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
