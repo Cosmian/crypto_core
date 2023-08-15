@@ -3,7 +3,7 @@ use curve25519_dalek::{scalar::clamp_integer, MontgomeryPoint, Scalar};
 use super::X25519PrivateKey;
 use crate::{CBytes, FixedSizeCBytes};
 
-const PUBLIC_KEY_LENGTH: usize = 32;
+pub const PUBLIC_KEY_LENGTH: usize = 32;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct X25519PublicKey(pub(crate) MontgomeryPoint);
