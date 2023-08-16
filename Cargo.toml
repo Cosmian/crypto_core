@@ -2,8 +2,8 @@
 name = "cosmian_crypto_core"
 version = "9.0.2"
 authors = [
-    "Bruno Grieder <bruno.grieder@cosmian.com>",
-    "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
+  "Bruno Grieder <bruno.grieder@cosmian.com>",
+  "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
 ]
 edition = "2021"
 license-file = "LICENSE.md"
@@ -11,20 +11,20 @@ repository = "https://github.com/Cosmian/crypto_core/"
 description = "Cosmian base cryptographic library"
 
 [lib]
-crate-type = ["rlib", "staticlib"]
+crate-type = ["lib", "staticlib"]
 name = "cosmian_crypto_core"
 path = "src/lib.rs"
 
 [features]
 default = [
-    'aes',
-    'chacha',
-    'ecies',
-    'curve25519',
-    'ser',
-    'blake',
-    'sha3',
-    'rfc5649',
+  'aes',
+  'chacha',
+  'ecies',
+  'curve25519',
+  'ser',
+  'blake',
+  'sha3',
+  'rfc5649',
 ]
 aes = ['aead', 'aes-gcm']
 chacha = ['aead', 'chacha20poly1305', 'chacha20']
