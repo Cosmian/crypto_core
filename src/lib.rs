@@ -21,6 +21,9 @@ pub mod reexport {
     pub use rand_core;
     #[cfg(feature = "curve25519")]
     pub use signature;
+    #[cfg(feature = "sha3")]
+    pub use tiny_keccak;
+    pub use zeroize;
 }
 
 #[cfg(feature = "curve25519")]
