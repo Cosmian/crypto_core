@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.0.3] - 2023-08-17
+
+### Bug Fixes
+
+- Reexport Curve 25519 constants
+- Reexport `zeroize`
+- Reexport `tiny-keccak` for feature `sha3`
+
 ## [9.0.2] - 2023-08-13
 
 ### Bug Fixes

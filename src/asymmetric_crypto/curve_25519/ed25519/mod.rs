@@ -7,3 +7,4 @@ mod public_key;
 pub use ed_dsa::{Cached25519Signer, Ed25519Keypair};
 pub use private_key::Ed25519PrivateKey;
 pub use public_key::Ed25519PublicKey;
+pub use public_key::ED25519_PUBLIC_KEY_LENGTH;
