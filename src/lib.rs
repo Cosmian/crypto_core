@@ -10,7 +10,7 @@ pub mod bytes_ser_de;
 #[cfg(feature = "ecies")]
 mod ecies;
 #[cfg(feature = "sha3")]
-mod kdf;
+pub mod kdf;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;
 
