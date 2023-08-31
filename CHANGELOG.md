@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- use local import of `tinny-keccak` for `kdf!`
+
 ## [9.0.3] - 2023-08-17
 
 ### Bug Fixes
