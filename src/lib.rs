@@ -10,7 +10,7 @@ pub mod bytes_ser_de;
 #[cfg(feature = "ecies")]
 mod ecies;
 #[cfg(feature = "sha3")]
-mod kdf;
+pub mod kdf;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;
 
@@ -18,11 +18,15 @@ mod error;
 pub mod reexport {
     #[cfg(any(feature = "aes", feature = "chacha"))]
     pub use aead;
+    #[cfg(feature = "certificate")]
+    pub use pkcs8;
     pub use rand_core;
     #[cfg(feature = "curve25519")]
     pub use signature;
     #[cfg(feature = "sha3")]
     pub use tiny_keccak;
+    #[cfg(feature = "certificate")]
+    pub use x509_cert;
     pub use zeroize;
 }
 

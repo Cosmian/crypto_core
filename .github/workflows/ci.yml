@@ -32,6 +32,8 @@ jobs:
   hack:
     runs-on: ubuntu-latest
     steps:
+      - name: Check storage
+        run: df -h
       - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
         with:
@@ -43,7 +45,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: hack
-          args: test --feature-powerset
+          args: test --feature-powerset --clean-per-run
   cargo-publish:
     needs:
       - cargo-lint

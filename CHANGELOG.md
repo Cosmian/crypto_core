@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.1.0] - 2023-09-01
+
+### Features
+
+- Implement Signature traits (involved in x509-cert crate) for Certificate signing using Ed25519
+
+### Fixed
+
+- use local import of `tinny-keccak` for `kdf!`
+
+### Ci
+
+- Clean hack per run
+
 ## [9.0.3] - 2023-08-17
 
 ### Bug Fixes

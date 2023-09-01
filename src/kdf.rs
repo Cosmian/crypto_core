@@ -1,3 +1,5 @@
+pub use tiny_keccak::{Hasher, Shake};
+
 /// Key Derivation Function (KDF).
 ///
 /// Derives the given inputs to the desired length using SHAKE128, which should
@@ -19,16 +21,16 @@
 ///
 /// const KEY_LENGTH: usize = 16;
 ///
-/// const ikm: &str = "asdf34@!dsa@grq5e$2ASGy5";
+/// const IKM: &str = "asdf34@!dsa@grq5e$2ASGy5";
 ///
 /// // derive a 32-bytes key
 /// let mut key = [0; KEY_LENGTH];
-/// kdf128!(&mut key, ikm.as_bytes());
+/// kdf128!(&mut key, IKM.as_bytes());
 ///
 /// assert_eq!(KEY_LENGTH, key.len());
 ///
 /// let mut key2 = [0; KEY_LENGTH];
-/// kdf128!(&mut key2, ikm.as_bytes());
+/// kdf128!(&mut key2, IKM.as_bytes());
 /// assert_eq!(key, key2);
 /// ```
 ///
@@ -40,11 +42,11 @@
 macro_rules! kdf128 {
     ($res: expr, $($bytes: expr),+) => {
         {
-            let mut hasher = tiny_keccak::Shake::v128();
+            let mut hasher = $crate::kdf::Shake::v128();
             $(
-                <tiny_keccak::Shake as tiny_keccak::Hasher>::update(&mut hasher, $bytes);
+                <$crate::kdf::Shake as $crate::kdf::Hasher>::update(&mut hasher, $bytes);
             )*
-            <tiny_keccak::Shake as tiny_keccak::Hasher>::finalize(hasher, $res);
+            <$crate::kdf::Shake as $crate::kdf::Hasher>::finalize(hasher, $res);
         }
     };
 }
@@ -91,11 +93,11 @@ macro_rules! kdf128 {
 macro_rules! kdf256 {
     ($res: expr, $($bytes: expr),+) => {
         {
-            let mut hasher = tiny_keccak::Shake::v256();
+            let mut hasher = $crate::kdf::Shake::v256();
             $(
-                <tiny_keccak::Shake as tiny_keccak::Hasher>::update(&mut hasher, $bytes);
+                <$crate::kdf::Shake as $crate::kdf::Hasher>::update(&mut hasher, $bytes);
             )*
-            <tiny_keccak::Shake as tiny_keccak::Hasher>::finalize(hasher, $res);
+            <$crate::kdf::Shake as $crate::kdf::Hasher>::finalize(hasher, $res);
         }
     };
 }

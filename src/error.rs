@@ -26,6 +26,10 @@ pub enum CryptoCoreError {
         plaintext_len: usize,
         max: u64,
     },
+    #[cfg(feature = "certificate")]
+    Certificate(String),
+    #[cfg(feature = "certificate")]
+    Pkcs8Error(String),
     #[cfg(feature = "ser")]
     ReadLeb128Error(leb128::read::Error),
     SerializationIoError {
@@ -67,6 +71,10 @@ impl Display for CryptoCoreError {
                 "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
                  bytes"
             ),
+            #[cfg(feature = "certificate")]
+            Self::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
+            #[cfg(feature = "certificate")]
+            Self::Certificate(err) => write!(f, "when build certificate, {err}"),
             Self::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
@@ -114,5 +122,32 @@ impl From<aead::Error> for CryptoCoreError {
 impl From<TryFromSliceError> for CryptoCoreError {
     fn from(e: TryFromSliceError) -> Self {
         Self::TryFromSliceError(e)
+    }
+}
+
+#[cfg(feature = "certificate")]
+impl From<pkcs8::der::Error> for CryptoCoreError {
+    fn from(e: pkcs8::der::Error) -> Self {
+        Self::Pkcs8Error(e.to_string())
+    }
+}
+#[cfg(feature = "certificate")]
+impl From<pkcs8::spki::Error> for CryptoCoreError {
+    fn from(e: pkcs8::spki::Error) -> Self {
+        Self::Pkcs8Error(e.to_string())
+    }
+}
+#[cfg(test)]
+#[cfg(feature = "certificate")]
+impl From<pkcs8::Error> for CryptoCoreError {
+    fn from(e: pkcs8::Error) -> Self {
+        Self::Pkcs8Error(e.to_string())
+    }
+}
+
+#[cfg(feature = "certificate")]
+impl From<x509_cert::builder::Error> for CryptoCoreError {
+    fn from(e: x509_cert::builder::Error) -> Self {
+        Self::Certificate(e.to_string())
     }
 }

@@ -1,4 +1,3 @@
-use ed25519_dalek::ed25519;
 use signature::{Keypair, Signer, Verifier};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -23,19 +22,26 @@ impl Keypair for Ed25519Keypair {
     }
 }
 
-impl Signer<ed25519_dalek::Signature> for Ed25519Keypair {
-    fn try_sign(&self, message: &[u8]) -> Result<ed25519::Signature, signature::Error> {
-        self.private_key.try_sign(message)
+pub struct Ed25519Signature {
+    pub(crate) signature: ed25519_dalek::Signature,
+}
+impl Ed25519Signature {
+    #[must_use]
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.signature.to_vec()
     }
 }
 
-impl Verifier<ed25519_dalek::Signature> for Ed25519Keypair {
-    fn verify(
-        &self,
-        msg: &[u8],
-        signature: &ed25519_dalek::Signature,
-    ) -> Result<(), signature::Error> {
-        self.public_key.verify(msg, signature)
+impl Signer<Ed25519Signature> for Ed25519Keypair {
+    fn try_sign(&self, message: &[u8]) -> Result<Ed25519Signature, signature::Error> {
+        Ok(Ed25519Signature {
+            signature: self.private_key.try_sign(message)?,
+        })
+    }
+}
+impl Verifier<Ed25519Signature> for Ed25519Keypair {
+    fn verify(&self, msg: &[u8], signature: &Ed25519Signature) -> Result<(), signature::Error> {
+        self.public_key.verify(msg, &signature.signature)
     }
 }
 
