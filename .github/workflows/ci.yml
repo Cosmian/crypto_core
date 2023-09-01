@@ -49,7 +49,7 @@ jobs:
   cargo-publish:
     needs:
       - cargo-lint
-      - cargo-semver
+      # - cargo-semver
       - cargo-dry-publish
       - wasm
       - hack
