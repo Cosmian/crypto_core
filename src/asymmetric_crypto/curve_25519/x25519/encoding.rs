@@ -2,31 +2,10 @@ use pkcs8::{
     der::asn1::BitStringRef, spki, Document, EncodePrivateKey, EncodePublicKey, ObjectIdentifier,
     PrivateKeyInfo, SecretDocument,
 };
-use rand_core::CryptoRngCore;
 
-use crate::{
-    CryptoCoreError, RandomFixedSizeCBytes, X25519PrivateKey, X25519PublicKey,
-    CURVE_25519_PRIVATE_KEY_LENGTH,
-};
+use crate::{RandomFixedSizeCBytes, X25519PublicKey, CURVE_25519_PRIVATE_KEY_LENGTH};
 
-/// An X25519 keypair which is compatible with the signature crate.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct X25519Keypair {
-    pub private_key: X25519PrivateKey,
-    pub public_key: X25519PublicKey,
-}
-
-impl X25519Keypair {
-    /// Generates a new random key pair.
-    pub fn new<R: CryptoRngCore>(rng: &mut R) -> Result<Self, CryptoCoreError> {
-        let private_key = X25519PrivateKey::new(rng);
-        let public_key = X25519PublicKey::from(&private_key);
-        Ok(Self {
-            private_key,
-            public_key,
-        })
-    }
-}
+use super::key_pair::X25519Keypair;
 
 impl EncodePrivateKey for X25519Keypair {
     fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {
