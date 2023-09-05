@@ -1,6 +1,6 @@
 [package]
 name = "cosmian_crypto_core"
-version = "9.1.0"
+version = "9.1.1"
 authors = [
   "Bruno Grieder <bruno.grieder@cosmian.com>",
   "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
@@ -62,7 +62,7 @@ zeroize = { version = "1.6", features = ["zeroize_derive"] }
 [dev-dependencies]
 criterion = "0.5"
 libc = "0.2"
-libsodium-sys-stable = "1.19.30"
+libsodium-sys-stable = "1.19.31"
 openssl = { version = "0.10", features = ["vendored"] }
 tempfile = "3.8"
 

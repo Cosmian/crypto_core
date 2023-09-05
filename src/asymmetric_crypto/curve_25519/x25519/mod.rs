@@ -1,3 +1,5 @@
+#[cfg(feature = "certificate")]
+mod encoding;
 mod public_key;
 
 pub use public_key::{X25519PublicKey, X25519_PUBLIC_KEY_LENGTH};
@@ -5,3 +7,6 @@ pub use public_key::{X25519PublicKey, X25519_PUBLIC_KEY_LENGTH};
 use super::private_key::Curve25519PrivateKey;
 
 pub type X25519PrivateKey = Curve25519PrivateKey;
+
+#[cfg(feature = "certificate")]
+pub use encoding::X25519Keypair;
