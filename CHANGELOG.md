@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.1.1] - 2023-09-05
+
+### Features
+
+- Implement encoding traits (pkcs8+der) for X25519
+
 ## [9.1.0] - 2023-09-01
 
 ### Features
