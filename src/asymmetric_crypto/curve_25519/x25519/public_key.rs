@@ -1,8 +1,7 @@
 use curve25519_dalek::{scalar::clamp_integer, MontgomeryPoint, Scalar};
-use ed25519_dalek::hazmat::ExpandedSecretKey;
 
 use super::X25519PrivateKey;
-use crate::{CBytes, Ed25519PrivateKey, Ed25519PublicKey, FixedSizeCBytes};
+use crate::{CBytes, Ed25519PublicKey, FixedSizeCBytes};
 
 /// Length of a X25519 public key in bytes.
 pub const X25519_PUBLIC_KEY_LENGTH: usize = 32;
@@ -20,13 +19,6 @@ impl X25519PublicKey {
     pub fn from_ed25519_public_key(ed25519_public_key: &Ed25519PublicKey) -> Self {
         Self(ed25519_public_key.0.to_montgomery())
     }
-
-    // /// Generate a X25519 public key (i.e. the Montgomery point) from a Ed25519 private key.
-    // pub fn from_ed25519_private_key(ed25519_private_key: &Ed25519PrivateKey) -> Self {
-    //     let expanded_secret_key = ExpandedSecretKey::from(&ed25519_private_key.0);
-    //     let scalar = expanded_secret_key.scalar;
-    //     Self(MontgomeryPoint::mul_base(&scalar))
-    // }
 }
 
 impl CBytes for X25519PublicKey {}

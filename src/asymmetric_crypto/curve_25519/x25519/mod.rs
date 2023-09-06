@@ -11,6 +11,10 @@ pub type X25519PrivateKey = Curve25519Secret;
 
 impl X25519PrivateKey {
     /// Convert the ED25519 private key to an X25519 private key
+    ///
+    /// This method is useful when an Ed25519 private key has been converted to an X25519 public key.
+    /// It will generate the private key that corresponds to the generated X25519 public key
+    /// from the original private key.
     pub fn from_ed25519_private_key(sk: &Ed25519PrivateKey) -> Self {
         // see ed25519_dalek::ExpandedSecretKey::to_curve25519_private_key
         // The spec-compliant way to define an expanded secret key. This computes `SHA512(sk)`, clamps the
