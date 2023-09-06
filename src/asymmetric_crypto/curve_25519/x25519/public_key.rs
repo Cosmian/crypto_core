@@ -1,7 +1,8 @@
 use curve25519_dalek::{scalar::clamp_integer, MontgomeryPoint, Scalar};
+use ed25519_dalek::hazmat::ExpandedSecretKey;
 
 use super::X25519PrivateKey;
-use crate::{CBytes, FixedSizeCBytes};
+use crate::{CBytes, Ed25519PrivateKey, Ed25519PublicKey, FixedSizeCBytes};
 
 /// Length of a X25519 public key in bytes.
 pub const X25519_PUBLIC_KEY_LENGTH: usize = 32;
@@ -14,6 +15,18 @@ impl X25519PublicKey {
     pub fn as_bytes(&self) -> &[u8; X25519_PUBLIC_KEY_LENGTH] {
         self.0.as_bytes()
     }
+
+    /// Convert an Ed25519 public key to a X25519 public key.
+    pub fn from_ed25519_public_key(ed25519_public_key: &Ed25519PublicKey) -> Self {
+        Self(ed25519_public_key.0.to_montgomery())
+    }
+
+    // /// Generate a X25519 public key (i.e. the Montgomery point) from a Ed25519 private key.
+    // pub fn from_ed25519_private_key(ed25519_private_key: &Ed25519PrivateKey) -> Self {
+    //     let expanded_secret_key = ExpandedSecretKey::from(&ed25519_private_key.0);
+    //     let scalar = expanded_secret_key.scalar;
+    //     Self(MontgomeryPoint::mul_base(&scalar))
+    // }
 }
 
 impl CBytes for X25519PublicKey {}
@@ -42,5 +55,31 @@ impl X25519PublicKey {
     #[must_use]
     pub fn dh(&self, rhs: &X25519PrivateKey) -> Self {
         Self(self.0 * Scalar::from_bytes_mod_order(clamp_integer(rhs.0)))
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::{
+        CsRng, Ed25519PrivateKey, Ed25519PublicKey, RandomFixedSizeCBytes, X25519PrivateKey,
+        X25519PublicKey,
+    };
+    use rand_core::SeedableRng;
+
+    #[test]
+    fn test_ed25519_to_x25519() {
+        let mut rng = CsRng::from_entropy();
+        let ed25519_sk = Ed25519PrivateKey::new(&mut rng);
+        let ed25519_pk = Ed25519PublicKey::from(&ed25519_sk);
+
+        // convert the ED25519 private key to an X25519 PrivateKey
+        let x25519_sk = X25519PrivateKey::from_ed25519_private_key(&ed25519_sk);
+        let x25519_pk = X25519PublicKey::from(&x25519_sk);
+
+        assert_eq!(
+            x25519_pk,
+            X25519PublicKey::from_ed25519_public_key(&ed25519_pk)
+        );
     }
 }

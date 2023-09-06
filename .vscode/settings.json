@@ -18,6 +18,7 @@
     "hashers",
     "keypair",
     "libsodium",
+    "montgomery",
     "sealbox",
     "Seedable",
     "xchacha",
