@@ -9,7 +9,7 @@ use pkcs8::{
 
 use crate::{
     Ed25519Keypair, Ed25519PublicKey, Ed25519Signature, RandomFixedSizeCBytes,
-    CURVE_25519_PRIVATE_KEY_LENGTH,
+    CURVE_25519_SECRET_LENGTH,
 };
 
 /// Algorithm [`ObjectIdentifier`] for the Ed25519 digital signature algorithm
@@ -38,7 +38,7 @@ impl EncodePublicKey for Ed25519Keypair {
 impl EncodePrivateKey for Ed25519Keypair {
     fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {
         // Serialize private key as nested OCTET STRING
-        let mut private_key = [0u8; 2 + CURVE_25519_PRIVATE_KEY_LENGTH];
+        let mut private_key = [0u8; 2 + CURVE_25519_SECRET_LENGTH];
         private_key[0] = 0x04;
         private_key[1] = 0x20;
         private_key[2..].copy_from_slice(self.private_key.as_bytes());
