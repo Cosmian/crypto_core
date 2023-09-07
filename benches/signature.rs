@@ -3,7 +3,6 @@
 use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
     Cached25519Signer, CsRng, Ed25519Keypair, Ed25519PrivateKey, Ed25519PublicKey,
-    RandomFixedSizeCBytes,
 };
 use criterion::Criterion;
 use signature::{Signer, Verifier};

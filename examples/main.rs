@@ -25,6 +25,22 @@ fn main() {
     ))]
     self::examples::ecies_x25519_xchacha20_stream();
 
+    #[cfg(all(
+        feature = "ecies",
+        feature = "aes",
+        feature = "sha3",
+        feature = "nist_curves"
+    ))]
+    self::examples::ecies_p256_aes128_combined();
+
+    #[cfg(all(
+        feature = "ecies",
+        feature = "aes",
+        feature = "sha3",
+        feature = "nist_curves"
+    ))]
+    self::examples::ecies_p256_aes128_stream();
+
     #[cfg(feature = "curve25519")]
     self::examples::ed25519_static();
     #[cfg(feature = "curve25519")]

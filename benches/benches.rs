@@ -2,7 +2,7 @@
 use cosmian_crypto_core::{
     blake2b, blake2s, kdf128, kdf256,
     reexport::rand_core::{RngCore, SeedableRng},
-    CryptoCoreError, CsRng, R25519PrivateKey, R25519PublicKey, RandomFixedSizeCBytes,
+    CsRng, R25519CurvePoint, R25519PrivateKey,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use dem::{
@@ -22,7 +22,7 @@ fn bench_dh_r25519(c: &mut Criterion) {
         let mut rng = CsRng::from_entropy();
         R25519PrivateKey::new(&mut rng)
     };
-    let public_key = R25519PublicKey::from(&private_key);
+    let public_key = R25519CurvePoint::from(&private_key);
     c.bench_function(
         "R25519 Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
         |b| b.iter(|| &public_key * &private_key),
@@ -123,7 +123,7 @@ criterion_group!(
 criterion_group!(
     name = ecies;
     config = Criterion::default().sample_size(5000);
-    targets =  ecies::ecies_r25519_aes128gcm_bench, ecies::ecies_salsa_seal_box,ecies::ecies_x25519_xchacha20
+    targets =  ecies::ecies_r25519_aes128gcm_bench, ecies::ecies_salsa_seal_box,ecies::ecies_x25519_xchacha20,ecies::ecies_x25519_aes128,ecies::ecies_nist_aes128
 );
 
 criterion_group!(

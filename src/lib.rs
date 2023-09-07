@@ -1,7 +1,7 @@
 //! This crate implements crypto primitives which are used in many other
 //! Cosmian cryptographic resources.
 
-#[cfg(feature = "curve25519")]
+#[cfg(any(feature = "curve25519", feature = "nist_curves"))]
 mod asymmetric_crypto;
 #[cfg(feature = "blake")]
 pub mod blake2;
@@ -15,6 +15,8 @@ pub mod kdf;
 mod symmetric_crypto;
 
 mod error;
+pub use error::CryptoCoreError;
+
 pub mod reexport {
     #[cfg(any(feature = "aes", feature = "chacha"))]
     pub use aead;
@@ -30,7 +32,7 @@ pub mod reexport {
     pub use zeroize;
 }
 
-#[cfg(feature = "curve25519")]
+#[cfg(any(feature = "curve25519", feature = "nist_curves"))]
 pub use asymmetric_crypto::*;
 #[cfg(feature = "ecies")]
 pub use ecies::*;
@@ -40,8 +42,6 @@ use reexport::rand_core::CryptoRngCore;
 #[cfg(any(feature = "aes", feature = "chacha"))]
 pub use symmetric_crypto::*;
 use zeroize::{Zeroize, ZeroizeOnDrop};
-
-pub use crate::error::CryptoCoreError;
 
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
 pub type CsRng = rand_chacha::ChaCha12Rng;

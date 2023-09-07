@@ -19,10 +19,14 @@
     "keypair",
     "libsodium",
     "montgomery",
+    "nist",
+    "openssl",
+    "pkcs",
     "sealbox",
     "Seedable",
     "xchacha",
     "zeroize",
-    "zeroized"
+    "zeroized",
+    "Zeroizing"
   ]
 }

@@ -4,7 +4,7 @@ pub fn ed25519_static() {
             rand_core::SeedableRng,
             signature::{Signer, Verifier},
         },
-        CsRng, Ed25519PrivateKey, Ed25519PublicKey, RandomFixedSizeCBytes,
+        CsRng, Ed25519PrivateKey, Ed25519PublicKey,
     };
 
     // instantiate a random number generator
@@ -30,7 +30,7 @@ pub fn ed25519_cached() {
             rand_core::SeedableRng,
             signature::{Signer, Verifier},
         },
-        Cached25519Signer, CsRng, Ed25519PrivateKey, Ed25519PublicKey, RandomFixedSizeCBytes,
+        Cached25519Signer, CsRng, Ed25519PrivateKey, Ed25519PublicKey,
     };
 
     // instantiate a random number generator

@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [9.1.1] - 2023-09-05
+## [9.2.0] - 2023-09-11
 
 ### Features
 
-- Implement encoding traits (pkcs8+der) for X25519
+- Add support for ECIES over NIST curves: P-192, P-224, P-256, P-384
+- Implement encoding traits (pkcs8+der) for NIST curves
 
 ## [9.1.0] - 2023-09-01
 
