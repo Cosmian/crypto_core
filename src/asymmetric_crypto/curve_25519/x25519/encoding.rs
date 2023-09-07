@@ -3,9 +3,8 @@ use pkcs8::{
     PrivateKeyInfo, SecretDocument,
 };
 
-use crate::{RandomFixedSizeCBytes, X25519PublicKey, CURVE_25519_PRIVATE_KEY_LENGTH};
-
 use super::key_pair::X25519Keypair;
+use crate::{RandomFixedSizeCBytes, X25519PublicKey, CURVE_25519_PRIVATE_KEY_LENGTH};
 
 impl EncodePrivateKey for X25519Keypair {
     fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {

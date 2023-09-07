@@ -46,7 +46,7 @@ blake2 = { version = "0.10", optional = true }
 chacha20 = { version = "0.9", optional = true }
 chacha20poly1305 = { version = "0.10", optional = true }
 crypto_box = { version = "0.9.1", features = ["seal"], optional = true }
-curve25519-dalek = { version = "4.0.0", optional = true }
+curve25519-dalek = { version = "4.1.0", optional = true }
 ed25519-dalek = { version = "2.0.0", optional = true }
 getrandom = { version = "0.2", features = ["js"] } # needed to compile into WASM
 leb128 = { version = "0.2", optional = true }

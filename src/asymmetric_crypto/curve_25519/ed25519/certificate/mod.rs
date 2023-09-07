@@ -40,7 +40,7 @@ where
 }
 
 pub struct Certificate {
-    inner: CertificateInner,
+    pub inner: CertificateInner,
     pub uuid: uuid::Uuid,
 }
 
