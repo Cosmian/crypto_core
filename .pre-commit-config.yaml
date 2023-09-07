@@ -127,7 +127,7 @@ repos:
     hooks:
       - id: stable-cargo-format
       - id: dprint-toml-fix
-      - id: cargo-upgrade
+      # - id: cargo-upgrade
       - id: cargo-update
       - id: cargo-udeps
       - id: cargo-audit
@@ -136,7 +136,6 @@ repos:
       - id: cargo-test-doc
       - id: clippy-autofix-all
       - id: clippy-autofix-pedantic
-      - id: clippy-autofix-nursery
       - id: clippy-autofix-others
       - id: clippy-all-targets-all-features
       - id: cargo-dry-publish

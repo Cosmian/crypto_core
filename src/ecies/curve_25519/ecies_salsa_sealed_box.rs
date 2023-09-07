@@ -3,7 +3,7 @@ use crypto_box::{PublicKey, SecretKey};
 use crate::{
     asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
     reexport::rand_core::CryptoRngCore,
-    Ecies,
+    Ecies, X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
 /// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption
@@ -27,6 +27,7 @@ use crate::{
 ///
 /// ```
 /// use std::sync::{Arc, Mutex};
+/// use rand_chacha::rand_core::SeedableRng;
 /// use cosmian_crypto_core::{
 ///     Ecies, EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey,
 ///     CsRng, RandomFixedSizeCBytes,
@@ -62,7 +63,9 @@ use crate::{
 /// generator.
 pub struct EciesSalsaSealBox {}
 
-impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
+impl Ecies<X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH, X25519PublicKey>
+    for EciesSalsaSealBox
+{
     const ENCRYPTION_OVERHEAD: usize = crypto_box::SEALBYTES;
 
     /// Encrypts a message using the given public key
@@ -103,6 +106,8 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
 
 #[cfg(test)]
 mod tests {
+
+    use rand_chacha::rand_core::SeedableRng;
 
     use crate::{
         asymmetric_crypto::{Ed25519PrivateKey, X25519PrivateKey, X25519PublicKey},

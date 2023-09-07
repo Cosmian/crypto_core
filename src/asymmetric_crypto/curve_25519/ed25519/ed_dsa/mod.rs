@@ -20,7 +20,7 @@ mod tests {
             Ed25519Keypair,
         },
         reexport::rand_core::SeedableRng,
-        CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
+        CsRng, FixedSizeCBytes,
     };
 
     #[test]

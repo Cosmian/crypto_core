@@ -2,13 +2,12 @@ use aead::{consts::U10, generic_array::GenericArray};
 use chacha20::hchacha;
 use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 
-use super::ecies_traits::EciesStream;
 use crate::{
-    asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
     blake2b,
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{Dem, DemStream, Instantiable, Nonce, SymmetricKey, XChaCha20Poly1305},
-    CryptoCoreError, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
+    CryptoCoreError, Ecies, EciesStream, X25519PrivateKey, X25519PublicKey,
+    X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
@@ -102,8 +101,10 @@ impl EciesX25519XChaCha20 {
     }
 }
 
-impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
-    const ENCRYPTION_OVERHEAD: usize = X25519PublicKey::LENGTH + XChaCha20Poly1305::MAC_LENGTH;
+impl Ecies<X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH, X25519PublicKey>
+    for EciesX25519XChaCha20
+{
+    const ENCRYPTION_OVERHEAD: usize = X25519_PUBLIC_KEY_LENGTH + XChaCha20Poly1305::MAC_LENGTH;
 
     fn encrypt<R: CryptoRngCore>(
         rng: &mut R,
@@ -119,7 +120,7 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
 
         // Assemble the final encrypted message: R || c || d
         let mut res = Vec::with_capacity(
-            X25519PublicKey::LENGTH + plaintext.len() + XChaCha20Poly1305::MAC_LENGTH,
+            X25519_PUBLIC_KEY_LENGTH + plaintext.len() + XChaCha20Poly1305::MAC_LENGTH,
         );
         res.extend(ephemeral_pk.to_bytes());
         res.extend(&ciphertext_plus_tag);
@@ -133,7 +134,8 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
         authentication_data: Option<&[u8]>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
         // Extract the ephemeral public key from the beginning of the ciphertext
-        let ephemeral_pk = X25519PublicKey::try_from_slice(&ciphertext[..X25519PublicKey::LENGTH])?;
+        let ephemeral_pk =
+            X25519PublicKey::try_from_slice(&ciphertext[..X25519_PUBLIC_KEY_LENGTH])?;
 
         // recover the symmetric key and nonce
         let (key, nonce) = Self::recover_key_and_nonce(recipient_sk, &ephemeral_pk)?;
@@ -141,13 +143,20 @@ impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesX25519XChaCha20 {
         // Decrypt and verify the message using AES-128-GCM
         XChaCha20Poly1305::new(&key).decrypt(
             &nonce,
-            &ciphertext[X25519PublicKey::LENGTH..],
+            &ciphertext[X25519_PUBLIC_KEY_LENGTH..],
             authentication_data,
         )
     }
 }
 
-impl EciesStream<X25519PrivateKey, X25519PublicKey, XChaCha20Poly1305Lib> for EciesX25519XChaCha20 {
+impl
+    EciesStream<
+        X25519_PRIVATE_KEY_LENGTH,
+        X25519_PUBLIC_KEY_LENGTH,
+        X25519PublicKey,
+        XChaCha20Poly1305Lib,
+    > for EciesX25519XChaCha20
+{
     fn get_dem_encryptor_be32<R: CryptoRngCore>(
         rng: &mut R,
         recipient_public_key: &X25519PublicKey,
@@ -213,11 +222,9 @@ mod tests {
 
     use super::CryptoCoreError;
     use crate::{
-        asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
-        ecies::{ecies_traits::EciesStream, EciesX25519XChaCha20},
-        reexport::rand_core::SeedableRng,
-        symmetric_crypto::XChaCha20Poly1305,
-        CsRng, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
+        ecies::traits::EciesStream, reexport::rand_core::SeedableRng,
+        symmetric_crypto::XChaCha20Poly1305, CsRng, Ecies, EciesX25519XChaCha20, X25519PrivateKey,
+        X25519PublicKey, X25519_PUBLIC_KEY_LENGTH,
     };
 
     #[test]
@@ -336,7 +343,7 @@ mod tests {
 
         //recover the ephemeral public key from the ciphertext
         let ephemeral_public_key =
-            X25519PublicKey::try_from_slice(&ciphertext[..X25519PublicKey::LENGTH])?;
+            X25519PublicKey::try_from_slice(&ciphertext[..X25519_PUBLIC_KEY_LENGTH])?;
 
         // Instantiate a decryptor
         let mut decryptor =
@@ -344,15 +351,15 @@ mod tests {
 
         // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
         let mut plaintext = decryptor.decrypt_next(Payload {
-            msg: &ciphertext[X25519PublicKey::LENGTH
-                ..X25519PublicKey::LENGTH + BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH],
+            msg: &ciphertext[X25519_PUBLIC_KEY_LENGTH
+                ..X25519_PUBLIC_KEY_LENGTH + BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH],
             aad,
         })?;
 
         // decrypt the second and last chunk
         plaintext.extend_from_slice(&decryptor.decrypt_last(Payload {
             msg: &ciphertext
-                [X25519PublicKey::LENGTH + BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH..],
+                [X25519_PUBLIC_KEY_LENGTH + BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH..],
             aad,
         })?);
 
@@ -400,7 +407,7 @@ mod tests {
 
         //recover the ephemeral public key from the ciphertext
         let ephemeral_public_key =
-            X25519PublicKey::try_from_slice(&ciphertext[..X25519PublicKey::LENGTH])?;
+            X25519PublicKey::try_from_slice(&ciphertext[..X25519_PUBLIC_KEY_LENGTH])?;
 
         // Instantiate a decryptor
         let mut decryptor =
@@ -408,15 +415,15 @@ mod tests {
 
         // decrypt the first chunk which is BLOCK_SIZE + MAC_LENGTH bytes long
         let mut plaintext = decryptor.decrypt_next(Payload {
-            msg: &ciphertext[X25519PublicKey::LENGTH
-                ..X25519PublicKey::LENGTH + BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH],
+            msg: &ciphertext[X25519_PUBLIC_KEY_LENGTH
+                ..X25519_PUBLIC_KEY_LENGTH + BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH],
             aad,
         })?;
 
         // decrypt the second and last chunk
         plaintext.extend_from_slice(&decryptor.decrypt_last(Payload {
             msg: &ciphertext
-                [X25519PublicKey::LENGTH + BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH..],
+                [X25519_PUBLIC_KEY_LENGTH + BLOCK_SIZE + XChaCha20Poly1305::MAC_LENGTH..],
             aad,
         })?);
 

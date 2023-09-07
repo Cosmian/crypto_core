@@ -45,11 +45,11 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: hack
-          args: test --feature-powerset --clean-per-run
+          args: build --feature-powerset --clean-per-run --no-dev-deps
   cargo-publish:
     needs:
       - cargo-lint
-      # - cargo-semver
+      - cargo-semver
       - cargo-dry-publish
       - wasm
       - hack

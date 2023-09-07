@@ -56,3 +56,40 @@ impl Serializable for Curve25519Secret {
         Self::try_from_bytes(bytes)
     }
 }
+
+/// Facades
+///
+/// Facades are used to hide the underlying types and provide a more
+/// user friendly interface to the user.
+impl Curve25519PrivateKey {
+    /// Generate a random private key
+    ///
+    /// This is a facade to `RandomFixedSizeCBytes::new`
+    pub fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
+        <Self as RandomFixedSizeCBytes<CURVE_25519_PRIVATE_KEY_LENGTH>>::new(rng)
+    }
+
+    /// Get the underlying bytes slice of the private key
+    ///
+    /// This is a facade to `RandomFixedSizeCBytes::as_bytes`
+    pub fn as_bytes(&self) -> &[u8] {
+        <Self as RandomFixedSizeCBytes<CURVE_25519_PRIVATE_KEY_LENGTH>>::as_bytes(self)
+    }
+
+    /// Serialize the `PrivateKey` as a non zero scalar
+    ///
+    /// This is a facade to `<Self as FixedSizeCBytes>::to_bytes`
+    pub fn to_bytes(&self) -> [u8; CURVE_25519_PRIVATE_KEY_LENGTH] {
+        <Self as FixedSizeCBytes<CURVE_25519_PRIVATE_KEY_LENGTH>>::to_bytes(self)
+    }
+
+    /// Deserialize the `PrivateKey` from a non zero scalar
+    ///
+    /// This is a facade to `<Self as
+    /// FixedSizeCBytes<CURVE_25519_PRIVATE_KEY_LENGTH>>::try_from_bytes`
+    pub fn try_from_bytes(
+        bytes: [u8; CURVE_25519_PRIVATE_KEY_LENGTH],
+    ) -> Result<Self, CryptoCoreError> {
+        <Self as FixedSizeCBytes<CURVE_25519_PRIVATE_KEY_LENGTH>>::try_from_bytes(bytes)
+    }
+}

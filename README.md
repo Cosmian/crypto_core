@@ -14,16 +14,20 @@ This crate implements the cryptographic primitives (modern encryption and signat
 - [Further improving performance](#further-improving-performance)
 - [Running tests and benchmarks](#running-tests-and-benchmarks)
 - [Symmetric key encryption](#symmetric-key-encryption)
-  * [Symmetric key encryption of a vector of bytes in combined mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-combined-mode)
-  * [Symmetric key encryption of a vector of bytes in detached mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-detached-mode)
-  * [Symmetric key encryption of a stream of bytes](#symmetric-key-encryption-of-a-stream-of-bytes)
+  - [Symmetric key encryption of a vector of bytes in combined mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-combined-mode)
+  - [Symmetric key encryption of a vector of bytes in detached mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-detached-mode)
+  - [Symmetric key encryption of a stream of bytes](#symmetric-key-encryption-of-a-stream-of-bytes)
 - [ECIES - Elliptic Curve Integrated Encryption Scheme](#ecies---elliptic-curve-integrated-encryption-scheme)
-  * [ECIES encryption of a vector of bytes](#ecies-encryption-of-a-vector-of-bytes)
-  * [ECIES encryption of a stream of bytes](#ecies-encryption-of-a-stream-of-bytes)
+  - [Curve 25519](#curve-25519)
+  - [NIST Curves](#nist-curves)
+  - [Performance](#performance)
+  - [Security](#security)
+  - [ECIES encryption of a vector of bytes](#ecies-encryption-of-a-vector-of-bytes)
+  - [ECIES encryption of a stream of bytes](#ecies-encryption-of-a-stream-of-bytes)
 - [Signature](#signature)
-  * [Static implementation](#static-implementation)
-  * [Cached implementation](#cached-implementation)
-  * [Using a Keypair](#using-a-keypair)
+  - [Static implementation](#static-implementation)
+  - [Cached implementation](#cached-implementation)
+  - [Using a Keypair](#using-a-keypair)
 - [Cryptographically Secure Random Number Generator (CS-RNG)](#cryptographically-secure-random-number-generator-cs-rng)
 - [Key Derivation Function (KDF)](#key-derivation-function-kdf)
 - [Blake2 hashing](#blake2-hashing)
@@ -305,17 +309,36 @@ assert_eq!(
 
 ## ECIES - Elliptic Curve Integrated Encryption Scheme
 
-The library exposes 3 ECIES schemes based on the [Dalek implementation](https://github.com/dalek-cryptography/curve25519-dalek) of curve 25519
+The library exposes 8 ECIES schemes
 
-- `EciesX25519XChaCha20`: which uses the X25519 KEM and the XChaCha20 Poly1305 DEM; it uses HChaCha for the ephemeral symmetric key derivation and Blake2b for the nonce generation. In case of doubt, this is the recommended scheme.
+### Curve 25519
+
+These use the [Dalek implementation](https://github.com/dalek-cryptography/curve25519-dalek) of curve 25519.
+
 - `EciesSalsaSealBox`: which uses the X25519 KEM and the Salsa20 Poly1305 DEM. This scheme is compatible with `libsodium` sealed boxes but does not offer support for additional data in the DEM authentication.
-- `EciesR25519Aes128`: which KEM is based on the Ristretto group of curve 25519 and uses Aes 128 GCM as a DEM. Both the derivation of the ephemeral symmetric key and the generation of the nonce is performed using Shake 128.
+- `EciesX25519XChaCha20`: which uses the X25519 KEM and the XChaCha20 Poly1305 DEM; it uses HChaCha for the ephemeral symmetric key derivation and Blake2b for the nonce generation. In case of doubt, this is the recommended scheme.
+- `EciesR25519Aes128`: which KEM is based on the Ristretto group of curve 25519 and uses AES 128 GCM as a DEM. Both the derivation of the ephemeral symmetric key and the generation of the nonce is performed using Shake128.
+- `EciesX25519Aes128`: which uses the X25519 KEM and uses AES 128 GCM as a DEM. Both the derivation of the ephemeral symmetric key and the generation of the nonce is performed using Shake128.
 
-All these implementations have similar performance (about 70µs for encryption/decryption on a 2.6GHz Intel Core i7) and security (128-bit classic security - no post-quantum resistance).
+### NIST Curves
 
-A later version offering a hybrid encryption scheme with post-quantum resistance will be released.
+ECIES is supported for the P384, P256, P224 and P192 NIST curves using their [RustCrypto implementation](https://github.com/RustCrypto/traits/tree/master/elliptic-curve). The implementation uses the corresponding curve KEM and the AES 128 GCM DEM. Both the derivation of the ephemeral symmetric key and the generation of the nonce is performed using Shake128.
 
-All these implementations use the same format for the Curve 25519 Private key; their public key implementations under the various representations (Edwards, Montgomery, and Ristretto) are available in the [`asymmetric_crypto`](./src/asymmetric_crypto/curve_25519/) folder.
+- `EciesP384Aes128`
+- `EciesP256Aes128`
+- `EciesP224Aes128`
+- `EciesP192Aes128`
+
+### Performance
+
+The implementations on the curve 25519 offer the best performances, below 100µs for encryption and for decryption on a 2.6GHz Intel Core i7.
+The implementation on the NIST P256 curve runs at about 500µs for encryption and for decryption, while the P384 implementation runs at about 2ms.
+
+Run the benchmarks to check the performance on your hardware using `cargo bench`.
+
+### Security
+
+The implementations of the curve 25519 and the P256 curve offer 128 bits of classic security (no post-quantum resistance).
 
 ### ECIES encryption of a vector of bytes
 
@@ -327,7 +350,7 @@ Encryption is performed using the public key and decryption using the private ke
 ```Rust
 use cosmian_crypto_core::{
     reexport::rand_core::SeedableRng, CsRng, Ecies, EciesX25519XChaCha20,
-    RandomFixedSizeCBytes, X25519PrivateKey, X25519PublicKey,
+    X25519PrivateKey, X25519PublicKey,
 };
 
 // A cryptographic random number generator
