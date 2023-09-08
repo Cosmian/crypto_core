@@ -3,10 +3,15 @@ mod encoding;
 use std::{str::FromStr, time::Duration};
 
 pub use encoding::ED25519_ALGORITHM_ID;
-use pkcs8::{der::EncodePem, spki::SubjectPublicKeyInfoOwned, EncodePublicKey, LineEnding};
+use pkcs8::{
+    der::{Decode, EncodePem},
+    spki::SubjectPublicKeyInfoOwned,
+    EncodePublicKey, LineEnding,
+};
 use x509_cert::{
     builder::{Builder, CertificateBuilder, Profile},
     certificate::CertificateInner,
+    ext::pkix::{SubjectKeyIdentifier, ID_CE_SUBJECT_KEY_IDENTIFIER},
     name::Name,
     serial_number::SerialNumber,
     time::Validity,
@@ -52,6 +57,39 @@ impl Certificate {
 
     pub fn to_pem(&self) -> Result<String, CryptoCoreError> {
         Ok(self.inner.to_pem(LineEnding::LF)?)
+    }
+
+    pub fn spki(&self) -> Result<Vec<u8>, CryptoCoreError> {
+        match &self.inner.tbs_certificate.extensions {
+            Some(exts) => {
+                let ski_list = exts
+                    .iter()
+                    .filter(|x| x.extn_id == ID_CE_SUBJECT_KEY_IDENTIFIER)
+                    .collect::<Vec<_>>();
+                if ski_list.is_empty() {
+                    return Err(CryptoCoreError::Certificate(format!(
+                        "Extension {ID_CE_SUBJECT_KEY_IDENTIFIER:?} not found"
+                    )));
+                }
+
+                if ski_list.len() > 1 {
+                    return Err(CryptoCoreError::Certificate(format!(
+                        "Multiple extensions {ID_CE_SUBJECT_KEY_IDENTIFIER:?} found"
+                    )));
+                }
+
+                let ski = ski_list
+                    .first()
+                    .ok_or(CryptoCoreError::Certificate(format!(
+                        "Cannot get first extension {ID_CE_SUBJECT_KEY_IDENTIFIER:?}"
+                    )))?;
+                let skid = SubjectKeyIdentifier::from_der(ski.extn_value.as_bytes())?;
+                Ok(skid.0.into_bytes())
+            }
+            None => Err(CryptoCoreError::Certificate(
+                "No X509 extension found".to_string(),
+            )),
+        }
     }
 }
 

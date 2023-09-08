@@ -1,5 +1,4 @@
 use rand_core::CryptoRngCore;
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, X25519PrivateKey,
@@ -58,19 +57,4 @@ impl FixedSizeCBytes<{ X25519PrivateKey::LENGTH + X25519PublicKey::LENGTH }> for
         })
     }
 }
-
-impl Zeroize for X25519Keypair {
-    fn zeroize(&mut self) {
-        self.private_key.zeroize();
-    }
-}
-
-impl Drop for X25519Keypair {
-    fn drop(&mut self) {
-        self.zeroize();
-    }
-}
-
-impl ZeroizeOnDrop for X25519Keypair {}
-
 impl CBytes for X25519Keypair {}
