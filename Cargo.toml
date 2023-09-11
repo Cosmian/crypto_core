@@ -62,7 +62,7 @@ zeroize = { version = "1.6", features = ["zeroize_derive"] }
 [dev-dependencies]
 criterion = "0.5"
 libc = "0.2"
-libsodium-sys-stable = "1.19.31"
+libsodium-sys-stable = "1.19.32"
 openssl = { version = "0.10", features = ["vendored"] }
 tempfile = "3.8"
 

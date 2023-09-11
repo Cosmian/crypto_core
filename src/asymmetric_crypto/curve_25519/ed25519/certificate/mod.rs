@@ -19,13 +19,13 @@ use x509_cert::{
 
 use crate::{CryptoCoreError, Ed25519Keypair, Ed25519Signature};
 
-fn default_validity_duration(expiration_in_months: u64) -> Result<Validity, CryptoCoreError> {
+fn default_validity_duration(validity_in_months: u64) -> Result<Validity, CryptoCoreError> {
     // Considering bissextile year, there are in a year an average of 365+1/4 days.
     // And 365,25/12 = 30,4375 => 30d10h30m
     const SECONDS_IN_MONTH: u64 = 30 * 24 * 60 * 60 + 10 * 60 * 60 + 30 * 60;
 
     // Calculate the total duration in seconds
-    let total_seconds: u64 = expiration_in_months * SECONDS_IN_MONTH;
+    let total_seconds: u64 = validity_in_months * SECONDS_IN_MONTH;
 
     // Create a Duration instance
     let duration = Duration::from_secs(total_seconds);
@@ -112,7 +112,7 @@ pub fn build_certificate<PublicKey>(
     public_key: &PublicKey,
     profile: Profile,
     subject: &str,
-    expiration_in_months: u64,
+    validity_in_months: u64,
 ) -> Result<Certificate, CryptoCoreError>
 where
     PublicKey: EncodePublicKey,
@@ -131,7 +131,7 @@ where
     let builder = CertificateBuilder::new(
         profile,
         serial_number,
-        default_validity_duration(expiration_in_months)?,
+        default_validity_duration(validity_in_months)?,
         subject,
         spki,
         signer,
