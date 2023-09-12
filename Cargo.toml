@@ -1,6 +1,6 @@
 [package]
 name = "cosmian_crypto_core"
-version = "9.1.0"
+version = "9.1.1"
 authors = [
   "Bruno Grieder <bruno.grieder@cosmian.com>",
   "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
@@ -46,7 +46,7 @@ blake2 = { version = "0.10", optional = true }
 chacha20 = { version = "0.9", optional = true }
 chacha20poly1305 = { version = "0.10", optional = true }
 crypto_box = { version = "0.9.1", features = ["seal"], optional = true }
-curve25519-dalek = { version = "4.0.0", optional = true }
+curve25519-dalek = { version = "4.1.0", optional = true }
 ed25519-dalek = { version = "2.0.0", optional = true }
 getrandom = { version = "0.2", features = ["js"] } # needed to compile into WASM
 leb128 = { version = "0.2", optional = true }
@@ -62,7 +62,7 @@ zeroize = { version = "1.6", features = ["zeroize_derive"] }
 [dev-dependencies]
 criterion = "0.5"
 libc = "0.2"
-libsodium-sys-stable = "1.19.30"
+libsodium-sys-stable = "1.19.32"
 openssl = { version = "0.10", features = ["vendored"] }
 tempfile = "3.8"
 

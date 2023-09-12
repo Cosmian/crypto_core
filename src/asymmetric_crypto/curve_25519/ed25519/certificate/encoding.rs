@@ -34,6 +34,7 @@ impl EncodePublicKey for Ed25519Keypair {
         .try_into()
     }
 }
+
 impl EncodePrivateKey for Ed25519Keypair {
     fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {
         // Serialize private key as nested OCTET STRING

@@ -3,36 +3,41 @@ mod encoding;
 use std::{str::FromStr, time::Duration};
 
 pub use encoding::ED25519_ALGORITHM_ID;
-use pkcs8::{der::EncodePem, spki::SubjectPublicKeyInfoOwned, EncodePublicKey, LineEnding};
+use pkcs8::{
+    der::{Decode, EncodePem},
+    spki::SubjectPublicKeyInfoOwned,
+    EncodePublicKey, LineEnding,
+};
 use x509_cert::{
     builder::{Builder, CertificateBuilder, Profile},
     certificate::CertificateInner,
+    ext::pkix::{SubjectKeyIdentifier, ID_CE_SUBJECT_KEY_IDENTIFIER},
     name::Name,
     serial_number::SerialNumber,
     time::Validity,
 };
 
-use crate::{CryptoCoreError, Ed25519Keypair, Ed25519PublicKey, Ed25519Signature};
+use crate::{CryptoCoreError, Ed25519Keypair, Ed25519Signature};
 
-fn default_validity_duration() -> Result<Validity, CryptoCoreError> {
+fn default_validity_duration(validity_in_months: u64) -> Result<Validity, CryptoCoreError> {
     // Considering bissextile year, there are in a year an average of 365+1/4 days.
     // And 365,25/12 = 30,4375 => 30d10h30m
     const SECONDS_IN_MONTH: u64 = 30 * 24 * 60 * 60 + 10 * 60 * 60 + 30 * 60;
 
-    // Number of months
-    const MONTHS: u64 = 3;
-
     // Calculate the total duration in seconds
-    const TOTAL_SECONDS: u64 = MONTHS * SECONDS_IN_MONTH;
+    let total_seconds: u64 = validity_in_months * SECONDS_IN_MONTH;
 
     // Create a Duration instance
-    let duration = Duration::from_secs(TOTAL_SECONDS);
+    let duration = Duration::from_secs(total_seconds);
     Ok(Validity::from_now(duration)?)
 }
 
-fn get_subject_public_key_info(
-    public_key: &Ed25519PublicKey,
-) -> Result<SubjectPublicKeyInfoOwned, CryptoCoreError> {
+fn get_subject_public_key_info<PublicKey>(
+    public_key: &PublicKey,
+) -> Result<SubjectPublicKeyInfoOwned, CryptoCoreError>
+where
+    PublicKey: EncodePublicKey,
+{
     let public_key_der = public_key.to_public_key_der()?;
     Ok(SubjectPublicKeyInfoOwned::try_from(
         public_key_der.as_bytes(),
@@ -40,7 +45,7 @@ fn get_subject_public_key_info(
 }
 
 pub struct Certificate {
-    inner: CertificateInner,
+    pub inner: CertificateInner,
     pub uuid: uuid::Uuid,
 }
 
@@ -52,6 +57,34 @@ impl Certificate {
 
     pub fn to_pem(&self) -> Result<String, CryptoCoreError> {
         Ok(self.inner.to_pem(LineEnding::LF)?)
+    }
+
+    pub fn spki(&self) -> Result<Vec<u8>, CryptoCoreError> {
+        match &self.inner.tbs_certificate.extensions {
+            Some(exts) => {
+                let ski_list = exts
+                    .iter()
+                    .filter(|x| x.extn_id == ID_CE_SUBJECT_KEY_IDENTIFIER)
+                    .collect::<Vec<_>>();
+                if ski_list.is_empty() {
+                    return Err(CryptoCoreError::Certificate(format!(
+                        "Extension {ID_CE_SUBJECT_KEY_IDENTIFIER:?} not found"
+                    )));
+                }
+
+                if ski_list.len() > 1 {
+                    return Err(CryptoCoreError::Certificate(format!(
+                        "Multiple extensions {ID_CE_SUBJECT_KEY_IDENTIFIER:?} found"
+                    )));
+                }
+
+                let skid = SubjectKeyIdentifier::from_der(ski_list[0].extn_value.as_bytes())?;
+                Ok(skid.0.into_bytes())
+            }
+            None => Err(CryptoCoreError::Certificate(
+                "No X509 extension found".to_string(),
+            )),
+        }
     }
 }
 
@@ -69,12 +102,16 @@ pub fn build_certificate_profile(
     Ok(profile)
 }
 
-pub fn build_certificate(
+pub fn build_certificate<PublicKey>(
     signer: &Ed25519Keypair,
-    public_key: &Ed25519PublicKey,
+    public_key: &PublicKey,
     profile: Profile,
     subject: &str,
-) -> Result<Certificate, CryptoCoreError> {
+    validity_in_months: u64,
+) -> Result<Certificate, CryptoCoreError>
+where
+    PublicKey: EncodePublicKey,
+{
     // Create certificate serial number
     let uuid = uuid::Uuid::new_v4();
     let serial_number = SerialNumber::new(uuid.as_bytes())?;
@@ -83,13 +120,13 @@ pub fn build_certificate(
     let subject = Name::from_str(&format!("CN={subject}"))?;
 
     // Build SPKI
-    let spki = get_subject_public_key_info(public_key)?;
+    let spki = get_subject_public_key_info::<PublicKey>(public_key)?;
 
     // Build certificate
     let builder = CertificateBuilder::new(
         profile,
         serial_number,
-        default_validity_duration()?,
+        default_validity_duration(validity_in_months)?,
         subject,
         spki,
         signer,
@@ -115,8 +152,8 @@ mod tests {
     use x509_cert::builder::Profile;
 
     use crate::{
-        asymmetric_crypto::curve_25519::ed25519::build_certificate, CryptoCoreError, CsRng,
-        Ed25519Keypair,
+        asymmetric_crypto::curve_25519::{ed25519::build_certificate, x25519::X25519Keypair},
+        CryptoCoreError, CsRng, Ed25519Keypair, X25519PublicKey,
     };
 
     #[test]
@@ -136,7 +173,7 @@ mod tests {
         let export_pkcs12_filename = tmp_path.join("final.p12").to_str().unwrap().to_owned();
 
         let mut rng = CsRng::from_entropy();
-        let key_pair = Ed25519Keypair::new(&mut rng)?;
+        let key_pair = X25519Keypair::new(&mut rng)?;
         let ca_signer = Ed25519Keypair::new(&mut rng)?;
 
         // Export public key
@@ -151,11 +188,12 @@ mod tests {
         )?;
 
         // Export certificate
-        let certificate = build_certificate(
+        let certificate = build_certificate::<X25519PublicKey>(
             &ca_signer,
             &key_pair.public_key,
             Profile::Root,
             "My Subject",
+            3,
         )?;
         let certificate_string = certificate.to_pem()?;
 
