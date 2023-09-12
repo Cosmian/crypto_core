@@ -2,6 +2,7 @@ use pkcs8::{
     der::asn1::BitStringRef, spki, Document, EncodePrivateKey, EncodePublicKey, ObjectIdentifier,
     PrivateKeyInfo, SecretDocument,
 };
+use zeroize::Zeroizing;
 
 use super::key_pair::X25519Keypair;
 use crate::{RandomFixedSizeCBytes, X25519PublicKey, CURVE_25519_PRIVATE_KEY_LENGTH};

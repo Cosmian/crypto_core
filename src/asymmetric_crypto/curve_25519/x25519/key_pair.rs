@@ -1,6 +1,7 @@
-use crate::reexport::rand_core::CryptoRngCore;
-
-use crate::{CryptoCoreError, RandomFixedSizeCBytes, X25519PrivateKey, X25519PublicKey};
+use crate::{
+    reexport::rand_core::CryptoRngCore, CryptoCoreError, RandomFixedSizeCBytes, X25519PrivateKey,
+    X25519PublicKey,
+};
 
 /// An X25519 keypair which is compatible with the signature crate.
 #[derive(Clone, PartialEq, Eq, Debug)]
