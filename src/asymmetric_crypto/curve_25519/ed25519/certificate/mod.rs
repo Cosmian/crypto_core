@@ -78,12 +78,7 @@ impl Certificate {
                     )));
                 }
 
-                let ski = ski_list
-                    .first()
-                    .ok_or(CryptoCoreError::Certificate(format!(
-                        "Cannot get first extension {ID_CE_SUBJECT_KEY_IDENTIFIER:?}"
-                    )))?;
-                let skid = SubjectKeyIdentifier::from_der(ski.extn_value.as_bytes())?;
+                let skid = SubjectKeyIdentifier::from_der(ski_list[0].extn_value.as_bytes())?;
                 Ok(skid.0.into_bytes())
             }
             None => Err(CryptoCoreError::Certificate(
