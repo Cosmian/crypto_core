@@ -1,4 +1,4 @@
-use rand_core::CryptoRngCore;
+use crate::reexport::rand_core::CryptoRngCore;
 
 use crate::{CryptoCoreError, RandomFixedSizeCBytes, X25519PrivateKey, X25519PublicKey};
 
