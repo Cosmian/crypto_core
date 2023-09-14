@@ -5,12 +5,12 @@ use pkcs8::{
 use zeroize::Zeroizing;
 
 use super::key_pair::X25519Keypair;
-use crate::{RandomFixedSizeCBytes, X25519PublicKey, CURVE_25519_PRIVATE_KEY_LENGTH};
+use crate::{RandomFixedSizeCBytes, X25519PublicKey, CURVE_25519_SECRET_LENGTH};
 
 impl EncodePrivateKey for X25519Keypair {
     fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {
         // Serialize private key as nested OCTET STRING
-        let mut private_key = Zeroizing::new([0u8; 2 + CURVE_25519_PRIVATE_KEY_LENGTH]);
+        let mut private_key = Zeroizing::new([0u8; 2 + CURVE_25519_SECRET_LENGTH]);
         private_key[0] = 0x04;
         private_key[1] = 0x20;
         private_key[2..].copy_from_slice(self.private_key.as_bytes());
