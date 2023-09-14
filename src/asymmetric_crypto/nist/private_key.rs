@@ -91,9 +91,6 @@ where
             .try_into()?
         };
 
-        // let bytes =
-        //     pkcs8::EncodePrivateKey::to_pkcs8_encrypted_der(&self.secret_key, &mut
-        // rng, password)         .map(|d| d.to_bytes())?;
         Ok(doc.to_bytes())
     }
 

@@ -1,7 +1,8 @@
 use curve25519_dalek::{scalar::clamp_integer, MontgomeryPoint, Scalar};
 
-use super::X25519PrivateKey;
-use crate::{CBytes, CryptoCoreError, FixedSizeCBytes};
+use crate::{CBytes, CryptoCoreError, Ed25519PublicKey, FixedSizeCBytes};
+
+use super::private_key::X25519PrivateKey;
 
 /// Length of a serialized X25519 curve point in bytes.
 pub const X25519_CURVE_POINT_LENGTH: usize = 32;
@@ -40,6 +41,16 @@ impl X25519CurvePoint {
     #[must_use]
     pub fn dh(&self, rhs: &X25519PrivateKey) -> Self {
         Self(self.0 * Scalar::from_bytes_mod_order(clamp_integer(rhs.0)))
+    }
+
+    /// Convert an Ed25519 public key to a X25519 public key.
+    ///
+    /// The corresponding private key of the Ed25519 keypair should be converted
+    /// to a X25519 private key.
+    /// See [`X25519PrivateKey::from_ed25519_private_key`] for more details.
+    #[must_use]
+    pub fn from_ed25519_public_key(ed25519_public_key: &Ed25519PublicKey) -> Self {
+        Self(ed25519_public_key.0.to_montgomery())
     }
 }
 

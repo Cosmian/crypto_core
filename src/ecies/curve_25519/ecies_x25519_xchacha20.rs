@@ -7,7 +7,7 @@ use crate::{
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{Dem, DemStream, Instantiable, Nonce, SymmetricKey, XChaCha20Poly1305},
     CryptoCoreError, Ecies, EciesStream, X25519PrivateKey, X25519PublicKey,
-    X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
+    CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
@@ -101,7 +101,7 @@ impl EciesX25519XChaCha20 {
     }
 }
 
-impl Ecies<X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH, X25519PublicKey>
+impl Ecies<CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH, X25519PublicKey>
     for EciesX25519XChaCha20
 {
     const ENCRYPTION_OVERHEAD: usize = X25519_PUBLIC_KEY_LENGTH + XChaCha20Poly1305::MAC_LENGTH;
@@ -151,7 +151,7 @@ impl Ecies<X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH, X25519PublicKey>
 
 impl
     EciesStream<
-        X25519_PRIVATE_KEY_LENGTH,
+        CURVE_25519_SECRET_LENGTH,
         X25519_PUBLIC_KEY_LENGTH,
         X25519PublicKey,
         XChaCha20Poly1305Lib,

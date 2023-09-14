@@ -7,10 +7,7 @@ use pkcs8::{
     Document, EncodePrivateKey, EncodePublicKey, ObjectIdentifier, PrivateKeyInfo, SecretDocument,
 };
 
-use crate::{
-    Ed25519Keypair, Ed25519PublicKey, Ed25519Signature, RandomFixedSizeCBytes,
-    CURVE_25519_SECRET_LENGTH,
-};
+use crate::{Ed25519Keypair, Ed25519PublicKey, Ed25519Signature, CURVE_25519_SECRET_LENGTH};
 
 /// Algorithm [`ObjectIdentifier`] for the Ed25519 digital signature algorithm
 /// (`id-Ed25519`).
