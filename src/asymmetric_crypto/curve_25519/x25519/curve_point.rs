@@ -1,8 +1,7 @@
 use curve25519_dalek::{scalar::clamp_integer, MontgomeryPoint, Scalar};
 
-use crate::{CBytes, CryptoCoreError, Ed25519PublicKey, FixedSizeCBytes};
-
 use super::private_key::X25519PrivateKey;
+use crate::{CBytes, CryptoCoreError, Ed25519PublicKey, FixedSizeCBytes};
 
 /// Length of a serialized X25519 curve point in bytes.
 pub const X25519_CURVE_POINT_LENGTH: usize = 32;
