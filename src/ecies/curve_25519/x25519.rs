@@ -1,12 +1,12 @@
 use crate::{
     ecies::traits::{EciesEcPrivateKey, EciesEcPublicKey, EciesEcSharedPoint},
     FixedSizeCBytes, RandomFixedSizeCBytes, X25519CurvePoint, X25519PrivateKey, X25519PublicKey,
-    X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
+    CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
-impl EciesEcPrivateKey<X25519_PRIVATE_KEY_LENGTH> for X25519PrivateKey {
+impl EciesEcPrivateKey<CURVE_25519_SECRET_LENGTH> for X25519PrivateKey {
     fn new<R: rand_core::CryptoRngCore>(rng: &mut R) -> Self {
-        <Self as RandomFixedSizeCBytes<{ X25519_PRIVATE_KEY_LENGTH }>>::new(rng)
+        <Self as RandomFixedSizeCBytes<{ CURVE_25519_SECRET_LENGTH }>>::new(rng)
     }
 }
 impl EciesEcSharedPoint for X25519PublicKey {
@@ -14,7 +14,7 @@ impl EciesEcSharedPoint for X25519PublicKey {
         <Self as FixedSizeCBytes<X25519_PUBLIC_KEY_LENGTH>>::to_bytes(self).to_vec()
     }
 }
-impl EciesEcPublicKey<X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH> for X25519CurvePoint {
+impl EciesEcPublicKey<CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH> for X25519CurvePoint {
     type PrivateKey = X25519PrivateKey;
     type SharedPoint = Self;
 

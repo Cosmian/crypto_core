@@ -50,10 +50,10 @@ fn get_ephemeral_key<
 }
 
 impl<
-    const PRIVATE_KEY_LENGTH: usize,
-    const PUBLIC_KEY_LENGTH: usize,
-    PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
-> EciesAes128<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
+        const PRIVATE_KEY_LENGTH: usize,
+        const PUBLIC_KEY_LENGTH: usize,
+        PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
+    > EciesAes128<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
 {
     fn generate_keys_and_nonce<R: CryptoRngCore>(
         rng: &mut R,
@@ -98,7 +98,7 @@ impl<
 
     fn recover_key_and_nonce(
         recipient_sk: &PublicKey::PrivateKey,
-        ephemeral_public_key: &PublicKey,
+        ephemeral_pk: &PublicKey,
     ) -> Result<
         (
             SymmetricKey<{ Aes128Gcm::KEY_LENGTH }>,
@@ -107,7 +107,7 @@ impl<
         CryptoCoreError,
     > {
         // Calculate the shared secret point (Px, Py) = P = R.y = r.G.y = r.Y
-        let shared_point = ephemeral_public_key.dh(recipient_sk);
+        let shared_point = ephemeral_pk.dh(recipient_sk);
 
         // Generate the 128-bit symmetric encryption key k, derived using SHAKE256 XOF
         // such as: k = kdf(S || S1) where:
@@ -128,20 +128,17 @@ impl<
             PRIVATE_KEY_LENGTH,
             PUBLIC_KEY_LENGTH,
             PublicKey,
-        >(
-            ephemeral_public_key,
-            &PublicKey::from_private_key(recipient_sk),
-        );
+        >(ephemeral_pk, &PublicKey::from_private_key(recipient_sk));
 
         Ok((key, nonce))
     }
 }
 
 impl<
-    const PRIVATE_KEY_LENGTH: usize,
-    const PUBLIC_KEY_LENGTH: usize,
-    PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
-> Ecies<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
+        const PRIVATE_KEY_LENGTH: usize,
+        const PUBLIC_KEY_LENGTH: usize,
+        PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
+    > Ecies<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
     for EciesAes128<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
 {
     const ENCRYPTION_OVERHEAD: usize = PUBLIC_KEY_LENGTH + Aes128Gcm::MAC_LENGTH;
@@ -193,10 +190,10 @@ impl<
 }
 
 impl<
-    const PRIVATE_KEY_LENGTH: usize,
-    const PUBLIC_KEY_LENGTH: usize,
-    PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
-> EciesStream<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey, Aes128GcmLib>
+        const PRIVATE_KEY_LENGTH: usize,
+        const PUBLIC_KEY_LENGTH: usize,
+        PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
+    > EciesStream<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey, Aes128GcmLib>
     for EciesAes128<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
 {
     fn get_dem_encryptor_be32<R: CryptoRngCore>(
@@ -257,10 +254,10 @@ mod tests {
         reexport::rand_core::SeedableRng,
         Aes128Gcm, CryptoCoreError, CsRng, Ecies, EciesAes128, EciesStream, P192PublicKey,
         P224PublicKey, P256PublicKey, P384PublicKey, R25519PublicKey, X25519PublicKey,
-        P192_PRIVATE_KEY_LENGTH, P192_PUBLIC_KEY_LENGTH, P224_PRIVATE_KEY_LENGTH,
-        P224_PUBLIC_KEY_LENGTH, P256_PRIVATE_KEY_LENGTH, P256_PUBLIC_KEY_LENGTH,
-        P384_PRIVATE_KEY_LENGTH, P384_PUBLIC_KEY_LENGTH, R25519_PRIVATE_KEY_LENGTH,
-        R25519_PUBLIC_KEY_LENGTH, X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
+        CURVE_25519_SECRET_LENGTH, P192_PRIVATE_KEY_LENGTH, P192_PUBLIC_KEY_LENGTH,
+        P224_PRIVATE_KEY_LENGTH, P224_PUBLIC_KEY_LENGTH, P256_PRIVATE_KEY_LENGTH,
+        P256_PUBLIC_KEY_LENGTH, P384_PRIVATE_KEY_LENGTH, P384_PUBLIC_KEY_LENGTH,
+        R25519_PRIVATE_KEY_LENGTH, R25519_PUBLIC_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
     };
 
     fn test_encrypt_decrypt<
@@ -545,7 +542,7 @@ mod tests {
             R25519PublicKey,
         >();
         all_ecies_tests::<
-            { X25519_PRIVATE_KEY_LENGTH },
+            { CURVE_25519_SECRET_LENGTH },
             { X25519_PUBLIC_KEY_LENGTH },
             X25519PublicKey,
         >();

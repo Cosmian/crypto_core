@@ -1,9 +1,8 @@
 use crypto_box::{PublicKey, SecretKey};
 
 use crate::{
-    asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
-    reexport::rand_core::CryptoRngCore,
-    Ecies, X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
+    asymmetric_crypto::X25519PublicKey, reexport::rand_core::CryptoRngCore, Ecies,
+    X25519PrivateKey, CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
 /// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption
@@ -31,7 +30,6 @@ use crate::{
 /// use cosmian_crypto_core::{
 ///     Ecies, EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey,
 ///     CsRng, RandomFixedSizeCBytes,
-///     reexport::rand_core::SeedableRng,
 /// };
 ///
 /// // Instantiate a cryptographic random number generator
@@ -63,7 +61,7 @@ use crate::{
 /// generator.
 pub struct EciesSalsaSealBox {}
 
-impl Ecies<X25519_PRIVATE_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH, X25519PublicKey>
+impl Ecies<CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH, X25519PublicKey>
     for EciesSalsaSealBox
 {
     const ENCRYPTION_OVERHEAD: usize = crypto_box::SEALBYTES;
@@ -111,9 +109,7 @@ mod tests {
 
     use crate::{
         asymmetric_crypto::{Ed25519PrivateKey, X25519PrivateKey, X25519PublicKey},
-        ecies::ecies_salsa_sealed_box::EciesSalsaSealBox,
-        reexport::rand_core::SeedableRng,
-        CsRng, Ecies, Ed25519PublicKey, FixedSizeCBytes, RandomFixedSizeCBytes,
+        CsRng, Ecies, EciesSalsaSealBox, Ed25519PublicKey,
     };
 
     #[test]

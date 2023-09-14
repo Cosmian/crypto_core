@@ -1,4 +1,4 @@
-//! Reexports the RustCrypto Ed25519 impl
+//! Reexports the `RustCrypto` Ed25519 impl
 
 use std::ops::Deref;
 
