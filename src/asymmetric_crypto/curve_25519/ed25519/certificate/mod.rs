@@ -98,6 +98,7 @@ pub fn build_certificate_profile(
         issuer: Name::from_str(&format!("CN={ca}"))?,
         enable_key_agreement,
         enable_key_encipherment,
+        include_subject_key_identifier: true,
     };
     Ok(profile)
 }

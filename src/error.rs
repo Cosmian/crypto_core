@@ -76,7 +76,7 @@ impl Display for CryptoCoreError {
             #[cfg(any(feature = "certificate", feature = "nist_curves"))]
             Self::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
             #[cfg(any(feature = "certificate", feature = "nist_curves"))]
-            Self::Certificate(err) => write!(f, "when build certificate, {err}"),
+            Self::Certificate(err) => write!(f, "when building certificate, {err}"),
             Self::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
