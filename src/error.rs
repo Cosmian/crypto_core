@@ -34,7 +34,7 @@ pub enum CryptoCoreError {
     Pkcs8Error(String),
     #[cfg(feature = "ser")]
     ReadLeb128Error(leb128::read::Error),
-    #[cfg(feature = "enable-rsa")]
+    #[cfg(feature = "rsa")]
     RsaError(String),
     SerializationIoError {
         bytes_len: usize,
@@ -106,7 +106,7 @@ impl Display for CryptoCoreError {
             CryptoCoreError::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
             #[cfg(feature = "ser")]
             CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
-            #[cfg(feature = "enable-rsa")]
+            #[cfg(feature = "rsa")]
             CryptoCoreError::RsaError(e) => write!(f, "RSA error: {e}"),
             CryptoCoreError::SerializationIoError { bytes_len, error } => {
                 write!(f, "when writing {bytes_len} bytes, {error}")
@@ -174,5 +174,12 @@ impl From<x509_cert::builder::Error> for CryptoCoreError {
 impl From<elliptic_curve::Error> for CryptoCoreError {
     fn from(e: elliptic_curve::Error) -> Self {
         Self::Certificate(e.to_string())
+    }
+}
+
+#[cfg(feature = "rsa")]
+impl From<rsa::errors::Error> for CryptoCoreError {
+    fn from(e: rsa::errors::Error) -> Self {
+        CryptoCoreError::RsaError(e.to_string())
     }
 }

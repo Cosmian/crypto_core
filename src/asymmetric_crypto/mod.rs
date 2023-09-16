@@ -1,9 +1,9 @@
 mod curves;
 pub use curves::*;
 
-#[cfg(feature = "enable-rsa")]
+#[cfg(feature = "rsa")]
 mod rsa;
-#[cfg(feature = "enable-rsa")]
+#[cfg(feature = "rsa")]
 pub use rsa::*;
 
 pub trait PublicKey {}

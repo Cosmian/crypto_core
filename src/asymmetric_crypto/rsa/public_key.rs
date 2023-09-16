@@ -1,5 +1,6 @@
-use crate::{key_wrap, Aes128Gcm, Aes256Gcm, CryptoCoreError, RandomFixedSizeCBytes, SymmetricKey};
-use crate::{KeyWrappingAlgorithm, PublicKey};
+use crate::{key_wrap, CryptoCoreError, RandomFixedSizeCBytes, SymmetricKey};
+use crate::{PublicKey, RsaKeyWrappingAlgorithm};
+use digest::{Digest, DynDigest};
 use rand_chacha::rand_core::CryptoRngCore;
 use zeroize::Zeroizing;
 
@@ -10,23 +11,31 @@ impl RsaPublicKey {
     pub fn wrap_key<R: CryptoRngCore>(
         &self,
         rng: &mut R,
-        wrapping_algorithm: KeyWrappingAlgorithm,
+        wrapping_algorithm: RsaKeyWrappingAlgorithm,
         key_material: &Zeroizing<Vec<u8>>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
         Ok(match wrapping_algorithm {
-            KeyWrappingAlgorithm::Pkcs1v1_5 => self
-                .0
-                .encrypt(&mut *rng, rsa::Pkcs1v15Encrypt, key_material)?
-                .to_vec(),
-            KeyWrappingAlgorithm::Oaep => {
-                let padding = rsa::Oaep::new::<sha2::Sha256>();
-                self.0.encrypt(&mut *rng, padding, key_material)?.to_vec()
+            RsaKeyWrappingAlgorithm::Pkcs1v1_5 => {
+                self.0
+                    .encrypt(&mut *rng, rsa::Pkcs1v15Encrypt, key_material)?
             }
-            KeyWrappingAlgorithm::Aes128KeyWrap => {
-                ckm_rsa_aes_key_wrap::<{ Aes128Gcm::KEY_LENGTH }, R>(rng, self, key_material)?
+            RsaKeyWrappingAlgorithm::OaepSha256 => {
+                ckm_rsa_pkcs_oaep::<sha2::Sha256, R>(rng, self, key_material)?
             }
-            KeyWrappingAlgorithm::Aes256KeyWrap => {
-                ckm_rsa_aes_key_wrap::<{ Aes256Gcm::KEY_LENGTH }, R>(rng, self, key_material)?
+            RsaKeyWrappingAlgorithm::OaepSha1 => {
+                ckm_rsa_pkcs_oaep::<sha1::Sha1, R>(rng, self, key_material)?
+            }
+            RsaKeyWrappingAlgorithm::OaepSha3 => {
+                ckm_rsa_pkcs_oaep::<sha3::Sha3_256, R>(rng, self, key_material)?
+            }
+            RsaKeyWrappingAlgorithm::Aes256Sha256 => {
+                ckm_rsa_aes_key_wrap::<sha2::Sha256, 128, R>(rng, self, key_material)?
+            }
+            RsaKeyWrappingAlgorithm::Aes256Sha1 => {
+                ckm_rsa_aes_key_wrap::<sha1::Sha1, 256, R>(rng, self, key_material)?
+            }
+            RsaKeyWrappingAlgorithm::Aes256Sha3 => {
+                ckm_rsa_aes_key_wrap::<sha3::Sha3_256, 256, R>(rng, self, key_material)?
             }
         })
     }
@@ -40,9 +49,24 @@ impl From<rsa::RsaPublicKey> for RsaPublicKey {
     }
 }
 
+/// Implementation of PKCS#1 RSA OAEP (CKM_RSA_PKCS_OAEP)
+/// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061137]
+fn ckm_rsa_pkcs_oaep<H: 'static + Digest + DynDigest + Send + Sync, R: CryptoRngCore>(
+    rng: &mut R,
+    rsa_public_key: &RsaPublicKey,
+    key_material: &Zeroizing<Vec<u8>>,
+) -> Result<Vec<u8>, CryptoCoreError> {
+    let padding = rsa::Oaep::new::<H>();
+    Ok(rsa_public_key.0.encrypt(&mut *rng, padding, key_material)?)
+}
+
 /// Implementation of PKCS#11 RSA AES KEY WRAP (CKM_RSA_AES_KEY_WRAP)
 /// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061152]
-fn ckm_rsa_aes_key_wrap<const AES_KEY_LENGTH: usize, R: CryptoRngCore>(
+fn ckm_rsa_aes_key_wrap<
+    H: 'static + Digest + DynDigest + Send + Sync,
+    const AES_KEY_LENGTH: usize,
+    R: CryptoRngCore,
+>(
     rng: &mut R,
     rsa_public_key: &RsaPublicKey,
     key_material: &Zeroizing<Vec<u8>>,
@@ -54,11 +78,8 @@ fn ckm_rsa_aes_key_wrap<const AES_KEY_LENGTH: usize, R: CryptoRngCore>(
     let mut ciphertext = key_wrap(key_material, &key_encryption_key)?;
     //Wraps the AES key with the wrapping RSA key using CKM_RSA_PKCS_OAEP with parameters of OAEPParams.
     // Zeroizes the temporary AES key (automatically done by the conversion into())
-    let mut wrapped_kwk = rsa_public_key.wrap_key(
-        rng,
-        KeyWrappingAlgorithm::Oaep,
-        &(key_encryption_key.into()),
-    )?;
+    let mut wrapped_kwk =
+        ckm_rsa_pkcs_oaep::<H, R>(rng, rsa_public_key, &key_encryption_key.into())?;
     // Concatenates two wrapped keys and outputs the concatenated blob.
     // The first is the wrapped AES key, and the second is the wrapped target key.
     wrapped_kwk.append(&mut ciphertext);

@@ -32,14 +32,14 @@ default = [
     "curve25519",
     "certificate",
     "nist_curves",
-    "enable-rsa",
+    "rsa",
     "ser",
     "blake",
     "sha3",
     "rfc5649",
 ]
 ecies = ["aead", "crypto_box"]
-enable-rsa = ["rsa", "sha2"]
+rsa = ["digest", "dep:rsa", "sha1", "sha2", "dep:sha3"]
 nist_curves = ["p384", "p256", "p224", "p192", "elliptic-curve", "pkcs8"]
 rfc5649 = ["aes", "chacha"]
 ser = ["leb128"]
@@ -53,6 +53,7 @@ chacha20 = { version = "0.9", optional = true }
 chacha20poly1305 = { version = "0.10", optional = true }
 crypto_box = { version = "0.9.1", features = ["seal"], optional = true }
 curve25519-dalek = { version = "4.1.0", optional = true }
+digest = { version = "0.10", optional = true }
 ed25519-dalek = { version = "2.0.0", optional = true, features = [
     "default",
     "hazmat",
@@ -78,7 +79,9 @@ pkcs8 = { version = "0.10", features = [
 rand_chacha = "0.3"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 rsa = { version = "0.9", optional = true }
+sha1 = { version = "0.10", optional = true }
 sha2 = { version = "0.10", optional = true }
+sha3 = { version = "0.10", optional = true }
 signature = { version = "2.1", optional = true }
 tiny-keccak = { version = "2.0.2", features = ["shake"], optional = true }
 uuid = { version = "1.4", features = ["v4"], optional = true }

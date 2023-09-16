@@ -1,7 +1,5 @@
-use crate::{
-    Aes128Gcm, Aes256Gcm, CryptoCoreError, KeyLength, KeyWrappingAlgorithm, PrivateKey,
-    RsaPublicKey, SymmetricKey,
-};
+use crate::{CryptoCoreError, PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPublicKey};
+use digest::{Digest, DynDigest};
 use rand_chacha::rand_core::CryptoRngCore;
 use zeroize::{ZeroizeOnDrop, Zeroizing};
 
@@ -12,7 +10,7 @@ impl RsaPrivateKey {
     /// Generate a random private key
     pub fn new<R: CryptoRngCore>(
         rng: &mut R,
-        key_length: KeyLength,
+        key_length: RsaKeyLength,
     ) -> Result<Self, CryptoCoreError> {
         Ok(Self(rsa::RsaPrivateKey::new(
             rng,
@@ -23,24 +21,36 @@ impl RsaPrivateKey {
     /// Unwrap a key
     pub fn unwrap_key(
         &self,
-        wrapping_algorithm: KeyWrappingAlgorithm,
+        wrapping_algorithm: RsaKeyWrappingAlgorithm,
         encrypted_key_material: &[u8],
     ) -> Result<Zeroizing<Vec<u8>>, CryptoCoreError> {
         Ok(match wrapping_algorithm {
-            KeyWrappingAlgorithm::Pkcs1v1_5 => Zeroizing::from(
+            RsaKeyWrappingAlgorithm::Pkcs1v1_5 => Zeroizing::from(
                 self.0
                     .decrypt(rsa::Pkcs1v15Encrypt, encrypted_key_material)?,
             ),
-            KeyWrappingAlgorithm::Oaep => {
-                let padding = rsa::Oaep::new::<sha2::Sha256>();
-                Zeroizing::from(self.0.decrypt(padding, encrypted_key_material)?)
+            RsaKeyWrappingAlgorithm::OaepSha256 => {
+                ckm_rsa_pkcs_oaep::<sha2::Sha256>(self, encrypted_key_material)?
             }
-            KeyWrappingAlgorithm::Aes128KeyWrap => {
-                ckm_rsa_aes_key_unwrap::<128>(self, encrypted_key_material)?
+            RsaKeyWrappingAlgorithm::OaepSha1 => {
+                ckm_rsa_pkcs_oaep::<sha1::Sha1>(self, encrypted_key_material)?
             }
-            KeyWrappingAlgorithm::Aes256KeyWrap => {
-                ckm_rsa_aes_key_unwrap::<256>(self, encrypted_key_material)?
+            RsaKeyWrappingAlgorithm::OaepSha3 => {
+                ckm_rsa_pkcs_oaep::<sha3::Sha3_256>(self, encrypted_key_material)?
             }
+            RsaKeyWrappingAlgorithm::Aes256Sha256 => todo!(),
+            RsaKeyWrappingAlgorithm::Aes256Sha1 => todo!(),
+            RsaKeyWrappingAlgorithm::Aes256Sha3 => todo!(),
+            // KeyWrappingAlgorithm::Oaep => {
+            //     let padding = rsa::Oaep::new::<sha2::Sha256>();
+            //     Zeroizing::from(self.0.decrypt(padding, encrypted_key_material)?)
+            // }
+            // KeyWrappingAlgorithm::Aes128KeyWrap => {
+            //     ckm_rsa_aes_key_unwrap::<128>(self, encrypted_key_material)?
+            // }
+            // KeyWrappingAlgorithm::Aes256Sha256KeyWrap => {
+            //     ckm_rsa_aes_key_unwrap::<256>(self, encrypted_key_material)?
+            // }
         })
     }
 }
@@ -59,8 +69,22 @@ impl From<rsa::RsaPrivateKey> for RsaPrivateKey {
     }
 }
 
+/// Implementation of PKCS#1 RSA OAEP (CKM_RSA_PKCS_OAEP)
+/// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061137]
+fn ckm_rsa_pkcs_oaep<H: 'static + Digest + DynDigest + Send + Sync>(
+    rsa_private_key: &RsaPrivateKey,
+    encrypted_key_material: &[u8],
+) -> Result<Zeroizing<Vec<u8>>, CryptoCoreError> {
+    let padding = rsa::Oaep::new::<H>();
+    Ok(Zeroizing::from(
+        rsa_private_key.0.decrypt(padding, encrypted_key_material)?,
+    ))
+}
+
 /// Implementation of PKCS#11 RSA AES KEY WRAP (CKM_RSA_AES_KEY_WRAP)
 /// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061152]
+///
+/// Also check [https://cloud.google.com/kms/docs/key-wrapping?hl=fr]
 fn ckm_rsa_aes_key_unwrap<const AES_KEY_LENGTH: usize>(
     rsa_private_key: &RsaPrivateKey,
     ciphertext: &[u8],
