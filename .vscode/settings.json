@@ -20,6 +20,7 @@
     "libsodium",
     "montgomery",
     "nist",
+    "OAEP",
     "openssl",
     "pkcs",
     "sealbox",
@@ -27,6 +28,7 @@
     "xchacha",
     "zeroize",
     "zeroized",
+    "Zeroizes",
     "Zeroizing"
   ]
 }

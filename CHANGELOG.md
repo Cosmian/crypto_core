@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.3.0] - 2023-09-26
+
+### Features
+
+- Add support for RSA
+
+### Fixed
+
+- Fixed export of Curve25519Secret
+
 ## [9.2.1] - 2023-09-26
 
 ### Features

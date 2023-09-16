@@ -1,9 +1,6 @@
 use sha2::{Digest, Sha512};
 
-use crate::{
-    asymmetric_crypto::curve_25519::curve_secret::Curve25519Secret, Ed25519PrivateKey,
-    CURVE_25519_SECRET_LENGTH,
-};
+use crate::{Curve25519Secret, Ed25519PrivateKey, CURVE_25519_SECRET_LENGTH};
 
 pub type X25519PrivateKey = Curve25519Secret;
 
