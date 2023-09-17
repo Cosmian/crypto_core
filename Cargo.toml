@@ -39,7 +39,7 @@ default = [
     "rfc5649",
 ]
 ecies = ["aead", "crypto_box"]
-rsa = ["digest", "dep:rsa", "sha1", "sha2", "dep:sha3"]
+rsa = ["digest", "dep:rsa", "sha1", "sha2", "dep:sha3", "pkcs8"]
 nist_curves = ["p384", "p256", "p224", "p192", "elliptic-curve", "pkcs8"]
 rfc5649 = ["aes", "chacha"]
 ser = ["leb128"]

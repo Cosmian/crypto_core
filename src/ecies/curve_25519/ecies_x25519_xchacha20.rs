@@ -296,9 +296,7 @@ mod tests {
             &ciphertext,
             Some(&b"Corrupted authenticated data"[..]),
         );
-
-        println!("{not_decrypted:?}");
-
+        
         assert!(matches!(
             not_decrypted,
             Err(CryptoCoreError::DecryptionError)

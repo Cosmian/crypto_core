@@ -12,6 +12,7 @@ mod tests;
 /// To be compliant with FIPS 186-5 (Digital Signature standards),
 /// the length of the modulus must be greater than 2048 bits.
 /// [https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RsaKeyLength {
     Modulus2048 = 2048,
     Modulus3072 = 3072,

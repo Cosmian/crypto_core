@@ -1,12 +1,23 @@
-use crate::{key_wrap, CryptoCoreError, RandomFixedSizeCBytes, SymmetricKey};
+use crate::{key_wrap, CryptoCoreError, RandomFixedSizeCBytes, RsaKeyLength, SymmetricKey};
 use crate::{PublicKey, RsaKeyWrappingAlgorithm};
 use digest::{Digest, DynDigest};
 use rand_chacha::rand_core::CryptoRngCore;
+use rsa::traits::PublicKeyParts;
 use zeroize::Zeroizing;
 
 pub struct RsaPublicKey(pub(super) rsa::RsaPublicKey);
 
 impl RsaPublicKey {
+    /// Get the key length which is the modulus size in bits
+    pub fn key_length(&self) -> RsaKeyLength {
+        match self.0.n().bits() {
+            2048 => RsaKeyLength::Modulus2048,
+            3072 => RsaKeyLength::Modulus3072,
+            4096 => RsaKeyLength::Modulus4096,
+            _ => panic!("Invalid RSA key length; this should never happen"),
+        }
+    }
+
     /// Wrap a key using PKCS #1 v1.5 RS (also denoted CKM_RSA_PKCS)
     pub fn wrap_key<R: CryptoRngCore>(
         &self,
@@ -29,13 +40,13 @@ impl RsaPublicKey {
                 ckm_rsa_pkcs_oaep::<sha3::Sha3_256, R>(rng, self, key_material)?
             }
             RsaKeyWrappingAlgorithm::Aes256Sha256 => {
-                ckm_rsa_aes_key_wrap::<sha2::Sha256, 128, R>(rng, self, key_material)?
+                ckm_rsa_aes_key_wrap::<sha2::Sha256, { 128 / 8 }, R>(rng, self, key_material)?
             }
             RsaKeyWrappingAlgorithm::Aes256Sha1 => {
-                ckm_rsa_aes_key_wrap::<sha1::Sha1, 256, R>(rng, self, key_material)?
+                ckm_rsa_aes_key_wrap::<sha1::Sha1, { 256 / 8 }, R>(rng, self, key_material)?
             }
             RsaKeyWrappingAlgorithm::Aes256Sha3 => {
-                ckm_rsa_aes_key_wrap::<sha3::Sha3_256, 256, R>(rng, self, key_material)?
+                ckm_rsa_aes_key_wrap::<sha3::Sha3_256, { 256 / 8 }, R>(rng, self, key_material)?
             }
         })
     }
@@ -62,6 +73,8 @@ fn ckm_rsa_pkcs_oaep<H: 'static + Digest + DynDigest + Send + Sync, R: CryptoRng
 
 /// Implementation of PKCS#11 RSA AES KEY WRAP (CKM_RSA_AES_KEY_WRAP)
 /// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061152]
+///
+/// The AES_KEY_LENGTH is the length of the AES key in bytes.
 fn ckm_rsa_aes_key_wrap<
     H: 'static + Digest + DynDigest + Send + Sync,
     const AES_KEY_LENGTH: usize,

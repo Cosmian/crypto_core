@@ -62,6 +62,7 @@ where
 
     /// Encode the public key as a `X.509 SubjectPublicKeyInfo` (SPKI) ASN.1 DER
     /// byte array.
+    #[deprecated = "use the methods on thw `Pkcs8PublicKey` trait instead"]
     pub fn try_to_pkcs8(&self) -> Result<Vec<u8>, CryptoCoreError> {
         let bytes =
             pkcs8::EncodePublicKey::to_public_key_der(&self.0).map(pkcs8::Document::into_vec)?;
@@ -70,6 +71,7 @@ where
 
     /// Decode the public key from a `X.509 SubjectPublicKeyInfo` (SPKI) ASN.1
     /// DER byte array.
+    #[deprecated = "use the methods on thw `Pkcs8PublicKey` trait instead"]
     pub fn try_from_pkcs8(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         let key = pkcs8::DecodePublicKey::from_public_key_der(bytes)?;
         Ok(Self(key))
@@ -156,6 +158,30 @@ where
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         let bytes = de.read_array::<LENGTH>()?;
         Self::try_from_bytes(bytes)
+    }
+}
+
+impl<C, const LENGTH: usize> pkcs8::EncodePublicKey for NistPublicKey<C, LENGTH>
+where
+    C: Curve + CurveArithmetic + pkcs8::AssociatedOid,
+    <C as Curve>::FieldBytesSize: sec1::ModulusSize,
+    <C as CurveArithmetic>::AffinePoint: sec1::ToEncodedPoint<C>,
+    <C as CurveArithmetic>::AffinePoint: sec1::FromEncodedPoint<C>,
+{
+    fn to_public_key_der(&self) -> pkcs8::spki::Result<pkcs8::Document> {
+        self.0.to_public_key_der()
+    }
+}
+
+impl<C, const LENGTH: usize> pkcs8::DecodePublicKey for NistPublicKey<C, LENGTH>
+where
+    C: Curve + CurveArithmetic + pkcs8::AssociatedOid,
+    <C as Curve>::FieldBytesSize: sec1::ModulusSize,
+    <C as CurveArithmetic>::AffinePoint: sec1::ToEncodedPoint<C>,
+    <C as CurveArithmetic>::AffinePoint: sec1::FromEncodedPoint<C>,
+{
+    fn from_public_key_der(bytes: &[u8]) -> pkcs8::spki::Result<Self> {
+        Ok(Self(PublicKey::from_public_key_der(bytes)?))
     }
 }
 
