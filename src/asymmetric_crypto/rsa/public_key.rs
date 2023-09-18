@@ -5,6 +5,7 @@ use rand_chacha::rand_core::CryptoRngCore;
 use rsa::traits::PublicKeyParts;
 use zeroize::Zeroizing;
 
+#[derive(Debug, PartialEq)]
 pub struct RsaPublicKey(pub(super) rsa::RsaPublicKey);
 
 impl RsaPublicKey {
@@ -97,4 +98,16 @@ fn ckm_rsa_aes_key_wrap<
     // The first is the wrapped AES key, and the second is the wrapped target key.
     wrapped_kwk.append(&mut ciphertext);
     Ok(wrapped_kwk)
+}
+
+impl pkcs8::EncodePublicKey for RsaPublicKey {
+    fn to_public_key_der(&self) -> pkcs8::spki::Result<pkcs8::Document> {
+        self.0.to_public_key_der()
+    }
+}
+
+impl pkcs8::DecodePublicKey for RsaPublicKey {
+    fn from_public_key_der(bytes: &[u8]) -> pkcs8::spki::Result<Self> {
+        Ok(Self(rsa::RsaPublicKey::from_public_key_der(bytes)?))
+    }
 }

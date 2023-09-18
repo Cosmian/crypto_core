@@ -1,8 +1,11 @@
 use crate::{
-    key_unwrap, CryptoCoreError, PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPublicKey,
+    key_unwrap, pkcs8_fix, CryptoCoreError, PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm,
+    RsaPublicKey,
 };
 use digest::{Digest, DynDigest};
+use pkcs8::SecretDocument;
 use rand_chacha::rand_core::CryptoRngCore;
+use rand_core::RngCore;
 use rsa::traits::PublicKeyParts;
 use zeroize::{ZeroizeOnDrop, Zeroizing};
 
@@ -112,4 +115,24 @@ fn ckm_rsa_aes_key_unwrap<H: 'static + Digest + DynDigest + Send + Sync>(
         &ciphertext[encapsulation_bytes_len..],
         &aes_key,
     )?))
+}
+
+impl pkcs8::EncodePrivateKey for RsaPrivateKey {
+    fn to_pkcs8_der(&self) -> pkcs8::Result<SecretDocument> {
+        self.0.to_pkcs8_der()
+    }
+
+    fn to_pkcs8_encrypted_der(
+        &self,
+        rng: impl rand_core::CryptoRng + RngCore,
+        password: impl AsRef<[u8]>,
+    ) -> pkcs8::Result<SecretDocument> {
+        pkcs8_fix::to_pkcs8_encrypted_der(&self.to_pkcs8_der()?, rng, password)
+    }
+}
+
+impl pkcs8::DecodePrivateKey for RsaPrivateKey {
+    fn from_pkcs8_der(bytes: &[u8]) -> pkcs8::Result<Self> {
+        Ok(Self(rsa::RsaPrivateKey::from_pkcs8_der(bytes)?))
+    }
 }
