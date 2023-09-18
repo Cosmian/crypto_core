@@ -300,7 +300,7 @@ mod tests {
     #[cfg(feature = "curve25519")]
     #[test]
     fn test_r25519_serialization() -> Result<(), CryptoCoreError> {
-        use crate::{asymmetric_crypto::R25519PrivateKey, RandomFixedSizeCBytes};
+        use crate::asymmetric_crypto::R25519PrivateKey;
 
         let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
         let serialized_key = key.serialize()?;

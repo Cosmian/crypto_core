@@ -19,6 +19,8 @@ pub enum CryptoCoreError {
         given: usize,
         expected: usize,
     },
+    #[cfg(feature = "nist_curves")]
+    EllipticCurveError(String),
     EncryptionError,
     GenericDeserializationError(String),
     InvalidBytesLength(String, usize, Option<usize>),
@@ -26,9 +28,9 @@ pub enum CryptoCoreError {
         plaintext_len: usize,
         max: u64,
     },
-    #[cfg(feature = "certificate")]
+    #[cfg(any(feature = "certificate", feature = "nist_curves"))]
     Certificate(String),
-    #[cfg(feature = "certificate")]
+    #[cfg(any(feature = "certificate", feature = "nist_curves"))]
     Pkcs8Error(String),
     #[cfg(feature = "ser")]
     ReadLeb128Error(leb128::read::Error),
@@ -71,10 +73,10 @@ impl Display for CryptoCoreError {
                 "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
                  bytes"
             ),
-            #[cfg(feature = "certificate")]
+            #[cfg(any(feature = "certificate", feature = "nist_curves"))]
             Self::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
-            #[cfg(feature = "certificate")]
-            Self::Certificate(err) => write!(f, "when build certificate, {err}"),
+            #[cfg(any(feature = "certificate", feature = "nist_curves"))]
+            Self::Certificate(err) => write!(f, "when building certificate, {err}"),
             Self::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
@@ -106,6 +108,8 @@ impl Display for CryptoCoreError {
             Self::SignatureError(e) => write!(f, "error during signature: {e}"),
             Self::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
             Self::TryFromSliceError(e) => write!(f, "try from slice error: {e}"),
+            #[cfg(feature = "nist_curves")]
+            Self::EllipticCurveError(e) => write!(f, "NIST elliptic curve error: {e}"),
         }
     }
 }
@@ -131,16 +135,23 @@ impl From<pkcs8::der::Error> for CryptoCoreError {
         Self::Pkcs8Error(e.to_string())
     }
 }
-#[cfg(feature = "certificate")]
+#[cfg(any(feature = "certificate", feature = "nist_curves"))]
 impl From<pkcs8::spki::Error> for CryptoCoreError {
     fn from(e: pkcs8::spki::Error) -> Self {
         Self::Pkcs8Error(e.to_string())
     }
 }
-#[cfg(test)]
-#[cfg(feature = "certificate")]
+
+#[cfg(any(feature = "certificate", feature = "nist_curves"))]
 impl From<pkcs8::Error> for CryptoCoreError {
     fn from(e: pkcs8::Error) -> Self {
+        Self::Pkcs8Error(e.to_string())
+    }
+}
+
+#[cfg(any(feature = "certificate", feature = "nist_curves"))]
+impl From<pkcs8::pkcs5::Error> for CryptoCoreError {
+    fn from(e: pkcs8::pkcs5::Error) -> Self {
         Self::Pkcs8Error(e.to_string())
     }
 }
@@ -148,6 +159,13 @@ impl From<pkcs8::Error> for CryptoCoreError {
 #[cfg(feature = "certificate")]
 impl From<x509_cert::builder::Error> for CryptoCoreError {
     fn from(e: x509_cert::builder::Error) -> Self {
+        Self::Certificate(e.to_string())
+    }
+}
+
+#[cfg(feature = "nist_curves")]
+impl From<elliptic_curve::Error> for CryptoCoreError {
+    fn from(e: elliptic_curve::Error) -> Self {
         Self::Certificate(e.to_string())
     }
 }

@@ -1,9 +1,8 @@
 use crypto_box::{PublicKey, SecretKey};
 
 use crate::{
-    asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
-    reexport::rand_core::CryptoRngCore,
-    Ecies,
+    asymmetric_crypto::X25519PublicKey, reexport::rand_core::CryptoRngCore, Ecies,
+    X25519PrivateKey, CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
 /// The `EciesSalsaSealBox` struct provides Elliptic Curve Integrated Encryption
@@ -30,7 +29,7 @@ use crate::{
 /// use rand_chacha::rand_core::SeedableRng;
 /// use cosmian_crypto_core::{
 ///     Ecies, EciesSalsaSealBox, X25519PrivateKey, X25519PublicKey,
-///    CsRng, RandomFixedSizeCBytes
+///     CsRng, RandomFixedSizeCBytes,
 /// };
 ///
 /// // Instantiate a cryptographic random number generator
@@ -62,7 +61,9 @@ use crate::{
 /// generator.
 pub struct EciesSalsaSealBox {}
 
-impl Ecies<X25519PrivateKey, X25519PublicKey> for EciesSalsaSealBox {
+impl Ecies<CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH, X25519PublicKey>
+    for EciesSalsaSealBox
+{
     const ENCRYPTION_OVERHEAD: usize = crypto_box::SEALBYTES;
 
     /// Encrypts a message using the given public key
@@ -107,9 +108,8 @@ mod tests {
     use rand_chacha::rand_core::SeedableRng;
 
     use crate::{
-        asymmetric_crypto::{X25519PrivateKey, X25519PublicKey},
-        ecies::ecies_salsa_sealed_box::EciesSalsaSealBox,
-        CsRng, Ecies, FixedSizeCBytes, RandomFixedSizeCBytes,
+        asymmetric_crypto::{Ed25519PrivateKey, X25519PrivateKey, X25519PublicKey},
+        CsRng, Ecies, EciesSalsaSealBox, Ed25519PublicKey,
     };
 
     #[test]
@@ -131,6 +131,33 @@ mod tests {
         let plaintext_ = EciesSalsaSealBox::decrypt(&private_key, &ciphertext, None).unwrap();
         // assert
         assert_eq!(plaintext, &plaintext_[..]);
+    }
+
+    #[test]
+    fn ecies_salsa_seal_box_ed() {
+        let mut rng = CsRng::from_entropy();
+        // Generate an ED25519 key pair
+        let ed25519_sk = Ed25519PrivateKey::new(&mut rng);
+        let ed25519_pk = Ed25519PublicKey::from(&ed25519_sk);
+
+        // generate an X25519 public key from the ED25519 public key
+        let x25519_pk = X25519PublicKey::from_ed25519_public_key(&ed25519_pk);
+        // encrypt
+        let message = b"Hello World!";
+        let ciphertext = EciesSalsaSealBox::encrypt(&mut rng, &x25519_pk, message, None).unwrap();
+        // check the size is the expected size
+        assert_eq!(
+            ciphertext.len(),
+            message.len() + EciesSalsaSealBox::ENCRYPTION_OVERHEAD
+        );
+
+        // generate the corresponding X25519 private key from the ED25519 private key
+        let x25519_sk = X25519PrivateKey::from_ed25519_private_key(&ed25519_sk);
+
+        // decrypt
+        let plaintext = EciesSalsaSealBox::decrypt(&x25519_sk, &ciphertext, None).unwrap();
+        // assert
+        assert_eq!(message, &plaintext[..]);
     }
 
     #[test]
