@@ -53,10 +53,7 @@ impl Display for CryptoCoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             #[cfg(any(feature = "certificate", feature = "nist_curves"))]
-            CryptoCoreError::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
-            #[cfg(any(feature = "certificate", feature = "nist_curves"))]
             CryptoCoreError::Certificate(err) => write!(f, "when building certificate, {err}"),
-            CryptoCoreError::Certificate(err) => write!(f, "when build certificate, {err}"),
             CryptoCoreError::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
@@ -102,7 +99,7 @@ impl Display for CryptoCoreError {
                 "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
                  bytes"
             ),
-            #[cfg(any(feature = "certificate", feature = "nist_curves"))]
+            #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
             CryptoCoreError::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
             #[cfg(feature = "ser")]
             CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
