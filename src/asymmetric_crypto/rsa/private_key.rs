@@ -78,6 +78,16 @@ impl PrivateKey for RsaPrivateKey {
     }
 }
 
+/// Facades
+impl RsaPrivateKey {
+    /// Get the public key
+    ///
+    /// This is a facade for [`PrivateKey::public_key`]
+    pub fn public_key(&self) -> <RsaPrivateKey as crate::asymmetric_crypto::PrivateKey>::PublicKey {
+        PrivateKey::public_key(self)
+    }
+}
+
 impl ZeroizeOnDrop for RsaPrivateKey {}
 
 /// Implementation of PKCS#1 RSA OAEP (CKM_RSA_PKCS_OAEP)

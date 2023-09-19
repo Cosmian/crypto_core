@@ -7,9 +7,7 @@ use zeroize::Zeroizing;
 
 use crate::reexport::rand_core::{RngCore, SeedableRng};
 
-use crate::{
-    CsRng, PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPrivateKey, RsaPublicKey,
-};
+use crate::{CsRng, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPrivateKey, RsaPublicKey};
 
 fn wrap_unwrap(
     rng: &mut CsRng,

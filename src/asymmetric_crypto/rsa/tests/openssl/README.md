@@ -21,7 +21,7 @@ openssl rand -out 32_byte.key 32
 
 ```
 
-## Wrap the secret with CKM_RSA_PKCS_OAEP mechanism
+## Wrap the secret with CKM_RSA_PKCS_OAEP mechanism, sha2:sha256
 
 ```sh
 openssl pkeyutl \
