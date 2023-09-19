@@ -1,13 +1,16 @@
-use openssl::encrypt::{Decrypter, Encrypter};
-use openssl::hash::MessageDigest;
-use openssl::pkey::PKey;
-use openssl::rsa::Padding;
+use openssl::{
+    encrypt::{Decrypter, Encrypter},
+    hash::MessageDigest,
+    pkey::PKey,
+    rsa::Padding,
+};
 use pkcs8::{DecodePrivateKey, DecodePublicKey};
 use zeroize::Zeroizing;
 
-use crate::reexport::rand_core::{RngCore, SeedableRng};
-
-use crate::{CsRng, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPrivateKey, RsaPublicKey};
+use crate::{
+    reexport::rand_core::{RngCore, SeedableRng},
+    CsRng, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPrivateKey, RsaPublicKey,
+};
 
 fn wrap_unwrap(
     rng: &mut CsRng,

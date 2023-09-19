@@ -1,4 +1,3 @@
-use crate::{reexport::rand_core::SeedableRng, CsRng, RsaPrivateKey, RsaPublicKey};
 use openssl::{
     pkey::{PKey, Public},
     rsa::Rsa,
@@ -6,7 +5,9 @@ use openssl::{
 };
 use pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 
-use crate::CryptoCoreError;
+use crate::{
+    reexport::rand_core::SeedableRng, CryptoCoreError, CsRng, RsaPrivateKey, RsaPublicKey,
+};
 
 #[test]
 fn test_pkcs8_openssl_key_compat() -> Result<(), CryptoCoreError> {

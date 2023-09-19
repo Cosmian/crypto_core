@@ -1,9 +1,12 @@
-use crate::{key_wrap, CryptoCoreError, RandomFixedSizeCBytes, RsaKeyLength, SymmetricKey};
-use crate::{PublicKey, RsaKeyWrappingAlgorithm};
 use digest::{Digest, DynDigest};
 use rand_chacha::rand_core::CryptoRngCore;
 use rsa::traits::PublicKeyParts;
 use zeroize::Zeroizing;
+
+use crate::{
+    key_wrap, CryptoCoreError, PublicKey, RandomFixedSizeCBytes, RsaKeyLength,
+    RsaKeyWrappingAlgorithm, SymmetricKey,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct RsaPublicKey(pub(super) rsa::RsaPublicKey);
@@ -85,13 +88,16 @@ fn ckm_rsa_aes_key_wrap<
     rsa_public_key: &RsaPublicKey,
     key_material: &Zeroizing<Vec<u8>>,
 ) -> Result<Vec<u8>, CryptoCoreError> {
-    // Generates a temporary random AES key of ulAESKeyBits length.  This key is not accessible to the user - no handle is returned.
+    // Generates a temporary random AES key of ulAESKeyBits length.  This key is not
+    // accessible to the user - no handle is returned.
     let key_encryption_key = SymmetricKey::<AES_KEY_LENGTH>::new(rng);
-    // Wraps the target key with the temporary AES key using CKM_AES_KEY_WRAP_KWP ([AES KEYWRAP] section 6.3).
-    // PKCS#11 CKM_AES_KEY_WRAP_KWP is identical to tRFC 5649
+    // Wraps the target key with the temporary AES key using CKM_AES_KEY_WRAP_KWP
+    // ([AES KEYWRAP] section 6.3). PKCS#11 CKM_AES_KEY_WRAP_KWP is identical to
+    // tRFC 5649
     let mut ciphertext = key_wrap(key_material, &key_encryption_key)?;
-    //Wraps the AES key with the wrapping RSA key using CKM_RSA_PKCS_OAEP with parameters of OAEPParams.
-    // Zeroizes the temporary AES key (automatically done by the conversion into())
+    //Wraps the AES key with the wrapping RSA key using CKM_RSA_PKCS_OAEP with
+    // parameters of OAEPParams. Zeroizes the temporary AES key (automatically
+    // done by the conversion into())
     let mut wrapped_kwk =
         ckm_rsa_pkcs_oaep::<H, R>(rng, rsa_public_key, &key_encryption_key.into())?;
     // Concatenates two wrapped keys and outputs the concatenated blob.

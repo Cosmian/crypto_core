@@ -50,10 +50,10 @@ fn get_ephemeral_key<
 }
 
 impl<
-        const PRIVATE_KEY_LENGTH: usize,
-        const PUBLIC_KEY_LENGTH: usize,
-        PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
-    > EciesAes128<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
+    const PRIVATE_KEY_LENGTH: usize,
+    const PUBLIC_KEY_LENGTH: usize,
+    PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
+> EciesAes128<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
 {
     fn generate_keys_and_nonce<R: CryptoRngCore>(
         rng: &mut R,
@@ -135,10 +135,10 @@ impl<
 }
 
 impl<
-        const PRIVATE_KEY_LENGTH: usize,
-        const PUBLIC_KEY_LENGTH: usize,
-        PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
-    > Ecies<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
+    const PRIVATE_KEY_LENGTH: usize,
+    const PUBLIC_KEY_LENGTH: usize,
+    PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
+> Ecies<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
     for EciesAes128<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
 {
     const ENCRYPTION_OVERHEAD: usize = PUBLIC_KEY_LENGTH + Aes128Gcm::MAC_LENGTH;
@@ -190,10 +190,10 @@ impl<
 }
 
 impl<
-        const PRIVATE_KEY_LENGTH: usize,
-        const PUBLIC_KEY_LENGTH: usize,
-        PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
-    > EciesStream<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey, Aes128GcmLib>
+    const PRIVATE_KEY_LENGTH: usize,
+    const PUBLIC_KEY_LENGTH: usize,
+    PublicKey: EciesEcPublicKey<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH>,
+> EciesStream<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey, Aes128GcmLib>
     for EciesAes128<PRIVATE_KEY_LENGTH, PUBLIC_KEY_LENGTH, PublicKey>
 {
     fn get_dem_encryptor_be32<R: CryptoRngCore>(

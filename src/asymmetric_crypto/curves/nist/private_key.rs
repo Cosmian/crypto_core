@@ -205,7 +205,8 @@ where
 }
 
 /// PKCS#8 support (deprecated)
-#[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` traits instead"]
+#[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` \
+                traits instead"]
 impl<C, const LENGTH: usize> NistPrivateKey<C, LENGTH>
 where
     C: Curve + CurveArithmetic + pkcs8::AssociatedOid,
@@ -216,7 +217,8 @@ where
     pub const LENGTH: usize = LENGTH;
 
     /// Encode the private key as a `PKCS#8 PrivateKeyInfo` ASN.1 DER
-    #[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` traits instead"]
+    #[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` \
+                    traits instead"]
     pub fn try_to_pkcs8(&self) -> Result<Zeroizing<Vec<u8>>, CryptoCoreError> {
         let bytes =
             pkcs8::EncodePrivateKey::to_pkcs8_der(&self.secret_key).map(|d| d.to_bytes())?;
@@ -225,7 +227,8 @@ where
 
     /// Encode the private key as a `PKCS#8 EncryptedPrivateKeyInfo` ASN.1 DER
     /// The encryption algorithm used is Scrypt AES-256 CBC
-    #[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` traits instead"]
+    #[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` \
+                    traits instead"]
     pub fn try_to_encrypted_pkcs8(
         &self,
         password: impl AsRef<[u8]>,
@@ -270,7 +273,8 @@ where
     }
 
     /// Decode the private key from a `PKCS#8 PrivateKeyInfo` ASN.1 DER
-    #[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` traits instead"]
+    #[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` \
+                    traits instead"]
     pub fn try_from_pkcs8(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         let secret_key: SecretKey<C> = pkcs8::DecodePrivateKey::from_pkcs8_der(bytes)?;
         let mut bytes = [0_u8; LENGTH];
@@ -279,7 +283,8 @@ where
     }
 
     /// Decode the private key as a `PKCS#8 EncryptedPrivateKeyInfo` ASN.1 DER
-    #[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` traits instead"]
+    #[deprecated = "use the methods on the `pkcs8::EncodePrivateKey` and `pkcs8::DecodePrivateKey` \
+                    traits instead"]
     pub fn try_from_encrypted_pkcs8(
         bytes: &[u8],
         password: impl AsRef<[u8]>,

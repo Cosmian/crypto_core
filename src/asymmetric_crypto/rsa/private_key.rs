@@ -1,13 +1,14 @@
-use crate::{
-    key_unwrap, pkcs8_fix, CryptoCoreError, PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm,
-    RsaPublicKey,
-};
 use digest::{Digest, DynDigest};
 use pkcs8::SecretDocument;
 use rand_chacha::rand_core::CryptoRngCore;
 use rand_core::RngCore;
 use rsa::traits::PublicKeyParts;
 use zeroize::{ZeroizeOnDrop, Zeroizing};
+
+use crate::{
+    key_unwrap, pkcs8_fix, CryptoCoreError, PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm,
+    RsaPublicKey,
+};
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
 pub struct RsaPrivateKey(rsa::RsaPrivateKey);
@@ -106,21 +107,23 @@ fn ckm_rsa_pkcs_oaep<H: 'static + Digest + DynDigest + Send + Sync>(
 /// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061152]
 ///
 /// Also check [https://cloud.google.com/kms/docs/key-wrapping?hl=fr]
-///
 fn ckm_rsa_aes_key_unwrap<H: 'static + Digest + DynDigest + Send + Sync>(
     rsa_private_key: &RsaPrivateKey,
     ciphertext: &[u8],
 ) -> Result<Zeroizing<Vec<u8>>, CryptoCoreError> {
-    // Splits the input into two parts. The first is the wrapped AES key, and the second is the wrapped target key. The length of the first part is equal to the length of the unwrapping RSA key.
+    // Splits the input into two parts. The first is the wrapped AES key, and the
+    // second is the wrapped target key. The length of the first part is equal to
+    // the length of the unwrapping RSA key.
     let encapsulation_bytes_len = ((rsa_private_key.key_length() as i32) / 8) as usize;
-    // Un-wraps the temporary AES key from the first part with the private RSA key using CKM_RSA_PKCS_OAEP with parameters of OAEPParams.
+    // Un-wraps the temporary AES key from the first part with the private RSA key
+    // using CKM_RSA_PKCS_OAEP with parameters of OAEPParams.
     let aes_key = ckm_rsa_pkcs_oaep::<H>(
         rsa_private_key,
         ciphertext[0..encapsulation_bytes_len].as_ref(),
     )?;
-    // Un-wraps the target key from the second part with the temporary AES key using CKM_AES_KEY_WRAP_KWP ([AES KEYWRAP] section 6.3).
-    // Zeroizes the temporary AES key.
-    // Returns the handle to the newly unwrapped target key.
+    // Un-wraps the target key from the second part with the temporary AES key using
+    // CKM_AES_KEY_WRAP_KWP ([AES KEYWRAP] section 6.3). Zeroizes the temporary
+    // AES key. Returns the handle to the newly unwrapped target key.
     Ok(Zeroizing::from(key_unwrap(
         &ciphertext[encapsulation_bytes_len..],
         &aes_key,

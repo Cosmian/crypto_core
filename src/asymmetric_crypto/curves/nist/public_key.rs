@@ -111,11 +111,8 @@ impl<C: Curve + CurveArithmetic, const LENGTH: usize> crate::PublicKey
 {
 }
 
-impl<
-        C: Curve + CurveArithmetic,
-        const PRIVATE_KEY_LENGTH: usize,
-        const PUBLIC_KEY_LENGTH: usize,
-    > From<&NistPrivateKey<C, PRIVATE_KEY_LENGTH>> for NistPublicKey<C, PUBLIC_KEY_LENGTH>
+impl<C: Curve + CurveArithmetic, const PRIVATE_KEY_LENGTH: usize, const PUBLIC_KEY_LENGTH: usize>
+    From<&NistPrivateKey<C, PRIVATE_KEY_LENGTH>> for NistPublicKey<C, PUBLIC_KEY_LENGTH>
 {
     fn from(sk: &NistPrivateKey<C, PRIVATE_KEY_LENGTH>) -> Self {
         Self(PublicKey::from_secret_scalar(

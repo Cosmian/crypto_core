@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
 
-    use crate::reexport::rand_core::SeedableRng;
     use openssl::{
         ec::{EcGroup, EcKey},
         error::ErrorStack,
@@ -11,7 +10,9 @@ mod tests {
     };
     use pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 
-    use crate::{CryptoCoreError, CsRng, P256PrivateKey, P256PublicKey};
+    use crate::{
+        reexport::rand_core::SeedableRng, CryptoCoreError, CsRng, P256PrivateKey, P256PublicKey,
+    };
 
     #[test]
     fn test_pkcs8_openssl_key_compat() -> Result<(), CryptoCoreError> {
