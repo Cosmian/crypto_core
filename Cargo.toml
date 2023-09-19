@@ -90,6 +90,7 @@ x509-cert = { version = "0.2.4", features = [
     "std",
     "builder",
     "arbitrary",
+    "hazmat",
 ], optional = true }
 zeroize = { version = "1.6", features = ["zeroize_derive"] }
 
