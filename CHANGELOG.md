@@ -6,11 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-- Add support for RSA
+- Add support for RSA key generation, key-wrapping and PKCS#8 import/export
 
 ### Fixed
 
 - Fixed export of Curve25519Secret
+- Aligned NIST Curves PKC8 import/export with the pkcs8 crate
 
 ## [9.2.1] - 2023-09-26
 

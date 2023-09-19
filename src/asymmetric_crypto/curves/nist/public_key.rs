@@ -89,11 +89,10 @@ where
     <C as CurveArithmetic>::AffinePoint: sec1::ToEncodedPoint<C>,
     <C as CurveArithmetic>::AffinePoint: sec1::FromEncodedPoint<C>,
 {
-    #[must_use]
-
     /// Serialize the underlying SEC1 Encoded Point as an array of bytes
     ///
     /// This is a facade to `<Self as FixedSizeCBytes>::to_bytes`
+    #[must_use]
     pub fn to_bytes(&self) -> [u8; LENGTH] {
         <Self as FixedSizeCBytes<LENGTH>>::to_bytes(self)
     }
@@ -105,6 +104,11 @@ where
     pub fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, crate::CryptoCoreError> {
         <Self as FixedSizeCBytes<LENGTH>>::try_from_bytes(bytes)
     }
+}
+
+impl<C: Curve + CurveArithmetic, const LENGTH: usize> crate::PublicKey
+    for NistPublicKey<C, LENGTH>
+{
 }
 
 impl<

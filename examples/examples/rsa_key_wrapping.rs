@@ -1,4 +1,4 @@
-#[cfg(all(feature = "rsa"))]
+#[cfg(feature = "rsa")]
 pub fn rsa_key_wrapping() {
     use cosmian_crypto_core::{
         reexport::rand_core::{RngCore, SeedableRng},

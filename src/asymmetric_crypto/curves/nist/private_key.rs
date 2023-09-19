@@ -17,7 +17,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
 use crate::{
     pkcs8_fix, reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, CsRng, FixedSizeCBytes,
-    RandomFixedSizeCBytes, SecretCBytes,
+    NistPublicKey, RandomFixedSizeCBytes, SecretCBytes,
 };
 
 /// Nist Curve private key
@@ -134,6 +134,16 @@ impl<C: Curve + CurveArithmetic, const LENGTH: usize> NistPrivateKey<C, LENGTH> 
     /// This is a facade to `<Self as FixedSizeCBytes<LENGTH>>::try_from_bytes`
     pub fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError> {
         <Self as FixedSizeCBytes<LENGTH>>::try_from_bytes(bytes)
+    }
+}
+
+impl<C: Curve + CurveArithmetic, const LENGTH: usize> crate::PrivateKey
+    for NistPrivateKey<C, LENGTH>
+{
+    type PublicKey = NistPublicKey<C, LENGTH>;
+
+    fn public_key(&self) -> Self::PublicKey {
+        Self::PublicKey::from(self)
     }
 }
 
