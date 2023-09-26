@@ -107,6 +107,21 @@ impl<'a> Deserializer<'a> {
         Ok(buf)
     }
 
+    /// Reads a slice of bytes from the `Deserializer`.
+    ///
+    /// Returns a reference to the read subslice
+    pub fn read_vec_as_ref(&mut self) -> Result<&'a [u8], CryptoCoreError> {
+        let len_u64 = self.read_leb128_u64()?;
+        let len = usize::try_from(len_u64).map_err(|_| {
+            CryptoCoreError::GenericDeserializationError(format!(
+                "size of vector is too big for architecture: {len_u64} bytes",
+            ))
+        })?;
+        let (front, back) = self.readable.split_at(len);
+        self.readable = back;
+        Ok(front)
+    }
+
     /// Reads the value of a type which implements `Serializable`.
     pub fn read<T: Serializable>(&mut self) -> Result<T, <T as Serializable>::Error> {
         T::read(self)
