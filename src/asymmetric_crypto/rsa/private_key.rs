@@ -76,7 +76,7 @@ impl PrivateKey for RsaPrivateKey {
     type PublicKey = RsaPublicKey;
 
     fn public_key(&self) -> Self::PublicKey {
-        self.0.to_public_key().into()
+        RsaPublicKey(self.0.to_public_key())
     }
 }
 
