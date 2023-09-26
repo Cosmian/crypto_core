@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.2.1] - 2023-09-26
+
+### Features
+
+- Allow the deserializer to perform zero-copy reading (using slices)
+
 ## [9.2.0] - 2023-09-11
 
 ### Features
