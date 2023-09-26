@@ -1,13 +1,13 @@
 use digest::{Digest, DynDigest};
 use pkcs8::SecretDocument;
-use rand_chacha::rand_core::CryptoRngCore;
-use rand_core::RngCore;
 use rsa::traits::PublicKeyParts;
 use zeroize::{ZeroizeOnDrop, Zeroizing};
 
 use crate::{
     asymmetric_crypto::{PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPublicKey},
-    key_unwrap, pkcs8_fix, CryptoCoreError,
+    key_unwrap, pkcs8_fix,
+    reexport::rand_core::{CryptoRng, CryptoRngCore, RngCore},
+    CryptoCoreError,
 };
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -76,7 +76,7 @@ impl PrivateKey for RsaPrivateKey {
     type PublicKey = RsaPublicKey;
 
     fn public_key(&self) -> Self::PublicKey {
-        RsaPublicKey(self.0.to_public_key())
+        self.0.to_public_key().into()
     }
 }
 
@@ -136,7 +136,7 @@ impl pkcs8::EncodePrivateKey for RsaPrivateKey {
 
     fn to_pkcs8_encrypted_der(
         &self,
-        rng: &mut impl CryptoRngCore,
+        rng: impl CryptoRng + RngCore,
         password: impl AsRef<[u8]>,
     ) -> pkcs8::Result<SecretDocument> {
         pkcs8_fix::to_pkcs8_encrypted_der(&self.to_pkcs8_der()?, rng, password)

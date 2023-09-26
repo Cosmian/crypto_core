@@ -30,30 +30,30 @@ impl RsaPublicKey {
         wrapping_algorithm: RsaKeyWrappingAlgorithm,
         key_material: &Zeroizing<Vec<u8>>,
     ) -> Result<Vec<u8>, CryptoCoreError> {
-        Ok(match wrapping_algorithm {
-            RsaKeyWrappingAlgorithm::Pkcs1v1_5 => {
-                self.0
-                    .encrypt(&mut *rng, rsa::Pkcs1v15Encrypt, key_material)?
-            }
+        match wrapping_algorithm {
+            RsaKeyWrappingAlgorithm::Pkcs1v1_5 => self
+                .0
+                .encrypt(&mut *rng, rsa::Pkcs1v15Encrypt, key_material)
+                .map_err(CryptoCoreError::from),
             RsaKeyWrappingAlgorithm::OaepSha256 => {
-                ckm_rsa_pkcs_oaep::<sha2::Sha256, R>(rng, self, key_material)?
+                ckm_rsa_pkcs_oaep::<sha2::Sha256, R>(rng, self, key_material)
             }
             RsaKeyWrappingAlgorithm::OaepSha1 => {
-                ckm_rsa_pkcs_oaep::<sha1::Sha1, R>(rng, self, key_material)?
+                ckm_rsa_pkcs_oaep::<sha1::Sha1, R>(rng, self, key_material)
             }
             RsaKeyWrappingAlgorithm::OaepSha3 => {
-                ckm_rsa_pkcs_oaep::<sha3::Sha3_256, R>(rng, self, key_material)?
+                ckm_rsa_pkcs_oaep::<sha3::Sha3_256, R>(rng, self, key_material)
             }
             RsaKeyWrappingAlgorithm::Aes256Sha256 => {
-                ckm_rsa_aes_key_wrap::<sha2::Sha256, { 128 / 8 }, R>(rng, self, key_material)?
+                ckm_rsa_aes_key_wrap::<sha2::Sha256, { 128 / 8 }, R>(rng, self, key_material)
             }
             RsaKeyWrappingAlgorithm::Aes256Sha1 => {
-                ckm_rsa_aes_key_wrap::<sha1::Sha1, { 256 / 8 }, R>(rng, self, key_material)?
+                ckm_rsa_aes_key_wrap::<sha1::Sha1, { 256 / 8 }, R>(rng, self, key_material)
             }
             RsaKeyWrappingAlgorithm::Aes256Sha3 => {
-                ckm_rsa_aes_key_wrap::<sha3::Sha3_256, { 256 / 8 }, R>(rng, self, key_material)?
+                ckm_rsa_aes_key_wrap::<sha3::Sha3_256, { 256 / 8 }, R>(rng, self, key_material)
             }
-        })
+        }
     }
 }
 
