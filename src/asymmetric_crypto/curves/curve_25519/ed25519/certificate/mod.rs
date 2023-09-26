@@ -153,8 +153,7 @@ mod tests {
     use x509_cert::builder::Profile;
 
     use crate::{
-        asymmetric_crypto::curve_25519::{ed25519::build_certificate, x25519::X25519Keypair},
-        CryptoCoreError, CsRng, Ed25519Keypair, X25519PublicKey,
+        build_certificate, CryptoCoreError, CsRng, Ed25519Keypair, X25519Keypair, X25519PublicKey,
     };
 
     #[test]

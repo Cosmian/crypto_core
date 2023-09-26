@@ -2,7 +2,7 @@ use ed25519_dalek::ed25519;
 pub use ed25519_dalek::{SecretKey as EdSecretKey, VerifyingKey as EdPublicKey};
 use signature::Verifier;
 
-use crate::asymmetric_crypto::curve_25519::ed25519::Ed25519PublicKey;
+use crate::Ed25519PublicKey;
 
 /// Verifier implementation for Ed25519.
 impl Verifier<ed25519::Signature> for Ed25519PublicKey {
