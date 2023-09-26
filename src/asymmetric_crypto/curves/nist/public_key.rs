@@ -71,7 +71,7 @@ where
 
     /// Decode the public key from a `X.509 SubjectPublicKeyInfo` (SPKI) ASN.1
     /// DER byte array.
-    #[deprecated = "use the methods on thw `Pkcs8PublicKey` trait instead"]
+    #[deprecated = "use the methods on the `Pkcs8PublicKey` trait instead"]
     pub fn try_from_pkcs8(bytes: &[u8]) -> Result<Self, CryptoCoreError> {
         let key = pkcs8::DecodePublicKey::from_public_key_der(bytes)?;
         Ok(Self(key))
