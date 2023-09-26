@@ -11,7 +11,7 @@ pub mod bytes_ser_de;
 mod ecies;
 #[cfg(feature = "sha3")]
 pub mod kdf;
-#[cfg(any(feature = "curve25519", feature = "rsa", feature = "nist_curves"))]
+#[cfg(any(feature = "certificate", feature = "rsa", feature = "nist_curves"))]
 mod pkcs8_fix;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;

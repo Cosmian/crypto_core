@@ -4,8 +4,8 @@ use rsa::traits::PublicKeyParts;
 use zeroize::Zeroizing;
 
 use crate::{
-    key_wrap, CryptoCoreError, PublicKey, RandomFixedSizeCBytes, RsaKeyLength,
-    RsaKeyWrappingAlgorithm, SymmetricKey,
+    asymmetric_crypto::{PublicKey, RsaKeyLength, RsaKeyWrappingAlgorithm},
+    key_wrap, CryptoCoreError, RandomFixedSizeCBytes, SymmetricKey,
 };
 
 #[derive(Debug, PartialEq)]
@@ -13,6 +13,7 @@ pub struct RsaPublicKey(pub(super) rsa::RsaPublicKey);
 
 impl RsaPublicKey {
     /// Get the key length which is the modulus size in bits
+    #[must_use]
     pub fn key_length(&self) -> RsaKeyLength {
         match self.0.n().bits() {
             2048 => RsaKeyLength::Modulus2048,
@@ -22,7 +23,7 @@ impl RsaPublicKey {
         }
     }
 
-    /// Wrap a key using PKCS #1 v1.5 RS (also denoted CKM_RSA_PKCS)
+    /// Wrap a key using PKCS #1 v1.5 RS (also denoted `CKM_RSA_PKCS`)
     pub fn wrap_key<R: CryptoRngCore>(
         &self,
         rng: &mut R,
@@ -64,7 +65,7 @@ impl From<rsa::RsaPublicKey> for RsaPublicKey {
     }
 }
 
-/// Implementation of PKCS#1 RSA OAEP (CKM_RSA_PKCS_OAEP)
+/// Implementation of PKCS#1 RSA OAEP (`CKM_RSA_PKCS_OAEP`)
 /// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061137]
 fn ckm_rsa_pkcs_oaep<H: 'static + Digest + DynDigest + Send + Sync, R: CryptoRngCore>(
     rng: &mut R,
@@ -75,10 +76,10 @@ fn ckm_rsa_pkcs_oaep<H: 'static + Digest + DynDigest + Send + Sync, R: CryptoRng
     Ok(rsa_public_key.0.encrypt(&mut *rng, padding, key_material)?)
 }
 
-/// Implementation of PKCS#11 RSA AES KEY WRAP (CKM_RSA_AES_KEY_WRAP)
+/// Implementation of PKCS#11 RSA AES KEY WRAP (`CKM_RSA_AES_KEY_WRAP`)
 /// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061152]
 ///
-/// The AES_KEY_LENGTH is the length of the AES key in bytes.
+/// The `AES_KEY_LENGTH` is the length of the AES key in bytes.
 fn ckm_rsa_aes_key_wrap<
     H: 'static + Digest + DynDigest + Send + Sync,
     const AES_KEY_LENGTH: usize,

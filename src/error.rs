@@ -30,7 +30,7 @@ pub enum CryptoCoreError {
     },
     #[cfg(any(feature = "certificate", feature = "nist_curves"))]
     Certificate(String),
-    #[cfg(any(feature = "certificate", feature = "nist_curves"))]
+    #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
     Pkcs8Error(String),
     #[cfg(feature = "ser")]
     ReadLeb128Error(leb128::read::Error),

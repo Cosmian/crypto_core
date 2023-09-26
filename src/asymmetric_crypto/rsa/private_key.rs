@@ -6,8 +6,8 @@ use rsa::traits::PublicKeyParts;
 use zeroize::{ZeroizeOnDrop, Zeroizing};
 
 use crate::{
-    key_unwrap, pkcs8_fix, CryptoCoreError, PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm,
-    RsaPublicKey,
+    asymmetric_crypto::{PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPublicKey},
+    key_unwrap, pkcs8_fix, CryptoCoreError,
 };
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -26,6 +26,7 @@ impl RsaPrivateKey {
     }
 
     /// Get the key length which is the modulus size in bits
+    #[must_use]
     pub fn key_length(&self) -> RsaKeyLength {
         match self.0.n().bits() {
             2048 => RsaKeyLength::Modulus2048,
@@ -84,6 +85,7 @@ impl RsaPrivateKey {
     /// Get the public key
     ///
     /// This is a facade for [`PrivateKey::public_key`]
+    #[must_use]
     pub fn public_key(&self) -> <RsaPrivateKey as crate::asymmetric_crypto::PrivateKey>::PublicKey {
         PrivateKey::public_key(self)
     }
@@ -91,7 +93,7 @@ impl RsaPrivateKey {
 
 impl ZeroizeOnDrop for RsaPrivateKey {}
 
-/// Implementation of PKCS#1 RSA OAEP (CKM_RSA_PKCS_OAEP)
+/// Implementation of PKCS#1 RSA OAEP (`CKM_RSA_PKCS_OAEP`)
 /// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061137]
 fn ckm_rsa_pkcs_oaep<H: 'static + Digest + DynDigest + Send + Sync>(
     rsa_private_key: &RsaPrivateKey,
@@ -103,7 +105,7 @@ fn ckm_rsa_pkcs_oaep<H: 'static + Digest + DynDigest + Send + Sync>(
     ))
 }
 
-/// Implementation of PKCS#11 RSA AES KEY WRAP (CKM_RSA_AES_KEY_WRAP)
+/// Implementation of PKCS#11 RSA AES KEY WRAP (`CKM_RSA_AES_KEY_WRAP`)
 /// [https://docs.oasis-open.org/pkcs11/pkcs11-curr/v3.0/os/pkcs11-curr-v3.0-os.html#_Toc30061152]
 ///
 /// Also check [https://cloud.google.com/kms/docs/key-wrapping?hl=fr]

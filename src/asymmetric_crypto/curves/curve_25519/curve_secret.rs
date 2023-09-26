@@ -72,6 +72,7 @@ impl Curve25519Secret {
     /// Get the underlying bytes slice of the private key
     ///
     /// This is a facade to `RandomFixedSizeCBytes::as_bytes`
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         <Self as RandomFixedSizeCBytes<CURVE_25519_SECRET_LENGTH>>::as_bytes(self)
     }
@@ -79,6 +80,7 @@ impl Curve25519Secret {
     /// Serialize the `PrivateKey` as a non zero scalar
     ///
     /// This is a facade to `<Self as FixedSizeCBytes>::to_bytes`
+    #[must_use]
     pub fn to_bytes(&self) -> [u8; CURVE_25519_SECRET_LENGTH] {
         <Self as FixedSizeCBytes<CURVE_25519_SECRET_LENGTH>>::to_bytes(self)
     }
