@@ -14,8 +14,9 @@ pub trait PrivateKey {
     fn public_key(&self) -> Self::PublicKey;
 }
 
-impl<T: PrivateKey> From<&T> for Box<dyn PublicKey>
+impl<T> From<&T> for Box<dyn PublicKey>
 where
+    T: PrivateKey,
     T::PublicKey: 'static,
 {
     fn from(private_key: &T) -> Self {
