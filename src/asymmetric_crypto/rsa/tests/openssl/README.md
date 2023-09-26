@@ -1,4 +1,4 @@
-Files generated using command line openssl to evaluate the compatibility with RSA implementation.
+Files generated using command line `openssl` to evaluate the compatibility with RSA implementation.
 
 ## Random RSA 3072 bit PEM private key
 
