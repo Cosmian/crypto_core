@@ -139,7 +139,7 @@ impl pkcs8::EncodePrivateKey for RsaPrivateKey {
 
     fn to_pkcs8_encrypted_der(
         &self,
-        rng: impl rand_core::CryptoRng + RngCore,
+        rng: &mut impl CryptoRngCore,
         password: impl AsRef<[u8]>,
     ) -> pkcs8::Result<SecretDocument> {
         pkcs8_fix::to_pkcs8_encrypted_der(&self.to_pkcs8_der()?, rng, password)
