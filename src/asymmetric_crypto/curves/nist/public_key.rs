@@ -62,7 +62,7 @@ where
 
     /// Encode the public key as a `X.509 SubjectPublicKeyInfo` (SPKI) ASN.1 DER
     /// byte array.
-    #[deprecated = "use the methods on thw `Pkcs8PublicKey` trait instead"]
+    #[deprecated = "use the methods on the `Pkcs8PublicKey` trait instead"]
     pub fn try_to_pkcs8(&self) -> Result<Vec<u8>, CryptoCoreError> {
         let bytes =
             pkcs8::EncodePublicKey::to_public_key_der(&self.0).map(pkcs8::Document::into_vec)?;
