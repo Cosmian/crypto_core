@@ -119,10 +119,7 @@ fn ckm_rsa_aes_key_unwrap<H: 'static + Digest + DynDigest + Send + Sync>(
     let encapsulation_bytes_len = ((rsa_private_key.key_length() as i32) / 8) as usize;
     // Un-wraps the temporary AES key from the first part with the private RSA key
     // using CKM_RSA_PKCS_OAEP with parameters of OAEPParams.
-    let aes_key = ckm_rsa_pkcs_oaep::<H>(
-        rsa_private_key,
-        ciphertext[0..encapsulation_bytes_len].as_ref(),
-    )?;
+    let aes_key = ckm_rsa_pkcs_oaep::<H>(rsa_private_key, &ciphertext[0..encapsulation_bytes_len])?;
     // Un-wraps the target key from the second part with the temporary AES key using
     // CKM_AES_KEY_WRAP_KWP ([AES KEYWRAP] section 6.3). Zeroizes the temporary
     // AES key. Returns the handle to the newly unwrapped target key.
