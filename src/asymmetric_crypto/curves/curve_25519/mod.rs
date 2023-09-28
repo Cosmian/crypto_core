@@ -3,7 +3,7 @@ mod ed25519;
 mod ristretto_25519;
 mod x25519;
 
-pub use curve_secret::CURVE_25519_SECRET_LENGTH;
+pub use curve_secret::{Curve25519Secret, CURVE_25519_SECRET_LENGTH};
 #[cfg(feature = "certificate")]
 pub use ed25519::{build_certificate, build_certificate_profile};
 pub use ed25519::{

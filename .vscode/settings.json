@@ -6,6 +6,7 @@
     "Cloudproof",
     "cosmian",
     "Cosmian",
+    "decrypter",
     "decryptor",
     "Decryptor",
     "decryptors",
@@ -14,12 +15,16 @@
     "encryptor",
     "Encryptor",
     "encryptors",
+    "FIPS",
     "hasher",
     "hashers",
     "keypair",
     "libsodium",
     "montgomery",
     "nist",
+    "oaep",
+    "Oaep",
+    "OAEP",
     "openssl",
     "pkcs",
     "sealbox",
@@ -27,6 +32,7 @@
     "xchacha",
     "zeroize",
     "zeroized",
+    "Zeroizes",
     "Zeroizing"
   ]
 }

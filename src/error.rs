@@ -30,10 +30,12 @@ pub enum CryptoCoreError {
     },
     #[cfg(any(feature = "certificate", feature = "nist_curves"))]
     Certificate(String),
-    #[cfg(any(feature = "certificate", feature = "nist_curves"))]
+    #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
     Pkcs8Error(String),
     #[cfg(feature = "ser")]
     ReadLeb128Error(leb128::read::Error),
+    #[cfg(feature = "rsa")]
+    RsaError(String),
     SerializationIoError {
         bytes_len: usize,
         error: std::io::Error,
@@ -50,34 +52,9 @@ pub enum CryptoCoreError {
 impl Display for CryptoCoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::DeserializationEmptyError => {
-                write!(f, "empty input when parsing bytes")
-            }
-            Self::DeserializationSizeError { given, expected } => write!(
-                f,
-                "wrong size when parsing bytes: {given} given should be {expected}"
-            ),
-            #[cfg(feature = "ser")]
-            Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
-            Self::GenericDeserializationError(err) => {
-                write!(f, "deserialization error: {err}")
-            }
-            Self::WriteLeb128Error { value, error } => {
-                write!(f, "when writing {value} as LEB128 size, IO error {error}")
-            }
-            Self::SerializationIoError { bytes_len, error } => {
-                write!(f, "when writing {bytes_len} bytes, {error}")
-            }
-            Self::PlaintextTooBigError { plaintext_len, max } => write!(
-                f,
-                "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
-                 bytes"
-            ),
             #[cfg(any(feature = "certificate", feature = "nist_curves"))]
-            Self::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
-            #[cfg(any(feature = "certificate", feature = "nist_curves"))]
-            Self::Certificate(err) => write!(f, "when building certificate, {err}"),
-            Self::CiphertextTooSmallError {
+            CryptoCoreError::Certificate(err) => write!(f, "when building certificate, {err}"),
+            CryptoCoreError::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
             } => write!(
@@ -85,7 +62,7 @@ impl Display for CryptoCoreError {
                 "when decrypting, ciphertext of {ciphertext_len} bytes is too small, min is {min} \
                  bytes"
             ),
-            Self::CiphertextTooBigError {
+            CryptoCoreError::CiphertextTooBigError {
                 ciphertext_len,
                 max,
             } => write!(
@@ -93,10 +70,22 @@ impl Display for CryptoCoreError {
                 "when decrypting, ciphertext of {ciphertext_len} bytes is too big, max is {max} \
                  bytes"
             ),
-            Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
-            Self::EncryptionError => write!(f, "error during encryption"),
-            Self::DecryptionError => write!(f, "error during decryption"),
-            Self::InvalidBytesLength(message, given, expected) => match expected {
+            CryptoCoreError::ConversionError(err) => write!(f, "failed to convert: {err}"),
+            CryptoCoreError::DecryptionError => write!(f, "error during decryption"),
+            CryptoCoreError::DeserializationEmptyError => {
+                write!(f, "empty input when parsing bytes")
+            }
+            CryptoCoreError::DeserializationSizeError { given, expected } => write!(
+                f,
+                "wrong size when parsing bytes: {given} given should be {expected}"
+            ),
+            #[cfg(feature = "nist_curves")]
+            CryptoCoreError::EllipticCurveError(e) => write!(f, "NIST elliptic curve error: {e}"),
+            CryptoCoreError::EncryptionError => write!(f, "error during encryption"),
+            CryptoCoreError::GenericDeserializationError(err) => {
+                write!(f, "deserialization error: {err}")
+            }
+            CryptoCoreError::InvalidBytesLength(message, given, expected) => match expected {
                 Some(expected_length) => write!(
                     f,
                     "{message}: invalid key length: got {given}, expected: {expected_length}",
@@ -105,11 +94,26 @@ impl Display for CryptoCoreError {
                     write!(f, "{message}: invalid key length: got {given}")
                 }
             },
-            Self::SignatureError(e) => write!(f, "error during signature: {e}"),
-            Self::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
-            Self::TryFromSliceError(e) => write!(f, "try from slice error: {e}"),
-            #[cfg(feature = "nist_curves")]
-            Self::EllipticCurveError(e) => write!(f, "NIST elliptic curve error: {e}"),
+            CryptoCoreError::PlaintextTooBigError { plaintext_len, max } => write!(
+                f,
+                "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
+                 bytes"
+            ),
+            #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
+            CryptoCoreError::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
+            #[cfg(feature = "ser")]
+            CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
+            #[cfg(feature = "rsa")]
+            CryptoCoreError::RsaError(e) => write!(f, "RSA error: {e}"),
+            CryptoCoreError::SerializationIoError { bytes_len, error } => {
+                write!(f, "when writing {bytes_len} bytes, {error}")
+            }
+            CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
+            CryptoCoreError::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
+            CryptoCoreError::TryFromSliceError(e) => write!(f, "try from slice error: {e}"),
+            CryptoCoreError::WriteLeb128Error { value, error } => {
+                write!(f, "when writing {value} as LEB128 size, IO error {error}")
+            }
         }
     }
 }
@@ -167,5 +171,12 @@ impl From<x509_cert::builder::Error> for CryptoCoreError {
 impl From<elliptic_curve::Error> for CryptoCoreError {
     fn from(e: elliptic_curve::Error) -> Self {
         Self::Certificate(e.to_string())
+    }
+}
+
+#[cfg(feature = "rsa")]
+impl From<rsa::errors::Error> for CryptoCoreError {
+    fn from(e: rsa::errors::Error) -> Self {
+        CryptoCoreError::RsaError(e.to_string())
     }
 }

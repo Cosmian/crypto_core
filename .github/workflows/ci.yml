@@ -45,7 +45,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: hack
-          args: build --feature-powerset --clean-per-run --no-dev-deps
+          args: check --feature-powerset --clean-per-run --no-dev-deps
   cargo-publish:
     needs:
       - cargo-lint

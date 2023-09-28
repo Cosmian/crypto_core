@@ -3,7 +3,7 @@
 use core::{hash::Hash, ops::Deref};
 use std::ops::DerefMut;
 
-use zeroize::{Zeroize, ZeroizeOnDrop};
+use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 use crate::{
     reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
@@ -60,6 +60,12 @@ impl<const LENGTH: usize> DerefMut for SymmetricKey<LENGTH> {
 impl<const LENGTH: usize> Default for SymmetricKey<LENGTH> {
     fn default() -> Self {
         Self([0; LENGTH])
+    }
+}
+
+impl<const LENGTH: usize> From<SymmetricKey<LENGTH>> for Zeroizing<Vec<u8>> {
+    fn from(value: SymmetricKey<LENGTH>) -> Self {
+        Zeroizing::new(value.0.to_vec())
     }
 }
 

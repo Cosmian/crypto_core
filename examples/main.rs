@@ -47,4 +47,7 @@ fn main() {
     self::examples::ed25519_cached();
     #[cfg(feature = "curve25519")]
     self::examples::ed25519_keypair();
+
+    #[cfg(feature = "rsa")]
+    self::examples::rsa_key_wrapping();
 }

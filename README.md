@@ -24,6 +24,10 @@ This crate implements the cryptographic primitives (modern encryption and signat
   - [Security](#security)
   - [ECIES encryption of a vector of bytes](#ecies-encryption-of-a-vector-of-bytes)
   - [ECIES encryption of a stream of bytes](#ecies-encryption-of-a-stream-of-bytes)
+- [Key wrapping](#key-wrapping)
+  - [RFC 5649](#rfc-5649)
+  - [ECIES Key Wrapping](#ecies-key-wrapping)
+  - [RSA Key Wrapping](#rsa-key-wrapping)
 - [Signature](#signature)
   - [Static implementation](#static-implementation)
   - [Cached implementation](#cached-implementation)
@@ -468,6 +472,156 @@ assert_eq!(
     plaintext.as_slice(),
     "Decryption failed"
 );
+```
+
+## Key Wrapping
+
+Key wrapping and unwrapping is supported using:
+
+- a symmetric key wrapping scheme based on the [RFC 5649](https://tools.ietf.org/html/rfc5649).
+- an Elliptic Curve keypair using one of the ECIES schemes above
+- using an RSA keypair
+
+### RFC 5649
+
+The RFC 5649 key wrapping scheme is implemented using the `key_wrap` and `Key_unwrap` methods exposed in the [key_wrapping_rfc_5649.rs](src/symmetric_crypto/key_wrapping_rfc_5649.rs). These methods are compatible with the PKCS#11 CKM_AES_KEY_WRAP_KWP mechanism (which is used in the hybrid RSA-AES key wrapping scheme, see below)
+
+**Example**
+
+```Rust
+let kek =
+    b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
+let key_to_wrap =
+    b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F";
+let wrapped_key = [
+    199, 131, 191, 63, 110, 233, 156, 72, 218, 187, 196, 16, 226, 132, 197, 44, 191, 117,
+    133, 120, 152, 157, 225, 138, 50, 148, 201, 164, 209, 151, 200, 162, 98, 112, 72, 139,
+    28, 233, 128, 22,
+];
+
+assert_eq!(
+    key_wrap(key_to_wrap, kek).expect("Failed to wrap"),
+    wrapped_key
+);
+assert_eq!(
+    key_unwrap(&wrapped_key, kek).expect("Failed to unwrap"),
+    key_to_wrap
+);
+
+```
+
+### ECIES Key Wrapping
+
+See [Ecies](#ecies---elliptic-curve-integrated-encryption-scheme) above for details on the ECIES schemes.
+
+### RSA Key Wrapping
+
+Various PKCS#11 compatible key wrapping schemes are implemented for RSA keys of size, 2048, 3072 and 4096 bits.
+
+The algorithms are listed below with the corresponding CKM mechanism. Preferably, the **Aes256Sha256** algorithm should be used.
+
+- **Pkcs1v1_5**,
+  PKCS #1 v1.5 RS following PKCS#11 CKM_RSA_PKCS
+  The maximum possible plaintext length is m = k - 11,
+  where k is the size of the RSA modulus.
+
+- **OaepSha256**,
+  PKCS #1 RSA with OAEP block format following PKCS#11 CKM*RSA_PKCS_OAEP
+  The hash function used is SHA256
+  The maximum possible plaintext length is m = k - 2 * h_len - 2,
+  where k is the size of the RSA modulus
+  and h_len is the size of the hash of the optional label.
+
+- **OaepSha1**,
+  PKCS #1 RSA with OAEP block format following PKCS#11 CKM*RSA_PKCS_OAEP
+  The hash function used is SHA1. For that reason this algorithm is not recommended
+  and is only kept here for compatibility with legacy systems.
+  The maximum possible plaintext length is m = k - 2 * h_len - 2,
+  where k is the size of the RSA modulus
+  and h_len is the size of the hash of the optional label.
+  This algorithm is compatible with Google Cloud KMS
+
+  - RSA_OAEP_3072_SHA256 with RSA 3072 bits key
+  - RSA_OAEP_4096_SHA256 with RSA 4096 bits key
+
+- **OaepSha3**,
+  PKCS #1 RSA with OAEP block format following PKCS#11 CKM_RSA_PKCS_OAEP
+  The hash function used is SHA3.
+  and is only kept here for compatibility with legacy systems.
+  The maximum possible plaintext length is m = k - 2 \* h_len - 2,
+  where k is the size of the RSA modulus
+  and h_len is the size of the hash of the optional label.
+
+- **Aes256Sha256**,
+  Key wrap with AES following PKCS#11 CKM_RSA_AES_KEY_WRAP
+  using an AES key of 256 bits. The hash function used is SHA256.
+  The AES wrapping follows the RFC 5649 which is compatible with PKCS#11 CKM_AES_KEY_WRAP_KWP
+  and there is no limitation on the size of the plaintext (other than those of AES); the recommended
+  plaintext format for an EC Private key is PKCS#8.
+  This algorithm is compatible with Google Cloud KMS
+
+  - RSA_OAEP_3072_SHA256_AES_256 for RSA 3072 bits key
+  - RSA_OAEP_4096_SHA256_AES_256 for RSA 4096 bits key
+
+- **Aes256Sha1**,
+  Key wrap with AES following PKCS#11 CKM_RSA_AES_KEY_WRAP
+  using an AES key of 256 bits. The hash function used is SHA1.
+  For that reason this algorithm is not recommended
+  and is only kept here for compatibility with legacy systems.
+  The AES wrapping follows the RFC 5649 which is compatible with PKCS#11 CKM_AES_KEY_WRAP_KWP
+  since there is no limitation on the size of the plaintext; the recommended
+  plaintext format for an EC Private key is PKCS#8.
+  This algorithm is compatible with Google Cloud KMS
+
+  - RSA_OAEP_3072_SHA1_AES_256 for RSA 3072 bits key
+  - RSA_OAEP_4096_SHA1_AES_256 for RSA 4096 bits key
+
+- **Aes256Sha3**,
+  Key wrap with AES following PKCS#11 CKM_RSA_AES_KEY_WRAP
+  using an AES key of 256 bits. The hash function used is SHA3-256 (defined in FIPS 202).
+  The AES wrapping follows the RFC 5649 which is compatible with PKCS#11 CKM_AES_KEY_WRAP_KWP
+  since there is no limitation on the size of the plaintext; the recommended
+  plaintext format for an EC Private key is PKCS#8.
+
+**Example using CKM_RSA_AES_KEY_WRAP with SHA-256 and AES 256**
+
+```Rust
+use cosmian_crypto_core::{
+    reexport::rand_core::{RngCore, SeedableRng},
+    CsRng, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPrivateKey,
+};
+use zeroize::Zeroizing;
+
+let mut rng = CsRng::from_entropy();
+println!("... Generating a 3072 bit RSA key ...");
+let rsa_private_key = RsaPrivateKey::new(&mut rng, RsaKeyLength::Modulus3072).unwrap();
+
+let mut key_to_wrap = [0_u8; 32];
+rng.fill_bytes(&mut key_to_wrap);
+
+let mut key_to_wrap = [0_u8; 189];
+rng.fill_bytes(&mut key_to_wrap);
+let key_to_wrap = Zeroizing::from(key_to_wrap.to_vec());
+
+let rsa_public_key = rsa_private_key.public_key();
+
+print!("Key wrapping with PKCS#11 CKM_RSA_AES_KEY_WRAP SHA-256 AES 256 ...");
+let wrapped_key = rsa_public_key
+    .wrap_key(
+        &mut rng,
+        RsaKeyWrappingAlgorithm::Aes256Sha256,
+        &key_to_wrap,
+    )
+    .unwrap();
+
+print!("unwrapping ...: ");
+let unwrapped_key = rsa_private_key
+    .unwrap_key(RsaKeyWrappingAlgorithm::Aes256Sha256, &wrapped_key)
+    .unwrap();
+
+assert_eq!(unwrapped_key, key_to_wrap);
+println!("OK");
+
 ```
 
 ## Signature

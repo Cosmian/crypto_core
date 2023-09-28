@@ -1,9 +1,6 @@
 use sha2::{Digest, Sha512};
 
-use crate::{
-    asymmetric_crypto::curve_25519::curve_secret::Curve25519Secret, Ed25519PrivateKey,
-    CURVE_25519_SECRET_LENGTH,
-};
+use crate::{Curve25519Secret, Ed25519PrivateKey, CURVE_25519_SECRET_LENGTH};
 
 pub type X25519PrivateKey = Curve25519Secret;
 
@@ -16,6 +13,7 @@ impl X25519PrivateKey {
     /// private key.
     ///
     /// See [`X25519PublicKey::from_ed25519_public_key`] for more details.
+    #[must_use]
     pub fn from_ed25519_private_key(sk: &Ed25519PrivateKey) -> Self {
         // see ed25519_dalek::ExpandedSecretKey::to_curve25519_private_key
         // The spec-compliant way to define an expanded secret key. This computes

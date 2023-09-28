@@ -15,10 +15,7 @@ mod tests {
 
     use super::Cached25519Signer;
     use crate::{
-        asymmetric_crypto::{
-            curve_25519::ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
-            Ed25519Keypair,
-        },
+        asymmetric_crypto::{Ed25519Keypair, Ed25519PrivateKey, Ed25519PublicKey},
         reexport::rand_core::SeedableRng,
         CsRng, FixedSizeCBytes,
     };
