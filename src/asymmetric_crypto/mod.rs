@@ -4,7 +4,7 @@ pub use curves::*;
 #[cfg(feature = "rsa")]
 mod rsa;
 #[cfg(feature = "rsa")]
-pub use rsa::*;
+pub use self::rsa::*;
 
 pub trait PublicKey {}
 
