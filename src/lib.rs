@@ -69,7 +69,10 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
     fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
         slice
             .try_into()
-            .map_err(CryptoCoreError::TryFromSliceError)
+            .map_err(|_| CryptoCoreError::TryFromSliceError {
+                expected: Self::LENGTH,
+                given: slice.len(),
+            })
             .and_then(Self::try_from_bytes)
     }
 

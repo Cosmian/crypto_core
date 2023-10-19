@@ -1,5 +1,4 @@
 use core::fmt::Display;
-use std::array::TryFromSliceError;
 
 /// Error type for this crate.
 #[derive(Debug)]
@@ -42,7 +41,10 @@ pub enum CryptoCoreError {
     },
     SignatureError(String),
     StreamCipherError(String),
-    TryFromSliceError(TryFromSliceError),
+    TryFromSliceError {
+        expected: usize,
+        given: usize,
+    },
     WriteLeb128Error {
         value: u64,
         error: std::io::Error,
@@ -110,7 +112,12 @@ impl Display for CryptoCoreError {
             }
             CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
             CryptoCoreError::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
-            CryptoCoreError::TryFromSliceError(e) => write!(f, "try from slice error: {e}"),
+            CryptoCoreError::TryFromSliceError { expected, given } => {
+                write!(
+                    f,
+                    "try from slice error: {given} was given when {expected} was expected"
+                )
+            }
             CryptoCoreError::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
@@ -124,12 +131,6 @@ impl std::error::Error for CryptoCoreError {}
 impl From<aead::Error> for CryptoCoreError {
     fn from(e: aead::Error) -> Self {
         Self::StreamCipherError(e.to_string())
-    }
-}
-
-impl From<TryFromSliceError> for CryptoCoreError {
-    fn from(e: TryFromSliceError) -> Self {
-        Self::TryFromSliceError(e)
     }
 }
 
