@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq)]
-pub struct RsaPublicKey(pub(super) rsa::RsaPublicKey);
+pub struct RsaPublicKey(pub(crate) rsa::RsaPublicKey);
 
 impl RsaPublicKey {
     /// Get the key length which is the modulus size in bits
@@ -57,7 +57,81 @@ impl RsaPublicKey {
     }
 }
 
+#[cfg(not(feature = "signature"))]
 impl PublicKey for RsaPublicKey {}
+
+#[cfg(feature = "signature")]
+use const_oid::ObjectIdentifier;
+
+#[cfg(feature = "signature")]
+use signature::Verifier;
+
+#[cfg(feature = "signature")]
+impl PublicKey for RsaPublicKey {
+    fn verify(
+        &self,
+        msg: &[u8],
+        signature: &[u8],
+        signature_algorithm: Option<const_oid::ObjectIdentifier>,
+    ) -> Result<(), crate::CryptoCoreError> {
+        let signature_oid = signature_algorithm.unwrap_or(
+            ObjectIdentifier::new("1.2.840.113549.1.1.11")
+                .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?,
+        );
+        match signature_oid.to_string().as_str() {
+            "1.2.840.113549.1.1.11" => {
+                let signature = rsa::pkcs1v15::Signature::try_from(signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+                let verifying_key =
+                    rsa::pkcs1v15::VerifyingKey::<sha2::Sha256>::from(self.0.clone());
+                verifying_key
+                    .verify(msg, &signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+            }
+            "1.2.840.113549.1.1.12" => {
+                let signature = rsa::pkcs1v15::Signature::try_from(signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+                let verifying_key =
+                    rsa::pkcs1v15::VerifyingKey::<sha2::Sha384>::from(self.0.clone());
+                verifying_key
+                    .verify(msg, &signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+            }
+            "1.2.840.113549.1.1.13" => {
+                let signature = rsa::pkcs1v15::Signature::try_from(signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+                let verifying_key =
+                    rsa::pkcs1v15::VerifyingKey::<sha2::Sha512>::from(self.0.clone());
+                verifying_key
+                    .verify(msg, &signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+            }
+            "1.2.840.113549.1.1.7" | "1.2.840.113549.1.1.5" => {
+                let signature = rsa::pkcs1v15::Signature::try_from(signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+                let verifying_key = rsa::pkcs1v15::VerifyingKey::<sha1::Sha1>::from(self.0.clone());
+                verifying_key
+                    .verify(msg, &signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+            }
+            "1.2.840.113549.1.1.10" => {
+                let signature = rsa::pss::Signature::try_from(signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+                let verifying_key = rsa::pss::VerifyingKey::<sha2::Sha256>::from(self.0.clone());
+                verifying_key
+                    .verify(msg, &signature)
+                    .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?;
+            }
+            _ => {
+                return Err(CryptoCoreError::UnsupportedAlgorithm(
+                    "Unsupported signature algorithm".to_string(),
+                ))
+            }
+        };
+
+        Ok(())
+    }
+}
 
 impl From<rsa::RsaPublicKey> for RsaPublicKey {
     fn from(key: rsa::RsaPublicKey) -> Self {

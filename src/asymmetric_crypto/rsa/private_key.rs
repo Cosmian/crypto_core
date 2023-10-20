@@ -1,5 +1,6 @@
 use digest::{Digest, DynDigest};
 use pkcs8::SecretDocument;
+use rand_core::SeedableRng;
 use rsa::traits::PublicKeyParts;
 use zeroize::{ZeroizeOnDrop, Zeroizing};
 
@@ -7,7 +8,7 @@ use crate::{
     asymmetric_crypto::{PrivateKey, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPublicKey},
     key_unwrap, pkcs8_fix,
     reexport::rand_core::{CryptoRng, CryptoRngCore, RngCore},
-    CryptoCoreError,
+    CryptoCoreError, CsRng,
 };
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq)]
@@ -72,11 +73,83 @@ impl RsaPrivateKey {
     }
 }
 
+#[cfg(not(feature = "signature"))]
 impl PrivateKey for RsaPrivateKey {
     type PublicKey = RsaPublicKey;
 
     fn public_key(&self) -> Self::PublicKey {
         self.0.to_public_key().into()
+    }
+}
+
+#[cfg(feature = "signature")]
+use const_oid::ObjectIdentifier;
+#[cfg(feature = "signature")]
+use signature::{RandomizedSigner, SignatureEncoding};
+
+#[cfg(feature = "signature")]
+impl PrivateKey for RsaPrivateKey {
+    type PublicKey = RsaPublicKey;
+
+    fn public_key(&self) -> Self::PublicKey {
+        self.0.to_public_key().into()
+    }
+
+    fn try_sign(
+        &self,
+        msg: &[u8],
+        signature_algorithm: Option<const_oid::ObjectIdentifier>,
+    ) -> Result<Vec<u8>, crate::CryptoCoreError> {
+        /*
+        sha1WithRSA	1.2.840.113549.1.1.5	SHA-1 with RSA Encryption
+        md2WithRSA	1.2.840.113549.1.1.2	MD2 with RSA Encryption
+        md5WithRSA	1.2.840.113549.1.1.4	MD5 with RSA Encryption
+        sha256WithRSA	1.2.840.113549.1.1.11	SHA-256 with RSA Encryption
+        sha384WithRSA	1.2.840.113549.1.1.12	SHA-384 with RSA Encryption
+        sha512WithRSA	1.2.840.113549.1.1.13	SHA-512 with RSA Encryption
+        pkcs1WithRSA	1.2.840.113549.1.1.7	PKCS#1 v1.5 with RSA Encryption
+        pssWithRSA	1.2.840.113549.1.1.10	RSA PSS
+         */
+
+        let mut rng = CsRng::from_entropy();
+
+        let signature_oid = signature_algorithm.unwrap_or(
+            ObjectIdentifier::new("1.2.840.113549.1.1.11")
+                .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))?,
+        );
+
+        let signature = match signature_oid.to_string().as_str() {
+            "1.2.840.113549.1.1.11" => {
+                rsa::pkcs1v15::SigningKey::<sha2::Sha256>::new(self.0.clone())
+                    .sign_with_rng(&mut rng, msg)
+                    .to_vec()
+            }
+            "1.2.840.113549.1.1.12" => {
+                rsa::pkcs1v15::SigningKey::<sha2::Sha384>::new(self.0.clone())
+                    .sign_with_rng(&mut rng, msg)
+                    .to_vec()
+            }
+            "1.2.840.113549.1.1.13" => {
+                rsa::pkcs1v15::SigningKey::<sha2::Sha512>::new(self.0.clone())
+                    .sign_with_rng(&mut rng, msg)
+                    .to_vec()
+            }
+            "1.2.840.113549.1.1.7" | "1.2.840.113549.1.1.5" => {
+                rsa::pkcs1v15::SigningKey::<sha1::Sha1>::new(self.0.clone())
+                    .sign_with_rng(&mut rng, msg)
+                    .to_vec()
+            }
+            "1.2.840.113549.1.1.10" => rsa::pss::SigningKey::<sha2::Sha256>::new(self.0.clone())
+                .sign_with_rng(&mut rng, msg)
+                .to_vec(),
+            _ => {
+                return Err(CryptoCoreError::UnsupportedAlgorithm(
+                    "Unsupported RSA signature algorithm".to_string(),
+                ))
+            }
+        };
+
+        Ok(signature)
     }
 }
 

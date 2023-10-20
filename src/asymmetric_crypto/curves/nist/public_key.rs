@@ -1,20 +1,19 @@
-use elliptic_curve::{
-    group::Curve as Curve_,
-    sec1::{self, ToEncodedPoint},
-    Curve, CurveArithmetic, ProjectivePoint, PublicKey,
-};
-
 use super::private_key::NistPrivateKey;
 #[cfg(feature = "ser")]
 use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
 use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, NistCurvePoint};
+use elliptic_curve::{
+    group::Curve as Curve_,
+    sec1::{self, ToEncodedPoint},
+    Curve, CurveArithmetic, PrimeCurve, ProjectivePoint, PublicKey,
+};
 
 /// Nist Curve public key
 ///
 /// The `LENGTH` const generic parameter is the length of the serialized public
 /// key in bytes.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct NistPublicKey<C: Curve + CurveArithmetic, const LENGTH: usize>(PublicKey<C>);
+pub struct NistPublicKey<C: Curve + CurveArithmetic, const LENGTH: usize>(pub(crate) PublicKey<C>);
 
 impl<C: Curve + CurveArithmetic, const LENGTH: usize> CBytes for NistPublicKey<C, LENGTH> {}
 
@@ -106,9 +105,47 @@ where
     }
 }
 
+#[cfg(not(feature = "signature"))]
 impl<C: Curve + CurveArithmetic, const LENGTH: usize> crate::PublicKey
     for NistPublicKey<C, LENGTH>
 {
+}
+
+#[cfg(feature = "signature")]
+use ecdsa::{
+    hazmat::{DigestPrimitive, VerifyPrimitive},
+    Signature, SignatureSize, VerifyingKey,
+};
+#[cfg(feature = "signature")]
+use elliptic_curve::{generic_array::ArrayLength, AffinePoint};
+#[cfg(feature = "signature")]
+use signature::Verifier;
+
+#[cfg(feature = "signature")]
+impl<C: Curve + CurveArithmetic + PrimeCurve, const LENGTH: usize> crate::PublicKey
+    for NistPublicKey<C, LENGTH>
+{
+    fn verify(
+        &self,
+        msg: &[u8],
+        signature: &[u8],
+        signature_algorithm: Option<const_oid::ObjectIdentifier>,
+    ) -> Result<(), crate::CryptoCoreError> {
+        todo!("Implement signature verification for NIST curves")
+    }
+}
+
+#[cfg(feature = "signature")]
+impl<C: Curve + CurveArithmetic + PrimeCurve + DigestPrimitive, const LENGTH: usize>
+    Verifier<Signature<C>> for NistPublicKey<C, LENGTH>
+where
+    AffinePoint<C>: VerifyPrimitive<C>,
+    SignatureSize<C>: ArrayLength<u8>,
+{
+    fn verify(&self, msg: &[u8], signature: &Signature<C>) -> Result<(), signature::Error> {
+        let vk = ecdsa::VerifyingKey::from(self.0);
+        VerifyingKey::<C>::verify(&vk, msg, signature)
+    }
 }
 
 impl<

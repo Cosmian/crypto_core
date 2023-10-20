@@ -4,13 +4,14 @@ use std::hash::Hash;
 use aead::generic_array::GenericArray;
 use elliptic_curve::{
     sec1::{self},
-    Curve, CurveArithmetic, SecretKey,
+    Curve, CurveArithmetic, PrimeCurve, SecretKey,
 };
 use pkcs8::{
     pkcs5::{pbes2, scrypt},
     EncodePrivateKey, EncryptedPrivateKeyInfo, SecretDocument,
 };
 use rand_core::{RngCore, SeedableRng};
+use signature::Signer;
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 #[cfg(feature = "ser")]
@@ -137,6 +138,7 @@ impl<C: Curve + CurveArithmetic, const LENGTH: usize> NistPrivateKey<C, LENGTH> 
     }
 }
 
+#[cfg(not(feature = "signature"))]
 impl<C: Curve + CurveArithmetic, const LENGTH: usize> crate::PrivateKey
     for NistPrivateKey<C, LENGTH>
 {
@@ -144,6 +146,57 @@ impl<C: Curve + CurveArithmetic, const LENGTH: usize> crate::PrivateKey
 
     fn public_key(&self) -> Self::PublicKey {
         Self::PublicKey::from(self)
+    }
+}
+
+#[cfg(feature = "signature")]
+use const_oid::AssociatedOid;
+#[cfg(feature = "signature")]
+use ecdsa::{
+    hazmat::{DigestPrimitive, SignPrimitive},
+    SignatureSize, SignatureWithOid, SigningKey,
+};
+#[cfg(feature = "signature")]
+use elliptic_curve::{generic_array::ArrayLength, ops::Invert, subtle::CtOption, Scalar};
+
+#[cfg(feature = "signature")]
+impl<C: Curve + CurveArithmetic + PrimeCurve + DigestPrimitive, const LENGTH: usize>
+    crate::PrivateKey for NistPrivateKey<C, LENGTH>
+where
+    C::Digest: AssociatedOid,
+    Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+    SignatureSize<C>: ArrayLength<u8>,
+{
+    type PublicKey = NistPublicKey<C, LENGTH>;
+
+    fn public_key(&self) -> Self::PublicKey {
+        Self::PublicKey::from(self)
+    }
+
+    fn try_sign(
+        &self,
+        msg: &[u8],
+        signature_algorithm: Option<const_oid::ObjectIdentifier>,
+    ) -> Result<Vec<u8>, crate::CryptoCoreError> {
+        // 1.2.840.10045.4.3.2 ecdsa-with-SHA256
+        <Self as Signer<SignatureWithOid<C>>>::try_sign(self, msg)
+            .map(|s| s.to_bytes().to_vec())
+            .map_err(|e| CryptoCoreError::SignatureError(e.to_string()))
+    }
+}
+
+#[cfg(feature = "signature")]
+impl<C: Curve + CurveArithmetic + PrimeCurve + DigestPrimitive, const LENGTH: usize>
+    Signer<SignatureWithOid<C>> for NistPrivateKey<C, LENGTH>
+where
+    C::Digest: AssociatedOid,
+    Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+    SignatureSize<C>: ArrayLength<u8>,
+{
+    fn try_sign(&self, msg: &[u8]) -> Result<SignatureWithOid<C>, signature::Error> {
+        let sk = SigningKey::from(self.secret_key.to_nonzero_scalar());
+        let signature = <SigningKey<C> as Signer<SignatureWithOid<C>>>::try_sign(&sk, msg)?;
+        Ok(signature)
     }
 }
 

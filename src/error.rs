@@ -43,6 +43,7 @@ pub enum CryptoCoreError {
     SignatureError(String),
     StreamCipherError(String),
     TryFromSliceError(TryFromSliceError),
+    UnsupportedAlgorithm(String),
     WriteLeb128Error {
         value: u64,
         error: std::io::Error,
@@ -111,6 +112,7 @@ impl Display for CryptoCoreError {
             CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
             CryptoCoreError::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
             CryptoCoreError::TryFromSliceError(e) => write!(f, "try from slice error: {e}"),
+            CryptoCoreError::UnsupportedAlgorithm(e) => write!(f, "unsupported algorithm: {e}"),
             CryptoCoreError::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }

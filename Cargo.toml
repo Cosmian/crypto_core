@@ -23,7 +23,7 @@ aes = ["aead", "aes-gcm"]
 blake = ["blake2"]
 certificate = ["curve25519", "x509-cert", "uuid", "pkcs8"]
 chacha = ["aead", "chacha20poly1305", "chacha20"]
-curve25519 = ["curve25519-dalek", "ed25519-dalek", "signature", "sha2"]
+curve25519 = ["curve25519-dalek", "ed25519-dalek", "dep:signature", "sha2"]
 default = [
     "aes",
     "chacha",
@@ -37,13 +37,34 @@ default = [
     "blake",
     "sha3",
     "rfc5649",
+    "signature",
 ]
 ecies = ["aead", "crypto_box"]
-rsa = ["digest", "dep:rsa", "sha1", "sha2", "dep:sha3", "pkcs8", "rfc5649"]
-nist_curves = ["p384", "p256", "p224", "p192", "elliptic-curve", "pkcs8"]
+rsa = [
+    "const-oid",
+    "digest",
+    "dep:rsa",
+    "sha1",
+    "sha2",
+    "dep:sha3",
+    "pkcs8",
+    "rfc5649",
+    "spki",
+]
+nist_curves = [
+    "const-oid",
+    "p384",
+    "p256",
+    "p224",
+    "p192",
+    "elliptic-curve",
+    "pkcs8",
+    "spki",
+]
 rfc5649 = ["aes", "chacha"]
 ser = ["leb128"]
 sha3 = ["tiny-keccak"]
+signature = ["dep:signature", "ecdsa"]
 
 [dependencies]
 aead = { version = "0.5", features = ["stream"], optional = true }
@@ -51,9 +72,11 @@ aes-gcm = { version = "0.10", optional = true, features = ["zeroize"] }
 blake2 = { version = "0.10", optional = true }
 chacha20 = { version = "0.9", optional = true }
 chacha20poly1305 = { version = "0.10", optional = true }
+const-oid = { version = "0.9", features = ["db"], optional = true }
 crypto_box = { version = "0.9.1", features = ["seal"], optional = true }
 curve25519-dalek = { version = "4.1.0", optional = true }
 digest = { version = "0.10", optional = true }
+ecdsa = { version = "0.16", optional = true }
 ed25519-dalek = { version = "2.0.0", optional = true, features = [
     "default",
     "hazmat",
@@ -79,10 +102,11 @@ pkcs8 = { version = "0.10", features = [
 rand_chacha = "0.3"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 rsa = { version = "0.9", optional = true }
-sha1 = { version = "0.10", optional = true }
-sha2 = { version = "0.10", optional = true }
+sha1 = { version = "0.10", features = ["oid"], optional = true }
+sha2 = { version = "0.10", features = ["oid"], optional = true }
 sha3 = { version = "0.10", optional = true }
 signature = { version = "2.1", optional = true }
+spki = { version = "0.7", optional = true }
 tiny-keccak = { version = "2.0.2", features = ["shake"], optional = true }
 uuid = { version = "1.4", features = ["v4"], optional = true }
 x509-cert = { version = "0.2.4", features = [
