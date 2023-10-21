@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.4.0] - 2023-10-21
+
+### Features
+
+- Add support for Subject Public Key Info
+- Add support for RSA signatures, NIST Curves signatures and refactor of Ed25519 signatures
+  ##### TODO: finalize NIST Curves signatures and revamp of Ed25519 signature
+
 ## [9.3.0] - 2023-09-26
 
 ### Features
