@@ -13,7 +13,7 @@ use crate::{
 /// A type that holds symmetric key of a fixed  size.
 ///
 /// It is internally built using an array of bytes of the given length.
-#[derive(Debug, Hash, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct SymmetricKey<const LENGTH: usize>(pub(crate) [u8; LENGTH]);
 
 impl<const LENGTH: usize> CBytes for SymmetricKey<LENGTH> {}
