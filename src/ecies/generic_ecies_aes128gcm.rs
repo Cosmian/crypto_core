@@ -44,8 +44,8 @@ fn get_ephemeral_key<
 >(
     shared_point: &PublicKey::SharedPoint,
 ) -> SymmetricKey<KEY_LENGTH> {
-    let mut key = SymmetricKey([0; KEY_LENGTH]);
-    kdf128!(&mut key.0, &shared_point.to_vec());
+    let mut key = SymmetricKey::default();
+    kdf128!(&mut *key, &shared_point.to_vec());
     key
 }
 
