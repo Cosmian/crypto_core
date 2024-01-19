@@ -99,6 +99,16 @@ impl R25519PrivateKey {
     pub fn try_from_bytes(bytes: [u8; R25519_PRIVATE_KEY_LENGTH]) -> Result<Self, CryptoCoreError> {
         <Self as FixedSizeCBytes<R25519_PRIVATE_KEY_LENGTH>>::try_from_bytes(bytes)
     }
+
+    /// Neutral scalar element for the addition.
+    pub const fn zero() -> Self {
+        Self(Scalar::ZERO)
+    }
+
+    /// Neutral scalar element for the multiplication.
+    pub const fn one() -> Self {
+        Self(Scalar::ONE)
+    }
 }
 
 // Curve arithmetic

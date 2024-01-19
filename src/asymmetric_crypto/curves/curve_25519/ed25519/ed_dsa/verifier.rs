@@ -1,5 +1,4 @@
 use ed25519_dalek::ed25519;
-pub use ed25519_dalek::{SecretKey as EdSecretKey, VerifyingKey as EdPublicKey};
 use signature::Verifier;
 
 use crate::Ed25519PublicKey;
