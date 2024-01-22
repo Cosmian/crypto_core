@@ -6,6 +6,7 @@ use std::{
 use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
+#[cfg(feature = "ser")]
 use crate::{bytes_ser_de::Serializable, CryptoCoreError};
 
 /// Holds a secret information of `LENGTH` bytes.
@@ -92,6 +93,7 @@ impl<const LENGTH: usize> Drop for Secret<LENGTH> {
 
 impl<const LENGTH: usize> ZeroizeOnDrop for Secret<LENGTH> {}
 
+#[cfg(feature = "ser")]
 impl<const LENGTH: usize> Serializable for Secret<LENGTH> {
     type Error = CryptoCoreError;
 
