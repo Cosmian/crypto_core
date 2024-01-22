@@ -3,6 +3,7 @@ use core::ops::{Add, Mul, Sub};
 use curve25519_dalek::{
     constants,
     ristretto::{CompressedRistretto, RistrettoPoint},
+    traits::Identity,
 };
 
 use super::R25519PrivateKey;
@@ -122,6 +123,12 @@ impl R25519CurvePoint {
     /// Facade to [`FixedSizeCBytes::try_from_slice`].
     pub fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
         <Self as FixedSizeCBytes<R25519_CURVE_POINT_LENGTH>>::try_from_slice(slice)
+    }
+
+    /// Returns the identity element of the curve.
+    #[must_use]
+    pub fn identity() -> Self {
+        Self(RistrettoPoint::identity())
     }
 }
 
