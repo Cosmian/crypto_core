@@ -101,11 +101,13 @@ impl R25519PrivateKey {
     }
 
     /// Neutral scalar element for the addition.
+    #[inline(always)]
     pub const fn zero() -> Self {
         Self(Scalar::ZERO)
     }
 
     /// Neutral scalar element for the multiplication.
+    #[inline(always)]
     pub const fn one() -> Self {
         Self(Scalar::ONE)
     }
