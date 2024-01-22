@@ -7,34 +7,36 @@ use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 use crate::{
     reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
-    RandomFixedSizeCBytes, SecretCBytes,
+    RandomFixedSizeCBytes, Secret, SecretCBytes,
 };
 
 /// A type that holds symmetric key of a fixed  size.
 ///
 /// It is internally built using an array of bytes of the given length.
 #[derive(Debug, Hash, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
-pub struct SymmetricKey<const LENGTH: usize>(pub(crate) [u8; LENGTH]);
+pub struct SymmetricKey<const LENGTH: usize>(Secret<LENGTH>);
 
 impl<const LENGTH: usize> CBytes for SymmetricKey<LENGTH> {}
 
 impl<const LENGTH: usize> FixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH> {
     fn to_bytes(&self) -> [u8; LENGTH] {
-        self.0
+        let mut dest = [0; LENGTH];
+        self.0.to_unprotected_bytes(&mut dest);
+        dest
     }
 
-    fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError> {
-        Ok(Self(bytes))
+    fn try_from_bytes(mut bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError> {
+        Ok(Self(Secret::from_unprotected_bytes(&mut bytes)))
     }
 }
 
 impl<const LENGTH: usize> RandomFixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH> {
+    #[inline(always)]
     fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-        let mut key = Self([0; LENGTH]);
-        rng.fill_bytes(&mut key.0);
-        key
+        Self(Secret::random(rng))
     }
 
+    #[inline(always)]
     fn as_bytes(&self) -> &[u8] {
         self.as_ref()
     }
@@ -59,7 +61,7 @@ impl<const LENGTH: usize> DerefMut for SymmetricKey<LENGTH> {
 
 impl<const LENGTH: usize> Default for SymmetricKey<LENGTH> {
     fn default() -> Self {
-        Self([0; LENGTH])
+        Self(Secret::new())
     }
 }
 
