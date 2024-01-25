@@ -5,6 +5,7 @@ use curve25519_dalek::{
     ristretto::{CompressedRistretto, RistrettoPoint},
     traits::Identity,
 };
+use zeroize::Zeroize;
 
 use super::R25519PrivateKey;
 #[cfg(feature = "ser")]
@@ -15,7 +16,7 @@ use crate::{CBytes, CryptoCoreError, FixedSizeCBytes};
 ///
 /// Internally, a Ristretto point is used. It wraps an Edwards point and its
 /// compressed form is used for serialization, which makes it 256-bit long.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Zeroize)]
 pub struct R25519CurvePoint(pub(crate) RistrettoPoint);
 
 impl CBytes for R25519CurvePoint {}
