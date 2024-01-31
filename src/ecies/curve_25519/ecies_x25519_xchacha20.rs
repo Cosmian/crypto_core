@@ -6,7 +6,7 @@ use crate::{
     blake2b,
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{Dem, DemStream, Instantiable, Nonce, SymmetricKey, XChaCha20Poly1305},
-    CryptoCoreError, Ecies, EciesStream, X25519PrivateKey, X25519PublicKey,
+    CryptoCoreError, Ecies, EciesStream, FixedSizeCBytes, X25519PrivateKey, X25519PublicKey,
     CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
@@ -33,9 +33,9 @@ fn get_ephemeral_key<const KEY_LENGTH: usize>(
         &GenericArray::default(),
     );
 
-    Ok(SymmetricKey(key.as_slice().try_into().map_err(|_| {
+    SymmetricKey::try_from_bytes(key.as_slice().try_into().map_err(|_| {
         CryptoCoreError::InvalidBytesLength("get ephemeral key".to_string(), KEY_LENGTH, None)
-    })?))
+    })?)
 }
 
 impl EciesX25519XChaCha20 {

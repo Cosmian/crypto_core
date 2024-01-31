@@ -13,6 +13,7 @@ mod ecies;
 pub mod kdf;
 #[cfg(any(feature = "certificate", feature = "rsa", feature = "nist_curves"))]
 mod pkcs8_fix;
+mod secret;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;
 
@@ -41,6 +42,7 @@ pub use ecies::*;
 #[cfg(feature = "sha3")]
 pub use kdf::*;
 use reexport::rand_core::CryptoRngCore;
+pub use secret::Secret;
 #[cfg(any(feature = "aes", feature = "chacha"))]
 pub use symmetric_crypto::*;
 use zeroize::{Zeroize, ZeroizeOnDrop};
