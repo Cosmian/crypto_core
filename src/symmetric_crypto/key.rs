@@ -6,7 +6,7 @@ use std::ops::DerefMut;
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 use crate::{
-    reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
+    kdf256, reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
     RandomFixedSizeCBytes, Secret, SecretCBytes,
 };
 
@@ -68,6 +68,31 @@ impl<const LENGTH: usize> Default for SymmetricKey<LENGTH> {
 impl<const LENGTH: usize> From<SymmetricKey<LENGTH>> for Zeroizing<Vec<u8>> {
     fn from(value: SymmetricKey<LENGTH>) -> Self {
         Zeroizing::new(value.0.to_vec())
+    }
+}
+
+impl<const KEY_LENGTH: usize> SymmetricKey<KEY_LENGTH> {
+    /// Deterministically derive a new key from the given secret and additional information.
+    ///
+    /// # Error
+    ///
+    /// Fails to generate the key in case the secret evidently does not contain enough entropy. The
+    /// check performed is based on the respective key and secret lengths. The secret needs to be
+    /// generated from a source containing enough entropy (greater than its length) for this check
+    /// to be valid.
+    pub fn derive<const SECRET_LENGTH: usize>(
+        secret: &Secret<SECRET_LENGTH>,
+        info: &[u8],
+    ) -> Result<Self, CryptoCoreError> {
+        if SECRET_LENGTH < KEY_LENGTH {
+            return Err(CryptoCoreError::ConversionError(format!(
+                "insufficient entropy to derive {}-byte key from a {}-byte secret",
+                KEY_LENGTH, SECRET_LENGTH,
+            )));
+        }
+        let mut key = Self::default();
+        kdf256!(&mut key, &secret, info);
+        Ok(key)
     }
 }
 
