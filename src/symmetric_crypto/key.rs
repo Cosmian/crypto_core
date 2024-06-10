@@ -5,8 +5,10 @@ use std::ops::DerefMut;
 
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
+#[cfg(feature = "sha3")]
+use crate::kdf256;
 use crate::{
-    kdf256, reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
+    reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
     RandomFixedSizeCBytes, Secret, SecretCBytes,
 };
 
@@ -71,6 +73,7 @@ impl<const LENGTH: usize> From<SymmetricKey<LENGTH>> for Zeroizing<Vec<u8>> {
     }
 }
 
+#[cfg(feature = "sha3")]
 impl<const KEY_LENGTH: usize> SymmetricKey<KEY_LENGTH> {
     /// Deterministically derive a new key from the given secret and additional information.
     ///

@@ -139,14 +139,14 @@ impl From<pkcs8::der::Error> for CryptoCoreError {
         Self::Pkcs8Error(e.to_string())
     }
 }
-#[cfg(any(feature = "certificate", feature = "nist_curves"))]
+#[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
 impl From<pkcs8::spki::Error> for CryptoCoreError {
     fn from(e: pkcs8::spki::Error) -> Self {
         Self::Pkcs8Error(e.to_string())
     }
 }
 
-#[cfg(any(feature = "certificate", feature = "nist_curves"))]
+#[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
 impl From<pkcs8::Error> for CryptoCoreError {
     fn from(e: pkcs8::Error) -> Self {
         Self::Pkcs8Error(e.to_string())

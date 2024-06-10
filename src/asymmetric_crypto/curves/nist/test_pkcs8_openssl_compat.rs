@@ -3,7 +3,6 @@ mod tests {
 
     use openssl::{
         ec::{EcGroup, EcKey},
-        error::ErrorStack,
         nid::Nid,
         pkey::{PKey, Public},
         symm::Cipher,
@@ -163,17 +162,5 @@ mod tests {
         assert!(private_key.public_eq(&openssl_public_key));
 
         Ok(())
-    }
-
-    impl From<std::io::Error> for crate::CryptoCoreError {
-        fn from(_: std::io::Error) -> Self {
-            Self::EncryptionError
-        }
-    }
-
-    impl From<ErrorStack> for crate::CryptoCoreError {
-        fn from(_: ErrorStack) -> Self {
-            Self::EncryptionError
-        }
     }
 }

@@ -176,7 +176,8 @@ pub fn ecies_x25519_xchacha20_stream() {
     feature = "ecies",
     feature = "aes",
     feature = "sha3",
-    feature = "nist_curves"
+    feature = "nist_curves",
+    feature = "chacha"
 ))]
 pub fn ecies_p256_aes128_stream() {
     use aead::Payload;

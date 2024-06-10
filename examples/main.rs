@@ -37,7 +37,8 @@ fn main() {
         feature = "ecies",
         feature = "aes",
         feature = "sha3",
-        feature = "nist_curves"
+        feature = "nist_curves",
+        feature = "chacha"
     ))]
     self::examples::ecies_p256_aes128_stream();
 
