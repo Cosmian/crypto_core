@@ -1,7 +1,7 @@
 //! This crate implements crypto primitives which are used in many other
 //! Cosmian cryptographic resources.
 
-#[cfg(any(feature = "curve25519", feature = "nist_curves"))]
+#[cfg(any(feature = "curve25519", feature = "nist_curves", feature = "rsa"))]
 mod asymmetric_crypto;
 #[cfg(feature = "blake")]
 pub mod blake2;
@@ -13,6 +13,7 @@ mod ecies;
 pub mod kdf;
 #[cfg(any(feature = "certificate", feature = "rsa", feature = "nist_curves"))]
 mod pkcs8_fix;
+mod secret;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;
 
@@ -34,13 +35,14 @@ pub mod reexport {
     pub use zeroize;
 }
 
-#[cfg(any(feature = "curve25519", feature = "nist_curves"))]
+#[cfg(any(feature = "curve25519", feature = "nist_curves", feature = "rsa"))]
 pub use asymmetric_crypto::*;
 #[cfg(feature = "ecies")]
 pub use ecies::*;
 #[cfg(feature = "sha3")]
 pub use kdf::*;
 use reexport::rand_core::CryptoRngCore;
+pub use secret::Secret;
 #[cfg(any(feature = "aes", feature = "chacha"))]
 pub use symmetric_crypto::*;
 use zeroize::{Zeroize, ZeroizeOnDrop};

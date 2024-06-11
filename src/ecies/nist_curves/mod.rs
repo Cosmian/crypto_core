@@ -1,5 +1,4 @@
 mod keys;
-pub use keys::*;
 
 use crate::{
     EciesAes128, P192PublicKey, P224PublicKey, P256PublicKey, P384PublicKey,

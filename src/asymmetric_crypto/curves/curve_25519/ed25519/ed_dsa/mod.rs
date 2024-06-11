@@ -30,7 +30,7 @@ mod tests {
         let signature = private_key.try_sign(message).unwrap();
 
         // verify the signature
-        let public_key = Ed25519PublicKey::try_from(&private_key).unwrap();
+        let public_key = Ed25519PublicKey::from(&private_key);
         public_key.verify(message, &signature).unwrap();
     }
 
@@ -43,7 +43,7 @@ mod tests {
         let cached_signer = Cached25519Signer::try_from(&private_key).unwrap();
 
         // verify the signatures
-        let public_key = Ed25519PublicKey::try_from(&private_key).unwrap();
+        let public_key = Ed25519PublicKey::from(&private_key);
 
         let message = b"Hello, world!";
         let signature = cached_signer.try_sign(message).unwrap();

@@ -2,7 +2,6 @@ mod encoding;
 
 use std::{str::FromStr, time::Duration};
 
-pub use encoding::ED25519_ALGORITHM_ID;
 use pkcs8::{
     der::{Decode, EncodePem},
     spki::SubjectPublicKeyInfoOwned,

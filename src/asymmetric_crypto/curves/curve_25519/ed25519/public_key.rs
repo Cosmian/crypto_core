@@ -3,7 +3,7 @@
 use std::ops::Deref;
 
 use ed25519_dalek::SigningKey;
-pub use ed25519_dalek::{SecretKey as EdSecretKey, VerifyingKey as EdPublicKey};
+pub use ed25519_dalek::VerifyingKey as EdPublicKey;
 
 use super::private_key::Ed25519PrivateKey;
 use crate::{CBytes, CryptoCoreError, FixedSizeCBytes};
