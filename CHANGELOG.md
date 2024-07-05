@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.5.0] - 2023-07-05
+
+### Features
+
+- derive `Clone` for `SymmetricKey`
+
 ## [9.4.0] - 2023-06-10
 
 ### Features
