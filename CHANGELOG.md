@@ -2,9 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.5.0] - 2023-07-05
+
+### Features
+
+- derive `Clone` for `SymmetricKey`, `Aes128Gcm` and `Aes256Gcm` structures
+
 ## [9.4.0] - 2023-06-10
 
 ### Features
+
 - add a `Secret` type to hold sensitive information
 - base the `SymmetricKey` type on the Secret type
 - add a derive constructor to the `SymmetricKey` that takes a `Secret` seed as

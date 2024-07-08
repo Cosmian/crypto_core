@@ -14,24 +14,26 @@ This crate implements the cryptographic primitives (modern encryption and signat
 - [Further improving performance](#further-improving-performance)
 - [Running tests and benchmarks](#running-tests-and-benchmarks)
 - [Symmetric key encryption](#symmetric-key-encryption)
-  - [Symmetric key encryption of a vector of bytes in combined mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-combined-mode)
-  - [Symmetric key encryption of a vector of bytes in detached mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-detached-mode)
-  - [Symmetric key encryption of a stream of bytes](#symmetric-key-encryption-of-a-stream-of-bytes)
+  * [Symmetric key encryption of a vector of bytes in combined mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-combined-mode)
+  * [Symmetric key encryption of a vector of bytes in detached mode](#symmetric-key-encryption-of-a-vector-of-bytes-in-detached-mode)
+  * [Symmetric key encryption of a stream of bytes](#symmetric-key-encryption-of-a-stream-of-bytes)
 - [ECIES - Elliptic Curve Integrated Encryption Scheme](#ecies---elliptic-curve-integrated-encryption-scheme)
-  - [Curve 25519](#curve-25519)
-  - [NIST Curves](#nist-curves)
-  - [Performance](#performance)
-  - [Security](#security)
-  - [ECIES encryption of a vector of bytes](#ecies-encryption-of-a-vector-of-bytes)
-  - [ECIES encryption of a stream of bytes](#ecies-encryption-of-a-stream-of-bytes)
-- [Key wrapping](#key-wrapping)
-  - [RFC 5649](#rfc-5649)
-  - [ECIES Key Wrapping](#ecies-key-wrapping)
-  - [RSA Key Wrapping](#rsa-key-wrapping)
+  * [Curve 25519](#curve-25519)
+  * [NIST Curves](#nist-curves)
+  * [Performance](#performance)
+  * [Security](#security)
+  * [ECIES encryption of a vector of bytes](#ecies-encryption-of-a-vector-of-bytes)
+  * [ECIES encryption of a stream of bytes](#ecies-encryption-of-a-stream-of-bytes)
+- [Key Wrapping](#key-wrapping)
+  * [RFC 5649](#rfc-5649)
+    + [Example](#example)
+  * [ECIES Key Wrapping](#ecies-key-wrapping)
+  * [RSA Key Wrapping](#rsa-key-wrapping)
+    + [Example using CKM_RSA_AES_KEY_WRAP with SHA-256 and AES 256](#example-using-ckm_rsa_aes_key_wrap-with-sha-256-and-aes-256)
 - [Signature](#signature)
-  - [Static implementation](#static-implementation)
-  - [Cached implementation](#cached-implementation)
-  - [Using a Keypair](#using-a-keypair)
+  * [Static implementation](#static-implementation)
+  * [Cached implementation](#cached-implementation)
+  * [Using a Keypair](#using-a-keypair)
 - [Cryptographically Secure Random Number Generator (CS-RNG)](#cryptographically-secure-random-number-generator-cs-rng)
 - [Key Derivation Function (KDF)](#key-derivation-function-kdf)
 - [Blake2 hashing](#blake2-hashing)
@@ -486,7 +488,7 @@ Key wrapping and unwrapping is supported using:
 
 The RFC 5649 key wrapping scheme is implemented using the `key_wrap` and `Key_unwrap` methods exposed in the [key_wrapping_rfc_5649.rs](src/symmetric_crypto/key_wrapping_rfc_5649.rs). These methods are compatible with the PKCS#11 CKM_AES_KEY_WRAP_KWP mechanism (which is used in the hybrid RSA-AES key wrapping scheme, see below)
 
-**Example**
+#### Example
 
 ```Rust
 let kek =
@@ -528,7 +530,7 @@ The algorithms are listed below with the corresponding CKM mechanism. Preferably
 - **OaepSha256**,
   PKCS #1 RSA with OAEP block format following PKCS#11 CKM*RSA_PKCS_OAEP
   The hash function used is SHA256
-  The maximum possible plaintext length is m = k - 2 * h_len - 2,
+The maximum possible plaintext length is m = k - 2* h_len - 2,
   where k is the size of the RSA modulus
   and h_len is the size of the hash of the optional label.
 
@@ -536,7 +538,7 @@ The algorithms are listed below with the corresponding CKM mechanism. Preferably
   PKCS #1 RSA with OAEP block format following PKCS#11 CKM*RSA_PKCS_OAEP
   The hash function used is SHA1. For that reason this algorithm is not recommended
   and is only kept here for compatibility with legacy systems.
-  The maximum possible plaintext length is m = k - 2 * h_len - 2,
+The maximum possible plaintext length is m = k - 2* h_len - 2,
   where k is the size of the RSA modulus
   and h_len is the size of the hash of the optional label.
   This algorithm is compatible with Google Cloud KMS
@@ -583,7 +585,7 @@ The algorithms are listed below with the corresponding CKM mechanism. Preferably
   since there is no limitation on the size of the plaintext; the recommended
   plaintext format for an EC Private key is PKCS#8.
 
-**Example using CKM_RSA_AES_KEY_WRAP with SHA-256 and AES 256**
+#### Example using CKM_RSA_AES_KEY_WRAP with SHA-256 and AES 256
 
 ```Rust
 use cosmian_crypto_core::{
