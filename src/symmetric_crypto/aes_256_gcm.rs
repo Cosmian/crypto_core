@@ -18,6 +18,7 @@ use crate::{
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 256 GCM.
+#[derive(Clone)]
 pub struct Aes256Gcm(Aes256GcmLib);
 
 impl Aes256Gcm {
