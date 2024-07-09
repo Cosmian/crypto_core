@@ -6,7 +6,7 @@ authors = [
     "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
     "Emmanuel COSTE <emmanuel.coste@cosmian.com>",
 ]
-categories = ["cryptography", "security"]
+categories = ["cryptography"]
 edition = "2021"
 keywords = ["cosmian", "crypto"]
 license-file = "LICENSE.md"
