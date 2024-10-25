@@ -15,6 +15,10 @@ pub enum CryptoCoreError {
     ConversionError(String),
     DecryptionError,
     DeserializationEmptyError,
+    DeserializationIoError {
+        bytes_len: usize,
+        error: String,
+    },
     DeserializationSizeError {
         given: usize,
         expected: usize,
@@ -105,6 +109,9 @@ impl Display for CryptoCoreError {
             CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
             #[cfg(feature = "rsa")]
             CryptoCoreError::RsaError(e) => write!(f, "RSA error: {e}"),
+            CryptoCoreError::DeserializationIoError { bytes_len, error } => {
+                write!(f, "when reading {bytes_len} bytes, {error}")
+            }
             CryptoCoreError::SerializationIoError { bytes_len, error } => {
                 write!(f, "when writing {bytes_len} bytes, {error}")
             }

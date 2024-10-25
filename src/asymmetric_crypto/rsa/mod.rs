@@ -44,9 +44,8 @@ pub enum RsaKeyWrappingAlgorithm {
     /// The hash function used is SHA1. For that reason this algorithm is not
     /// recommended and is only kept here for compatibility with legacy
     /// systems. The maximum possible plaintext length is m = k - 2 * h_len
-    /// - 2, where k is the size of the RSA modulus
-    /// and h_len is the size of the hash of the optional label.
-    /// This algorithm is compatible with Google Cloud KMS
+    /// - 2, where k is the size of the RSA modulus and h_len is the size of the hash of the
+    ///   optional label. This algorithm is compatible with Google Cloud KMS
     ///  - RSA_OAEP_3072_SHA256 with RSA 3072 bits key
     ///  - RSA_OAEP_4096_SHA256 with RSA 4096 bits key
     OaepSha1,
