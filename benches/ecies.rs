@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![cfg(feature = "default")]
 use cosmian_crypto_core::{
     CsRng, Ecies, EciesAes128, EciesEcPrivateKey, EciesEcPublicKey, EciesR25519Aes128,
@@ -7,7 +8,7 @@ use cosmian_crypto_core::{
 use criterion::Criterion;
 use rand_chacha::rand_core::SeedableRng;
 
-pub fn ecies_r25519_aes128gcm_bench(c: &mut Criterion) {
+pub(crate) fn ecies_r25519_aes128gcm_bench(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
     // generate a key pair
     let private_key = R25519PrivateKey::new(&mut rng);
@@ -31,7 +32,7 @@ pub fn ecies_r25519_aes128gcm_bench(c: &mut Criterion) {
     });
 }
 
-pub fn ecies_salsa_seal_box(c: &mut Criterion) {
+pub(crate) fn ecies_salsa_seal_box(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
     // generate a key pair
     let private_key = X25519PrivateKey::new(&mut rng);
@@ -55,7 +56,7 @@ pub fn ecies_salsa_seal_box(c: &mut Criterion) {
     });
 }
 
-pub fn ecies_x25519_xchacha20(c: &mut Criterion) {
+pub(crate) fn ecies_x25519_xchacha20(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
     // generate a key pair
     let private_key = X25519PrivateKey::new(&mut rng);
@@ -79,7 +80,7 @@ pub fn ecies_x25519_xchacha20(c: &mut Criterion) {
     });
 }
 
-pub fn ecies_x25519_aes128(c: &mut Criterion) {
+pub(crate) fn ecies_x25519_aes128(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
     // generate a key pair
     let private_key = X25519PrivateKey::new(&mut rng);
@@ -151,7 +152,7 @@ fn ecies_aes218<
     });
 }
 
-pub fn ecies_nist_aes128(c: &mut Criterion) {
+pub(crate) fn ecies_nist_aes128(c: &mut Criterion) {
     ecies_aes218::<
         { cosmian_crypto_core::P192_PRIVATE_KEY_LENGTH },
         { cosmian_crypto_core::P192_PUBLIC_KEY_LENGTH },

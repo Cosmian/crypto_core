@@ -1,5 +1,5 @@
 #[cfg(feature = "rsa")]
-pub fn rsa_key_wrapping() {
+pub(crate) fn rsa_key_wrapping() {
     use cosmian_crypto_core::{
         reexport::rand_core::{RngCore, SeedableRng},
         CsRng, RsaKeyLength, RsaKeyWrappingAlgorithm, RsaPrivateKey,

@@ -115,7 +115,7 @@ impl R25519PrivateKey {
 
 // Curve arithmetic
 
-impl<'a> Add<&'a R25519PrivateKey> for &R25519PrivateKey {
+impl Add<&R25519PrivateKey> for &R25519PrivateKey {
     type Output = R25519PrivateKey;
 
     fn add(self, rhs: &R25519PrivateKey) -> Self::Output {
@@ -123,7 +123,7 @@ impl<'a> Add<&'a R25519PrivateKey> for &R25519PrivateKey {
     }
 }
 
-impl<'a> Sub<&'a R25519PrivateKey> for &R25519PrivateKey {
+impl Sub<&R25519PrivateKey> for &R25519PrivateKey {
     type Output = R25519PrivateKey;
 
     fn sub(self, rhs: &R25519PrivateKey) -> Self::Output {
@@ -131,7 +131,7 @@ impl<'a> Sub<&'a R25519PrivateKey> for &R25519PrivateKey {
     }
 }
 
-impl<'a> Mul<&'a R25519PrivateKey> for &R25519PrivateKey {
+impl Mul<&R25519PrivateKey> for &R25519PrivateKey {
     type Output = R25519PrivateKey;
 
     fn mul(self, rhs: &R25519PrivateKey) -> Self::Output {
@@ -139,7 +139,7 @@ impl<'a> Mul<&'a R25519PrivateKey> for &R25519PrivateKey {
     }
 }
 
-impl<'a> Div<&'a R25519PrivateKey> for &R25519PrivateKey {
+impl Div<&R25519PrivateKey> for &R25519PrivateKey {
     type Output = R25519PrivateKey;
 
     fn div(self, rhs: &R25519PrivateKey) -> Self::Output {

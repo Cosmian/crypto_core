@@ -71,7 +71,7 @@ impl From<R25519PrivateKey> for R25519CurvePoint {
     }
 }
 
-impl<'a> Sub<&'a R25519CurvePoint> for &R25519CurvePoint {
+impl Sub<&R25519CurvePoint> for &R25519CurvePoint {
     type Output = R25519CurvePoint;
 
     fn sub(self, rhs: &R25519CurvePoint) -> Self::Output {
@@ -79,7 +79,7 @@ impl<'a> Sub<&'a R25519CurvePoint> for &R25519CurvePoint {
     }
 }
 
-impl<'a> Add<&'a R25519CurvePoint> for &R25519CurvePoint {
+impl Add<&R25519CurvePoint> for &R25519CurvePoint {
     type Output = R25519CurvePoint;
 
     fn add(self, rhs: &R25519CurvePoint) -> Self::Output {
@@ -87,7 +87,7 @@ impl<'a> Add<&'a R25519CurvePoint> for &R25519CurvePoint {
     }
 }
 
-impl<'a> Mul<&'a R25519PrivateKey> for &R25519CurvePoint {
+impl Mul<&R25519PrivateKey> for &R25519CurvePoint {
     type Output = R25519CurvePoint;
 
     fn mul(self, rhs: &R25519PrivateKey) -> Self::Output {
@@ -100,11 +100,10 @@ impl<'a> Mul<&'a R25519PrivateKey> for &R25519CurvePoint {
 /// Facades are used to hide the underlying types and provide a more
 /// user friendly interface to the user.
 impl R25519CurvePoint {
-    #[must_use]
-
     /// Serialize the curve point.
     ///
     /// Facade to [`FixedSizeCBytes::to_bytes`].
+    #[must_use]
     pub fn to_bytes(&self) -> [u8; R25519_CURVE_POINT_LENGTH] {
         <Self as FixedSizeCBytes<R25519_CURVE_POINT_LENGTH>>::to_bytes(self)
     }

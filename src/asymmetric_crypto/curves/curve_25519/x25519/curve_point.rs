@@ -58,11 +58,10 @@ impl X25519CurvePoint {
 /// Facades are used to hide the underlying types and provide a more
 /// user friendly interface to the user.
 impl X25519CurvePoint {
-    #[must_use]
-
     /// Serialize the curve point.
     ///
     /// Facade to [`FixedSizeCBytes::to_bytes`].
+    #[must_use]
     pub fn to_bytes(&self) -> [u8; X25519_CURVE_POINT_LENGTH] {
         <Self as FixedSizeCBytes<X25519_CURVE_POINT_LENGTH>>::to_bytes(self)
     }

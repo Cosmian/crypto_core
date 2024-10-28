@@ -1,4 +1,4 @@
-pub fn ed25519_static() {
+pub(crate) fn ed25519_static() {
     use cosmian_crypto_core::{
         reexport::{
             rand_core::SeedableRng,
@@ -24,7 +24,7 @@ pub fn ed25519_static() {
     println!("Ed25519 static: OK");
 }
 
-pub fn ed25519_cached() {
+pub(crate) fn ed25519_cached() {
     use cosmian_crypto_core::{
         reexport::{
             rand_core::SeedableRng,
@@ -54,7 +54,7 @@ pub fn ed25519_cached() {
     println!("Ed25519 cached: OK");
 }
 
-pub fn ed25519_keypair() {
+pub(crate) fn ed25519_keypair() {
     use cosmian_crypto_core::{
         reexport::{
             rand_core::SeedableRng,
