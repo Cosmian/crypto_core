@@ -40,7 +40,7 @@ pub trait Dem<
     /// - `nonce`       : the Nonce to use
     /// - `plaintext`   : plaintext message
     /// - `aad`         : optional data to use in the authentication method,
-    /// must use the same for decryption
+    ///   must use the same for decryption
     fn encrypt(
         &self,
         nonce: &Self::Nonce,
@@ -65,7 +65,7 @@ pub trait Dem<
     /// - `nonce`       : the Nonce to use
     /// - `ciphertext`  : ciphertext message
     /// - `aad`         : optional data to use in the authentication method,
-    /// must use the same for encryption
+    ///   must use the same for encryption
     fn decrypt(
         &self,
         nonce: &Self::Nonce,
