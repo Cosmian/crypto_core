@@ -143,7 +143,10 @@ pub fn key_unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreEr
         };
 
         if !check_iv(
-            u64::from_be_bytes(padded_plain[0..8].try_into()?),
+            u64::from_be_bytes(padded_plain[0..8].try_into().expect(
+                "this conversion cannot fail since the slice is 8-bytes long which is the \
+                 expected size for a `u64`",
+            )),
             &padded_plain[8..16],
         ) {
             return Err(CryptoCoreError::InvalidBytesLength(
@@ -153,7 +156,10 @@ pub fn key_unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreEr
             ));
         }
 
-        let unpadded_size = u32::from_be_bytes(padded_plain[4..8].try_into()?) as usize;
+        let unpadded_size = u32::from_be_bytes(padded_plain[4..8].try_into().expect(
+            "this conversion cannot fail since the slice is 4-bytes long which is the expected \
+             size for a `u32`",
+        )) as usize;
 
         Ok(padded_plain[8..(8 + unpadded_size)].to_vec())
     }
@@ -191,7 +197,10 @@ fn _wrap_64(plain: &[u8], kek: &[u8], iv: Option<u64>) -> Result<Vec<u8>, Crypto
     let mut big_r = Vec::with_capacity(n);
 
     for chunk in plain.chunks(8) {
-        big_r.push(u64::from_be_bytes(chunk.try_into()?));
+        big_r.push(u64::from_be_bytes(chunk.try_into().expect(
+            "this conversion cannot fail since the slice is 8-bytes long which is the expected \
+             size for a `u64`",
+        )));
     }
 
     for j in 0..6 {
@@ -228,8 +237,14 @@ fn _wrap_64(plain: &[u8], kek: &[u8], iv: Option<u64>) -> Result<Vec<u8>, Crypto
             // A = MSB(64, B) ^ t where t = (n*j)+i
             let t = ((n * j) + (i + 1)) as u64;
 
-            big_a = u64::from_be_bytes(big_b[0..8].try_into()?) ^ t;
-            *r = u64::from_be_bytes(big_b[8..16].try_into()?);
+            big_a = u64::from_be_bytes(big_b[0..8].try_into().expect(
+                "this conversion cannot fail since the slice is 8-bytes long which is the \
+                 expected size for a `u64`",
+            )) ^ t;
+            *r = u64::from_be_bytes(big_b[8..16].try_into().expect(
+                "this conversion cannot fail since the slice is 8-bytes long which is the \
+                 expected size for a `u64`",
+            ));
         }
     }
 
@@ -277,7 +292,10 @@ fn _unwrap_64(ciphertext: &[u8], kek: &[u8]) -> Result<(u64, Vec<u8>), CryptoCor
 
     let mut big_r = Vec::with_capacity(n + 1);
     for chunk in ciphertext.chunks(8) {
-        big_r.push(u64::from_be_bytes(chunk.try_into()?));
+        big_r.push(u64::from_be_bytes(chunk.try_into().expect(
+            "this conversion cannot fail since the slice is 8-bytes long which is the expected \
+             size for a `u64`",
+        )));
     }
 
     let mut big_a = big_r[0];
@@ -317,10 +335,16 @@ fn _unwrap_64(ciphertext: &[u8], kek: &[u8]) -> Result<(u64, Vec<u8>), CryptoCor
             };
 
             // A = MSB(64, B)
-            big_a = u64::from_be_bytes(big_b[0..8].try_into()?);
+            big_a = u64::from_be_bytes(big_b[0..8].try_into().expect(
+                "this conversion cannot fail since the slice is 8-bytes long which is the \
+                 expected size for a `u64`",
+            ));
 
             // R[i] = LSB(64, B)
-            *r = u64::from_be_bytes(big_b[8..16].try_into()?);
+            *r = u64::from_be_bytes(big_b[8..16].try_into().expect(
+                "this conversion cannot fail since the slice is 8-bytes long which is the \
+                 expected size for a `u64`",
+            ));
         }
     }
 
