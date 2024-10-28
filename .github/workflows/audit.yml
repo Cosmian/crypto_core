@@ -2,6 +2,7 @@
 name: Audit
 
 on:
+  push:
   schedule:
     # At 8:30 every day
     - cron: 30 8 * * *
@@ -12,14 +13,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Check deprecated dependencies
-        uses: actions-rs/cargo@v1
-        with:
-          command: audit
-          args: --deny warnings --ignore RUSTSEC-2021-0145
+      - uses: actions/checkout@v3
+      - uses: EmbarkStudios/cargo-deny-action@v1

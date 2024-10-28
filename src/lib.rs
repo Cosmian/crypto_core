@@ -53,7 +53,7 @@ pub type CsRng = rand_chacha::ChaCha12Rng;
 /// Cryptographic bytes
 ///
 /// The bytes should be thread-safe and comparable.
-/// The bytes are NOT clonable by design (secrets should not be cloned).
+/// The bytes are NOT cloneable by design (secrets should not be cloned).
 pub trait CBytes: Eq + PartialEq + Send + Sync {}
 
 /// A Fixed Size Array of cryptographic bytes

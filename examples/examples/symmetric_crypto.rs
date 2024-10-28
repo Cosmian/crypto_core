@@ -6,7 +6,7 @@
 ///  - the ciphertext is a newly allocated vector that combines the encrypted
 ///    data and the MAC
 #[cfg(feature = "chacha")]
-pub fn dem_vector_combined() {
+pub(crate) fn dem_vector_combined() {
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, Dem, FixedSizeCBytes, Instantiable, Nonce,
         RandomFixedSizeCBytes, SymmetricKey, XChaCha20Poly1305,
@@ -66,7 +66,7 @@ pub fn dem_vector_combined() {
 ///  - the ciphertext is a newly allocated vector that combines the encrypted
 ///    data and the MAC
 #[cfg(feature = "chacha")]
-pub fn dem_vector_detached() {
+pub(crate) fn dem_vector_detached() {
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, DemInPlace, FixedSizeCBytes, Instantiable, Nonce,
         RandomFixedSizeCBytes, SymmetricKey, XChaCha20Poly1305,
@@ -130,7 +130,7 @@ pub fn dem_vector_detached() {
 /// Demonstrates how to use symmetric encryption
 /// with a stream of data
 #[cfg(feature = "chacha")]
-pub fn dem_stream_be32() {
+pub(crate) fn dem_stream_be32() {
     use cosmian_crypto_core::{
         reexport::{aead::Payload, rand_core::SeedableRng},
         CsRng, DemStream, Instantiable, Nonce, RandomFixedSizeCBytes, SymmetricKey,

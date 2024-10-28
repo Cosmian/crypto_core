@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.6.0] - 2024-10-28
+
+### 🚀 Features
+
+- Dereference secrets to &[u8; LENGTH] [#80](https://github.com/Cosmian/crypto_core/pull/80)
+
+### 🐛 Bug Fixes
+
+- Improve `TryFromSlice` error message [#71](https://github.com/Cosmian/crypto_core/pull/71)
+- Fix array deserialization [#79](https://github.com/Cosmian/crypto_core/pull/79)
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump curve25519-dalek from 4.1.0 to 4.1.3 for security fix [#78](https://github.com/Cosmian/crypto_core/pull/78)
+
 ## [9.5.0] - 2023-07-05
 
 ### Features
