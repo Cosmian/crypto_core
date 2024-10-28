@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![cfg(feature = "default")]
 use cosmian_crypto_core::{
     reexport::rand_core::{RngCore, SeedableRng},
@@ -9,7 +10,7 @@ use criterion::Criterion;
 /// Size of the message used in the benchmarks
 const MSG_LENGTH: usize = 2048;
 
-pub fn bench_symmetric_encryption_combined(c: &mut Criterion) {
+pub(crate) fn bench_symmetric_encryption_combined(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
 
     // keys
@@ -63,7 +64,7 @@ pub fn bench_symmetric_encryption_combined(c: &mut Criterion) {
     );
 }
 
-pub fn bench_symmetric_decryption_combined(c: &mut Criterion) {
+pub(crate) fn bench_symmetric_decryption_combined(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
 
     // keys
@@ -126,7 +127,7 @@ pub fn bench_symmetric_decryption_combined(c: &mut Criterion) {
     );
 }
 
-pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
+pub(crate) fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
 
     // keys
@@ -204,7 +205,7 @@ pub fn bench_symmetric_encryption_in_place(c: &mut Criterion) {
     );
 }
 
-pub fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
+pub(crate) fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
 
     // keys

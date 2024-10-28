@@ -53,7 +53,7 @@ pub type CsRng = rand_chacha::ChaCha12Rng;
 /// Cryptographic bytes
 ///
 /// The bytes should be thread-safe and comparable.
-/// The bytes are NOT clonable by design (secrets should not be cloned).
+/// The bytes are NOT cloneable by design (secrets should not be cloned).
 pub trait CBytes: Eq + PartialEq + Send + Sync {}
 
 /// A Fixed Size Array of cryptographic bytes
@@ -71,7 +71,10 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
     fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
         slice
             .try_into()
-            .map_err(CryptoCoreError::TryFromSliceError)
+            .map_err(|_| CryptoCoreError::TryFromSliceError {
+                expected: Self::LENGTH,
+                given: slice.len(),
+            })
             .and_then(Self::try_from_bytes)
     }
 

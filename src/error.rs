@@ -1,5 +1,4 @@
 use core::fmt::Display;
-use std::array::TryFromSliceError;
 
 /// Error type for this crate.
 #[derive(Debug)]
@@ -15,6 +14,10 @@ pub enum CryptoCoreError {
     ConversionError(String),
     DecryptionError,
     DeserializationEmptyError,
+    DeserializationIoError {
+        bytes_len: usize,
+        error: String,
+    },
     DeserializationSizeError {
         given: usize,
         expected: usize,
@@ -42,7 +45,10 @@ pub enum CryptoCoreError {
     },
     SignatureError(String),
     StreamCipherError(String),
-    TryFromSliceError(TryFromSliceError),
+    TryFromSliceError {
+        expected: usize,
+        given: usize,
+    },
     WriteLeb128Error {
         value: u64,
         error: std::io::Error,
@@ -105,12 +111,20 @@ impl Display for CryptoCoreError {
             CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
             #[cfg(feature = "rsa")]
             CryptoCoreError::RsaError(e) => write!(f, "RSA error: {e}"),
+            CryptoCoreError::DeserializationIoError { bytes_len, error } => {
+                write!(f, "when reading {bytes_len} bytes, {error}")
+            }
             CryptoCoreError::SerializationIoError { bytes_len, error } => {
                 write!(f, "when writing {bytes_len} bytes, {error}")
             }
             CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
             CryptoCoreError::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
-            CryptoCoreError::TryFromSliceError(e) => write!(f, "try from slice error: {e}"),
+            CryptoCoreError::TryFromSliceError { expected, given } => {
+                write!(
+                    f,
+                    "try from slice error: {given} was given when {expected} was expected"
+                )
+            }
             CryptoCoreError::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
@@ -124,12 +138,6 @@ impl std::error::Error for CryptoCoreError {}
 impl From<aead::Error> for CryptoCoreError {
     fn from(e: aead::Error) -> Self {
         Self::StreamCipherError(e.to_string())
-    }
-}
-
-impl From<TryFromSliceError> for CryptoCoreError {
-    fn from(e: TryFromSliceError) -> Self {
-        Self::TryFromSliceError(e)
     }
 }
 

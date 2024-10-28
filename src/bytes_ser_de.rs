@@ -72,10 +72,10 @@ impl<'a> Deserializer<'a> {
     /// Reads an array of bytes of length `LENGTH` from the `Deserializer`.
     pub fn read_array<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], CryptoCoreError> {
         let mut buf = [0; LENGTH];
-        self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::DeserializationSizeError {
-                given: self.readable.len(),
-                expected: LENGTH,
+        self.readable.read_exact(&mut buf).map_err(|e| {
+            CryptoCoreError::DeserializationIoError {
+                bytes_len: LENGTH,
+                error: e.to_string(),
             }
         })?;
         Ok(buf)
@@ -315,7 +315,7 @@ mod tests {
     #[cfg(feature = "curve25519")]
     #[test]
     fn test_r25519_serialization() -> Result<(), CryptoCoreError> {
-        use crate::asymmetric_crypto::R25519PrivateKey;
+        use crate::{asymmetric_crypto::R25519PrivateKey, R25519_PRIVATE_KEY_LENGTH};
 
         let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
         let serialized_key = key.serialize()?;
@@ -346,9 +346,9 @@ mod tests {
             dbg!(&too_small_error);
             assert!(matches!(
                 too_small_error,
-                Err(CryptoCoreError::DeserializationSizeError {
-                    given: 3,
-                    expected: 32
+                Err(CryptoCoreError::DeserializationIoError {
+                    bytes_len: R25519_PRIVATE_KEY_LENGTH,
+                    error: _e,
                 })
             ));
         }

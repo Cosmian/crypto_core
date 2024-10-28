@@ -4,7 +4,7 @@
     feature = "blake",
     feature = "curve25519"
 ))]
-pub fn ecies_x25519_xchacha20_combined() {
+pub(crate) fn ecies_x25519_xchacha20_combined() {
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, Ecies, EciesX25519XChaCha20, X25519PrivateKey,
         X25519PublicKey,
@@ -44,7 +44,7 @@ pub fn ecies_x25519_xchacha20_combined() {
     feature = "sha3",
     feature = "nist_curves"
 ))]
-pub fn ecies_p256_aes128_combined() {
+pub(crate) fn ecies_p256_aes128_combined() {
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, Ecies, EciesP256Aes128, P256PrivateKey,
         P256PublicKey,
@@ -84,7 +84,7 @@ pub fn ecies_p256_aes128_combined() {
     feature = "blake",
     feature = "curve25519"
 ))]
-pub fn ecies_x25519_xchacha20_stream() {
+pub(crate) fn ecies_x25519_xchacha20_stream() {
     use aead::Payload;
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, EciesStream, EciesX25519XChaCha20,
@@ -179,7 +179,7 @@ pub fn ecies_x25519_xchacha20_stream() {
     feature = "nist_curves",
     feature = "chacha"
 ))]
-pub fn ecies_p256_aes128_stream() {
+pub(crate) fn ecies_p256_aes128_stream() {
     use aead::Payload;
     use cosmian_crypto_core::{
         reexport::rand_core::SeedableRng, CsRng, EciesP256Aes128, EciesStream, FixedSizeCBytes,

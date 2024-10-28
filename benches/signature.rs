@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![cfg(feature = "default")]
 /// Size of the message used in the benchmarks
 use cosmian_crypto_core::{
@@ -9,7 +10,7 @@ use signature::{Signer, Verifier};
 
 const MSG_LENGTH: usize = 2048;
 
-pub fn bench_ed25519_signature(c: &mut Criterion) {
+pub(crate) fn bench_ed25519_signature(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
 
     let mut msg = [0; MSG_LENGTH];

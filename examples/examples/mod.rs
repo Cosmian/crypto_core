@@ -8,10 +8,10 @@ mod signature;
 mod symmetric_crypto;
 
 #[cfg(feature = "ecies")]
-pub use self::ecies::*;
+pub(crate) use self::ecies::*;
 #[cfg(feature = "rsa")]
-pub use self::rsa_key_wrapping::*;
+pub(crate) use self::rsa_key_wrapping::*;
 #[cfg(feature = "curve25519")]
-pub use self::signature::*;
+pub(crate) use self::signature::*;
 #[cfg(feature = "chacha")]
-pub use self::symmetric_crypto::*;
+pub(crate) use self::symmetric_crypto::*;

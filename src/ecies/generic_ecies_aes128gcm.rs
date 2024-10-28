@@ -245,7 +245,7 @@ impl<
     }
 }
 
-#[cfg(all(test, feature = "nist_curves", feature = "curve_25519"))]
+#[cfg(all(test, feature = "nist_curves", feature = "curve25519"))]
 mod tests {
     use aead::Payload;
 
