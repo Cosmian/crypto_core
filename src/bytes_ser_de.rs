@@ -1,6 +1,9 @@
 //! Implements the `Serializer` and `Deserializer` objects using LEB128.
 
-use std::io::{Read, Write};
+use std::{
+    fmt::Debug,
+    io::{Read, Write},
+};
 
 use leb128;
 use zeroize::Zeroizing;
@@ -11,7 +14,7 @@ use crate::CryptoCoreError;
 /// array of bytes.
 pub trait Serializable: Sized {
     /// Error type returned by the serialization.
-    type Error: From<CryptoCoreError>;
+    type Error: std::error::Error + From<CryptoCoreError>;
 
     /// Retrieves the length of the serialized object if it can be known.
     ///
@@ -242,6 +245,23 @@ pub fn to_leb128_len(n: usize) -> usize {
     size
 }
 
+/// Test that for the given value, the following holds:
+///
+/// - `(len ∘ serialize) = length`
+/// - `serialize` is deterministic
+/// - `(deserialize ∘ serialize) = Id`
+///
+/// # Panics
+///
+/// Panics on failure.
+pub fn test_serialization<T: PartialEq + Debug + Serializable>(v: &T) {
+    let bytes = v.serialize().unwrap();
+    assert_eq!(bytes.len(), v.length());
+    let w = T::deserialize(&bytes).unwrap();
+    assert_eq!(v, &w);
+    assert_eq!(bytes, w.serialize().unwrap());
+}
+
 #[cfg(test)]
 mod tests {
     use super::{to_leb128_len, Deserializer, Serializable, Serializer};
@@ -252,7 +272,7 @@ mod tests {
 
     /// We don't have a non-fixed size implementation of Serializable inside
     /// `crypto_core` so just have a dummy implementation here.
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     struct DummyLeb128Serializable {
         bytes: Vec<u8>,
     }
@@ -315,21 +335,18 @@ mod tests {
     #[cfg(feature = "curve25519")]
     #[test]
     fn test_r25519_serialization() -> Result<(), CryptoCoreError> {
-        use crate::{asymmetric_crypto::R25519PrivateKey, R25519_PRIVATE_KEY_LENGTH};
+        use crate::{
+            asymmetric_crypto::R25519PrivateKey, bytes_ser_de::test_serialization,
+            R25519_PRIVATE_KEY_LENGTH,
+        };
 
         let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
-        let serialized_key = key.serialize()?;
-        let key_ = R25519PrivateKey::deserialize(&serialized_key)?;
-        assert_eq!(key, key_);
-        assert_eq!(serialized_key, key_.serialize()?);
+        test_serialization(&key);
 
         let dummy = DummyLeb128Serializable {
             bytes: vec![1; 512],
         };
-        let serialized_dummy = dummy.serialize()?;
-        let deserialized_dummy = DummyLeb128Serializable::deserialize(&serialized_dummy)?;
-
-        assert_eq!(deserialized_dummy.bytes, dummy.bytes);
+        test_serialization(&dummy);
 
         {
             let empty_error = R25519PrivateKey::deserialize(&[]);
