@@ -9,11 +9,13 @@ impl EciesEcPrivateKey<R25519_PRIVATE_KEY_LENGTH> for R25519PrivateKey {
         <Self as RandomFixedSizeCBytes<{ R25519_PRIVATE_KEY_LENGTH }>>::new(rng)
     }
 }
+
 impl EciesEcSharedPoint for R25519PublicKey {
     fn to_vec(&self) -> Vec<u8> {
         <Self as FixedSizeCBytes<R25519_PUBLIC_KEY_LENGTH>>::to_bytes(self).to_vec()
     }
 }
+
 impl EciesEcPublicKey<R25519_PRIVATE_KEY_LENGTH, R25519_PUBLIC_KEY_LENGTH> for R25519CurvePoint {
     type PrivateKey = R25519PrivateKey;
     type SharedPoint = Self;
