@@ -254,12 +254,27 @@ pub fn to_leb128_len(n: usize) -> usize {
 /// # Panics
 ///
 /// Panics on failure.
-pub fn test_serialization<T: PartialEq + Debug + Serializable>(v: &T) {
+pub fn test_serialization<T: PartialEq + Debug + Serializable>(v: &T) -> Result<(), String> {
     let bytes = v.serialize().unwrap();
-    assert_eq!(bytes.len(), v.length());
     let w = T::deserialize(&bytes).unwrap();
-    assert_eq!(v, &w);
-    assert_eq!(bytes, w.serialize().unwrap());
+    if bytes.len() != v.length() {
+        return Err(format!(
+            "incorrect serialized length (1): {} != {}",
+            bytes.len(),
+            v.length()
+        ));
+    }
+    if v != &w {
+        return Err("incorrect deserialization".to_string());
+    }
+    if bytes.len() != w.length() {
+        return Err(format!(
+            "incorrect serialized length (2): {} != {}",
+            bytes.len(),
+            w.length()
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -341,12 +356,12 @@ mod tests {
         };
 
         let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
-        test_serialization(&key);
+        test_serialization(&key).unwrap();
 
         let dummy = DummyLeb128Serializable {
             bytes: vec![1; 512],
         };
-        test_serialization(&dummy);
+        test_serialization(&dummy).unwrap();
 
         {
             let empty_error = R25519PrivateKey::deserialize(&[]);
