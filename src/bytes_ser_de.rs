@@ -265,7 +265,7 @@ pub fn test_serialization<T: PartialEq + Debug + Serializable>(v: &T) -> Result<
         ));
     }
     if v != &w {
-        return Err("incorrect deserialization".to_string());
+        return Err(format!("incorrect deserialization: {:?} != {:?}", v, w));
     }
     if bytes.len() != w.length() {
         return Err(format!(
