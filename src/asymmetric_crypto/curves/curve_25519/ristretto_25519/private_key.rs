@@ -1,4 +1,7 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::{
+    iter::Sum,
+    ops::{Add, Div, Mul, Sub},
+};
 
 use curve25519_dalek::Scalar;
 use rand_core::CryptoRngCore;
@@ -100,6 +103,10 @@ impl R25519PrivateKey {
         <Self as FixedSizeCBytes<R25519_PRIVATE_KEY_LENGTH>>::try_from_bytes(bytes)
     }
 
+    pub fn from_raw_bytes(bytes: &[u8; 64]) -> Self {
+        Self(Scalar::from_bytes_mod_order_wide(bytes))
+    }
+
     /// Neutral scalar element for the addition.
     #[inline(always)]
     pub const fn zero() -> Self {
@@ -114,6 +121,14 @@ impl R25519PrivateKey {
 }
 
 // Curve arithmetic
+
+impl Add for R25519PrivateKey {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
 
 impl Add<&R25519PrivateKey> for &R25519PrivateKey {
     type Output = R25519PrivateKey;
@@ -145,5 +160,11 @@ impl Div<&R25519PrivateKey> for &R25519PrivateKey {
     fn div(self, rhs: &R25519PrivateKey) -> Self::Output {
         #[allow(clippy::suspicious_arithmetic_impl)]
         R25519PrivateKey(self.0 * rhs.0.invert())
+    }
+}
+
+impl Sum for R25519PrivateKey {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::zero(), Add::add)
     }
 }
