@@ -1,4 +1,5 @@
 use core::ops::{Add, Mul, Sub};
+use std::iter::Sum;
 
 use curve25519_dalek::{
     constants,
@@ -129,6 +130,20 @@ impl R25519CurvePoint {
     #[must_use]
     pub fn identity() -> Self {
         Self(RistrettoPoint::identity())
+    }
+}
+
+impl<'a> Add<&'a R25519CurvePoint> for R25519CurvePoint {
+    type Output = R25519CurvePoint;
+
+    fn add(self, rhs: &'a R25519CurvePoint) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl<'a> Sum<&'a R25519CurvePoint> for R25519CurvePoint {
+    fn sum<I: Iterator<Item = &'a R25519CurvePoint>>(iter: I) -> Self {
+        iter.fold(Self::identity(), Add::add)
     }
 }
 

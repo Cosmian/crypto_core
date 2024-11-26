@@ -48,7 +48,7 @@ impl<const LENGTH: usize> RandomFixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH>
 impl<const LENGTH: usize> SecretCBytes<LENGTH> for SymmetricKey<LENGTH> {}
 
 impl<const LENGTH: usize> Deref for SymmetricKey<LENGTH> {
-    type Target = [u8];
+    type Target = [u8; LENGTH];
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -94,7 +94,7 @@ impl<const KEY_LENGTH: usize> SymmetricKey<KEY_LENGTH> {
             )));
         }
         let mut key = Self::default();
-        kdf256!(&mut key, &secret, info);
+        kdf256!(&mut *key, &**secret, info);
         Ok(key)
     }
 }

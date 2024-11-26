@@ -95,7 +95,7 @@ fn ckm_rsa_aes_key_wrap<
     // Wraps the target key with the temporary AES key using CKM_AES_KEY_WRAP_KWP
     // ([AES KEYWRAP] section 6.3). PKCS#11 CKM_AES_KEY_WRAP_KWP is identical to
     // tRFC 5649
-    let mut ciphertext = key_wrap(key_material, &key_encryption_key)?;
+    let mut ciphertext = key_wrap(key_material, &*key_encryption_key)?;
     //Wraps the AES key with the wrapping RSA key using CKM_RSA_PKCS_OAEP with
     // parameters of OAEPParams. Zeroizes the temporary AES key (automatically
     // done by the conversion into())

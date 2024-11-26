@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.6.1] - 2024-11-26
+
+### 🚀 Features
+
+- adds implementation of some arithmetic operations for curve points,
+- exports a method for raw bytes conversion to R25519PrivateKey
+- adds a generic serialization test that can be used by any type implementing Serializable,
+- requires the Serializable::Error to implement std::error::Error,
+- modifies the Deref implementations for the secrets and keys so that one can access to reference on arrays instead of slices (needed to be compatible with fixed-length byte parsing)
+
+### ⚙️ Miscellaneous Tasks
+
+- Fix cargo-deny allowing license Unicode-3.0
+
 ## [9.6.0] - 2024-10-28
 
 ### 🚀 Features

@@ -27,7 +27,7 @@ impl<const LENGTH: usize> Secret<LENGTH> {
     /// Creates a new random secret using the given RNG.
     pub fn random(rng: &mut impl CryptoRngCore) -> Self {
         let mut secret = Self::new();
-        rng.fill_bytes(&mut secret);
+        rng.fill_bytes(&mut *secret);
         secret
     }
 
@@ -39,7 +39,7 @@ impl<const LENGTH: usize> Secret<LENGTH> {
     /// responsibility to guarantee they are not leaked in the memory.
     #[inline(always)]
     pub fn to_unprotected_bytes(&self, dest: &mut [u8; LENGTH]) {
-        dest.copy_from_slice(self);
+        dest.copy_from_slice(&**self);
     }
 
     /// Creates a secret from the given unprotected bytes, and zeroizes the
@@ -62,18 +62,18 @@ impl<const LENGTH: usize> Default for Secret<LENGTH> {
 }
 
 impl<const LENGTH: usize> Deref for Secret<LENGTH> {
-    type Target = [u8];
+    type Target = [u8; LENGTH];
 
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
-        &*self.0
+        &self.0
     }
 }
 
 impl<const LENGTH: usize> DerefMut for Secret<LENGTH> {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.0
+        &mut self.0
     }
 }
 
@@ -104,7 +104,7 @@ impl<const LENGTH: usize> Serializable for Secret<LENGTH> {
 
     #[inline(always)]
     fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(self)
+        ser.write_array(&**self)
     }
 
     #[inline(always)]
