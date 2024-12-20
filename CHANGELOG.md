@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [9.6.1] - 2024-11-26
+## [10.0.0] - 2024-12-20
 
 ### 🚀 Features
 
