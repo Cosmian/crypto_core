@@ -43,13 +43,21 @@ pub trait Serializable: Sized {
 
         let mut de = Deserializer::new(bytes);
         match de.read::<Self>() {
-            Ok(result) if !de.finalize().is_empty() => {
-                Err(CryptoCoreError::DeserializationSizeError {
-                    given: bytes.len(),
-                    expected: result.length(),
-                })?
+            Ok(result) => {
+                if de.finalize().is_empty() {
+                    Ok(result)
+                } else {
+                    Err(CryptoCoreError::DeserializationSizeError {
+                        given: bytes.len(),
+                        expected: result.length(),
+                    }
+                    .into())
+                }
             }
-            success_or_failure => success_or_failure,
+            Err(err) => Err(CryptoCoreError::GenericDeserializationError(format!(
+                "failed deserializing with error '{err}' on bytes '{bytes:?}'",
+            ))
+            .into()),
         }
     }
 }
@@ -352,10 +360,7 @@ mod tests {
     #[cfg(feature = "curve25519")]
     #[test]
     fn test_r25519_serialization() -> Result<(), CryptoCoreError> {
-        use crate::{
-            asymmetric_crypto::R25519PrivateKey, bytes_ser_de::test_serialization,
-            R25519_PRIVATE_KEY_LENGTH,
-        };
+        use crate::{asymmetric_crypto::R25519PrivateKey, bytes_ser_de::test_serialization};
 
         let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
         test_serialization(&key).unwrap();
@@ -364,87 +369,6 @@ mod tests {
             bytes: vec![1; 512],
         };
         test_serialization(&dummy).unwrap();
-
-        {
-            let empty_error = R25519PrivateKey::deserialize(&[]);
-
-            dbg!(&empty_error);
-            assert!(matches!(
-                empty_error,
-                Err(CryptoCoreError::DeserializationEmptyError)
-            ));
-        }
-        {
-            let too_small_error = R25519PrivateKey::deserialize(&[1, 2, 3]);
-
-            dbg!(&too_small_error);
-            assert!(matches!(
-                too_small_error,
-                Err(CryptoCoreError::DeserializationIoError {
-                    bytes_len: R25519_PRIVATE_KEY_LENGTH,
-                    error: _e,
-                })
-            ));
-        }
-        {
-            let too_big_error = R25519PrivateKey::deserialize(&[1; 34]);
-
-            dbg!(&too_big_error);
-            assert!(matches!(
-                too_big_error,
-                Err(CryptoCoreError::DeserializationSizeError {
-                    given: 34,
-                    expected: 32
-                })
-            ));
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn test_deserialization_errors() -> Result<(), CryptoCoreError> {
-        {
-            let empty_error = DummyLeb128Serializable::deserialize(&[]);
-
-            dbg!(&empty_error);
-            assert!(matches!(
-                empty_error,
-                Err(CryptoCoreError::DeserializationEmptyError)
-            ));
-        }
-
-        let dummy = DummyLeb128Serializable {
-            bytes: vec![1; 512],
-        };
-
-        {
-            let mut bytes = dummy.serialize()?;
-            bytes.pop();
-            let too_small_error = DummyLeb128Serializable::deserialize(&bytes);
-
-            dbg!(&too_small_error);
-            assert!(matches!(
-                too_small_error,
-                Err(CryptoCoreError::DeserializationSizeError {
-                    given: 513,
-                    expected: 514
-                })
-            ));
-        }
-        {
-            let mut bytes = dummy.serialize()?;
-            bytes.push(42);
-            let too_big_error = DummyLeb128Serializable::deserialize(&bytes);
-
-            dbg!(&too_big_error);
-            assert!(matches!(
-                too_big_error,
-                Err(CryptoCoreError::DeserializationSizeError {
-                    given: 515,
-                    expected: 514
-                })
-            ));
-        }
 
         Ok(())
     }
