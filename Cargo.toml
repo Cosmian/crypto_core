@@ -9,7 +9,7 @@ authors = [
 categories = ["cryptography"]
 edition = "2021"
 keywords = ["cosmian", "crypto"]
-license-file = "LICENSE.md"
+license = "BUSL-1.1"
 repository = "https://github.com/Cosmian/crypto_core/"
 description = "Cosmian base cryptographic library"
 
