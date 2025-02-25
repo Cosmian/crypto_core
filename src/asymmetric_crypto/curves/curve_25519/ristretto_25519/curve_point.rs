@@ -2,7 +2,7 @@ use core::ops::{Add, Mul, Sub};
 use std::iter::Sum;
 
 use curve25519_dalek::{
-    constants,
+    constants::{self, RISTRETTO_BASEPOINT_POINT},
     ristretto::{CompressedRistretto, RistrettoPoint},
     traits::Identity,
 };
@@ -130,6 +130,12 @@ impl R25519CurvePoint {
     #[must_use]
     pub fn identity() -> Self {
         Self(RistrettoPoint::identity())
+    }
+
+    /// Returns the generator element of the curve.
+    #[must_use]
+    pub fn generator() -> Self {
+        Self(RISTRETTO_BASEPOINT_POINT)
     }
 }
 
