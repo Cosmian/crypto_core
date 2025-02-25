@@ -22,7 +22,7 @@ pub enum CryptoCoreError {
         given: usize,
         expected: usize,
     },
-    #[cfg(feature = "nist_curves")]
+    #[cfg(any(feature = "nist_curves", feature = "curve25519"))]
     EllipticCurveError(String),
     EncryptionError,
     GenericDeserializationError(String),
@@ -85,7 +85,7 @@ impl Display for CryptoCoreError {
                 f,
                 "wrong size when parsing bytes: {given} given should be {expected}"
             ),
-            #[cfg(feature = "nist_curves")]
+            #[cfg(any(feature = "nist_curves", feature = "curve25519"))]
             CryptoCoreError::EllipticCurveError(e) => write!(f, "NIST elliptic curve error: {e}"),
             CryptoCoreError::EncryptionError => write!(f, "error during encryption"),
             CryptoCoreError::GenericDeserializationError(err) => {
