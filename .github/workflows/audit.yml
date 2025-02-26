@@ -17,7 +17,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.83.0
         with:
           components: rustfmt, clippy
-      - name: Install cargo-deny
+      - name: Install cargo-deny@0.17.0
         run: |
           cargo install --locked cargo-deny
           cargo deny check
