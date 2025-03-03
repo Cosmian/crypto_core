@@ -5,6 +5,8 @@
 mod asymmetric_crypto;
 #[cfg(feature = "blake")]
 pub mod blake2;
+#[macro_use]
+mod bytes;
 #[cfg(feature = "ser")]
 pub mod bytes_ser_de;
 #[cfg(feature = "ecies")]
@@ -49,6 +51,13 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
 pub type CsRng = rand_chacha::ChaCha12Rng;
+
+/// A non-cryptographic random sampling functionality.
+///
+/// For cryptographic objects, implement `RandomFixedSizeCBytes` instead.
+pub trait Sampling {
+    fn random(rng: &mut impl reexport::rand_core::RngCore) -> Self;
+}
 
 /// Cryptographic bytes
 ///

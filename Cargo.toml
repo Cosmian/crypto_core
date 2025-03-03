@@ -64,6 +64,7 @@ elliptic-curve = { version = "0.13.8", default-features = false, features = [
     "pkcs8",
     "ecdh",
 ], optional = true }
+gensym = "0.1.1"
 getrandom = { version = "0.2", features = ["js"] } # needed to compile into WASM
 leb128 = { version = "0.2", optional = true }
 p192 = { version = "0.13", optional = true }
