@@ -255,8 +255,10 @@ pub fn to_leb128_len(n: usize) -> usize {
 ///
 /// Panics on failure.
 pub fn test_serialization<T: PartialEq + Debug + Serializable>(v: &T) -> Result<(), String> {
-    let bytes = v.serialize().unwrap();
-    let w = T::deserialize(&bytes).unwrap();
+    let bytes = v
+        .serialize()
+        .map_err(|e| format!("serialization failure: {e}"))?;
+    let w = T::deserialize(&bytes).map_err(|e| format!("deserialization failure: {e}"))?;
     if bytes.len() != v.length() {
         return Err(format!(
             "incorrect serialized length (1): {} != {}",
