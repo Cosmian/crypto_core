@@ -11,7 +11,7 @@ const DEFAULT_RFC5649_CONST: u32 = 0xA659_59A6_u32;
 ///
 /// `data_size` is the size of the key to wrap
 fn build_iv(data_size: usize) -> u64 {
-    u64::from(DEFAULT_RFC5649_CONST) << 32 | u64::from((data_size as u32).to_le())
+    (u64::from(DEFAULT_RFC5649_CONST) << 32) | u64::from((data_size as u32).to_le())
 }
 
 /// Check if `iv` value is appropriate according to the RFC 5649
@@ -206,7 +206,7 @@ fn _wrap_64(plain: &[u8], kek: &[u8], iv: Option<u64>) -> Result<Vec<u8>, Crypto
     for j in 0..6 {
         for (i, r) in big_r.iter_mut().enumerate().take(n) {
             // B = AES(K, A | R[i])
-            let big_i = u128::from(big_a) << 64 | u128::from(*r);
+            let big_i = (u128::from(big_a) << 64) | u128::from(*r);
             let mut big_b = GenericArray::from(big_i.to_be_bytes());
 
             match kek.len() {
@@ -305,7 +305,7 @@ fn _unwrap_64(ciphertext: &[u8], kek: &[u8]) -> Result<(u64, Vec<u8>), CryptoCor
             let t = ((n * j) + (n - i)) as u64;
 
             // B = AES-1(K, (A ^ t) | R[i]) where t = n*j+i
-            let big_i = u128::from(big_a ^ t) << 64 | u128::from(*r);
+            let big_i = (u128::from(big_a ^ t) << 64) | u128::from(*r);
 
             let mut big_b = GenericArray::from(big_i.to_be_bytes());
 
