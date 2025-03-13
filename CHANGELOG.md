@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [10.0.1] - 2025-03-13
+
+### 🐛 Bug Fixes
+
+- Expose missing `generator()` function for the R25519 curve [#87](https://github.com/Cosmian/crypto_core/pull/87)
+
+### 🧪 Testing
+
+- Add context to deserialization error [#86](https://github.com/Cosmian/crypto_core/pull/86)
+- Do not unwrap in `test_serialization` [#93](https://github.com/Cosmian/crypto_core/pull/93)
+
+### ⚙️ Miscellaneous Tasks
+
+- Make license BUSL-1.1
+- Update cargo deny action [#92](https://github.com/Cosmian/crypto_core/pull/92)
+
 ## [10.0.0] - 2024-12-20
 
 ### 🚀 Features

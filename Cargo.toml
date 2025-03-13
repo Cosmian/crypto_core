@@ -1,15 +1,15 @@
 [package]
 name = "cosmian_crypto_core"
-version = "10.0.0"
+version = "10.0.1"
 authors = [
-    "Bruno GRIEDER <bruno.grieder@cosmian.com>",
-    "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
-    "Emmanuel COSTE <emmanuel.coste@cosmian.com>",
+  "Bruno GRIEDER <bruno.grieder@cosmian.com>",
+  "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
+  "Emmanuel COSTE <emmanuel.coste@cosmian.com>",
 ]
 categories = ["cryptography"]
 edition = "2021"
 keywords = ["cosmian", "crypto"]
-license-file = "LICENSE.md"
+license = "BUSL-1.1"
 repository = "https://github.com/Cosmian/crypto_core/"
 description = "Cosmian base cryptographic library"
 
@@ -25,18 +25,18 @@ certificate = ["curve25519", "x509-cert", "uuid", "pkcs8"]
 chacha = ["aead", "chacha20poly1305", "chacha20"]
 curve25519 = ["curve25519-dalek", "ed25519-dalek", "signature", "sha2"]
 default = [
-    "aes",
-    "chacha",
-    "certificate",
-    "ecies",
-    "curve25519",
-    "certificate",
-    "nist_curves",
-    "rsa",
-    "ser",
-    "blake",
-    "sha3",
-    "rfc5649",
+  "aes",
+  "chacha",
+  "certificate",
+  "ecies",
+  "curve25519",
+  "certificate",
+  "nist_curves",
+  "rsa",
+  "ser",
+  "blake",
+  "sha3",
+  "rfc5649",
 ]
 ecies = ["aead", "crypto_box"]
 rsa = ["digest", "dep:rsa", "sha1", "sha2", "dep:sha3", "pkcs8", "rfc5649"]
@@ -55,14 +55,14 @@ crypto_box = { version = "0.9.1", features = ["seal"], optional = true }
 curve25519-dalek = { version = "4.1.3", optional = true }
 digest = { version = "0.10", optional = true }
 ed25519-dalek = { version = "2.1.1", optional = true, features = [
-    "default",
-    "hazmat",
+  "default",
+  "hazmat",
 ] }
 elliptic-curve = { version = "0.13.8", default-features = false, features = [
-    "hazmat",
-    "sec1",
-    "pkcs8",
-    "ecdh",
+  "hazmat",
+  "sec1",
+  "pkcs8",
+  "ecdh",
 ], optional = true }
 getrandom = { version = "0.2", features = ["js"] } # needed to compile into WASM
 leb128 = { version = "0.2", optional = true }
@@ -71,10 +71,10 @@ p224 = { version = "0.13", optional = true }
 p256 = { version = "0.13", optional = true }
 p384 = { version = "0.13", optional = true }
 pkcs8 = { version = "0.10", features = [
-    "encryption",
-    "std",
-    "alloc",
-    "pem",
+  "encryption",
+  "std",
+  "alloc",
+  "pem",
 ], optional = true }
 rand_chacha = "0.3"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
@@ -84,22 +84,22 @@ sha2 = { version = "0.10", optional = true }
 sha3 = { version = "0.10", optional = true }
 signature = { version = "2.2", optional = true }
 tiny-keccak = { version = "2.0.2", features = ["shake"], optional = true }
-uuid = { version = "1.11", features = ["v4"], optional = true }
+uuid = { version = "=1.11", features = ["v4"], optional = true }
 x509-cert = { version = "0.2.5", features = [
-    "pem",
-    "std",
-    "builder",
-    "arbitrary",
-    "hazmat",
+  "pem",
+  "std",
+  "builder",
+  "arbitrary",
+  "hazmat",
 ], optional = true }
 zeroize = { version = "1.8", features = ["zeroize_derive"] }
 
 [dev-dependencies]
 criterion = "0.5"
 libc = "0.2"
-libsodium-sys-stable = "1.22.1"
+libsodium-sys-stable = "1.22.2"
 openssl = { version = "0.10", features = ["vendored"] }
-tempfile = "3.13"
+tempfile = "3.18"
 
 [[bench]]
 harness = false

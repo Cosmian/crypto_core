@@ -155,11 +155,15 @@ impl Mul<&R25519PrivateKey> for &R25519PrivateKey {
 }
 
 impl Div<&R25519PrivateKey> for &R25519PrivateKey {
-    type Output = R25519PrivateKey;
+    type Output = Result<R25519PrivateKey, CryptoCoreError>;
 
     fn div(self, rhs: &R25519PrivateKey) -> Self::Output {
-        #[allow(clippy::suspicious_arithmetic_impl)]
-        R25519PrivateKey(self.0 * rhs.0.invert())
+        if rhs.0 == Scalar::ZERO {
+            return Err(CryptoCoreError::EllipticCurveError(
+                "division by zero".to_string(),
+            ));
+        }
+        Ok(R25519PrivateKey(self.0 * rhs.0.invert()))
     }
 }
 
