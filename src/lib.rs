@@ -50,6 +50,21 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
 pub type CsRng = rand_chacha::ChaCha12Rng;
 
+/// Shuffles the given slice in a destructive way.
+pub fn shuffle_in_place<X>(xs: &mut [X], rng: &mut impl CryptoRngCore) {
+    for i in 0..xs.len() {
+        let j = rng.next_u32() as usize % xs.len();
+        xs.swap(i, j);
+    }
+}
+
+/// Returns a vector containing a shuffled copy of the given elements.
+pub fn shuffle<X: Clone>(xs: &[X], rng: &mut impl CryptoRngCore) -> Vec<X> {
+    let mut res = xs.to_vec();
+    shuffle_in_place(&mut res, rng);
+    res
+}
+
 /// Cryptographic bytes
 ///
 /// The bytes should be thread-safe and comparable.
