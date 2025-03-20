@@ -1,10 +1,13 @@
+pub use gensym;
+
 #[macro_export]
 macro_rules! define_byte_type {
     ($name: ident) => {
-        gensym::gensym! { _define_byte_type! { $name } }
+        $crate::bytes::gensym::gensym! { $crate::_define_byte_type! { $name } }
     };
 }
 
+#[macro_export]
 macro_rules! _define_byte_type {
     ($module: ident, $name: ident) => {
         pub use $module::$name;
@@ -15,9 +18,9 @@ macro_rules! _define_byte_type {
 
             use std::ops::{Deref, DerefMut};
 
-            use rand_core::RngCore;
-
-            use crate::{bytes_ser_de::Serializable, CryptoCoreError, Sampling};
+            use $crate::{
+                bytes_ser_de::Serializable, reexport::rand_core::RngCore, CryptoCoreError, Sampling,
+            };
 
             impl<const LENGTH: usize> Deref for $name<LENGTH> {
                 type Target = [u8; LENGTH];
@@ -30,6 +33,12 @@ macro_rules! _define_byte_type {
             impl<const LENGTH: usize> DerefMut for $name<LENGTH> {
                 fn deref_mut(&mut self) -> &mut Self::Target {
                     &mut self.0
+                }
+            }
+
+            impl<const LENGTH: usize> AsRef<[u8]> for $name<LENGTH> {
+                fn as_ref(&self) -> &[u8] {
+                    &**self
                 }
             }
 
@@ -56,12 +65,12 @@ macro_rules! _define_byte_type {
 
                 fn write(
                     &self,
-                    ser: &mut crate::bytes_ser_de::Serializer,
+                    ser: &mut $crate::bytes_ser_de::Serializer,
                 ) -> Result<usize, Self::Error> {
                     ser.write_array(&self.0)
                 }
 
-                fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
+                fn read(de: &mut $crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
                     de.read_array::<LENGTH>().map(Self)
                 }
             }

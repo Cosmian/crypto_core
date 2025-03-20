@@ -7,7 +7,7 @@ mod asymmetric_crypto;
 pub mod blake2;
 #[cfg(feature = "macro")]
 #[macro_use]
-mod bytes;
+pub mod bytes;
 #[cfg(feature = "ser")]
 pub mod bytes_ser_de;
 #[cfg(feature = "ecies")]
