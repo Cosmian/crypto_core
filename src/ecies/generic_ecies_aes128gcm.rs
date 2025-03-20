@@ -5,8 +5,8 @@ use crate::{
     ecies::traits::{EciesEcPrivateKey, EciesEcPublicKey, EciesEcSharedPoint},
     kdf128,
     reexport::rand_core::CryptoRngCore,
-    symmetric_crypto::{Aes128Gcm, Dem, DemStream, Instantiable, Nonce, SymmetricKey},
-    CryptoCoreError, Ecies,
+    symmetric_crypto::{Aes128Gcm, Dem, DemStream, Instantiable, Nonce},
+    CryptoCoreError, Ecies, SymmetricKey,
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using

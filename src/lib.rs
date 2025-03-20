@@ -11,7 +11,8 @@ pub mod bytes_ser_de;
 mod ecies;
 #[cfg(feature = "sha3")]
 pub mod kdf;
-#[cfg(any(feature = "certificate", feature = "rsa", feature = "nist_curves"))]
+mod key;
+#[cfg(any(feature = "rsa", feature = "nist_curves"))]
 mod pkcs8_fix;
 mod secret;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
@@ -41,6 +42,7 @@ pub use asymmetric_crypto::*;
 pub use ecies::*;
 #[cfg(feature = "sha3")]
 pub use kdf::*;
+pub use key::SymmetricKey;
 use reexport::rand_core::CryptoRngCore;
 pub use secret::Secret;
 #[cfg(any(feature = "aes", feature = "chacha"))]

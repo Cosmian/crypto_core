@@ -5,9 +5,9 @@ use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 use crate::{
     blake2b,
     reexport::rand_core::CryptoRngCore,
-    symmetric_crypto::{Dem, DemStream, Instantiable, Nonce, SymmetricKey, XChaCha20Poly1305},
-    CryptoCoreError, Ecies, EciesStream, FixedSizeCBytes, X25519PrivateKey, X25519PublicKey,
-    CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
+    symmetric_crypto::{Dem, DemStream, Instantiable, Nonce, XChaCha20Poly1305},
+    CryptoCoreError, Ecies, EciesStream, FixedSizeCBytes, SymmetricKey, X25519PrivateKey,
+    X25519PublicKey, CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using

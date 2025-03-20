@@ -102,10 +102,7 @@ impl<const KEY_LENGTH: usize> SymmetricKey<KEY_LENGTH> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{
-        reexport::rand_core::SeedableRng, symmetric_crypto::key::SymmetricKey, CsRng,
-        RandomFixedSizeCBytes,
-    };
+    use crate::{reexport::rand_core::SeedableRng, CsRng, RandomFixedSizeCBytes, SymmetricKey};
 
     const KEY_LENGTH: usize = 32;
 
