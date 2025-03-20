@@ -16,6 +16,17 @@ macro_rules! _define_byte_type {
             #[derive(Debug, Clone, Hash, PartialEq, Eq)]
             pub struct $name<const LENGTH: usize>([u8; LENGTH]);
 
+            #[derive(Clone, Debug)]
+            pub struct Error(String);
+
+            impl std::fmt::Display for Error {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}", self.0)
+                }
+            }
+
+            impl std::error::Error for Error {}
+
             use std::ops::{Deref, DerefMut};
 
             use $crate::{
@@ -45,6 +56,22 @@ macro_rules! _define_byte_type {
             impl<const LENGTH: usize> From<[u8; LENGTH]> for $name<LENGTH> {
                 fn from(bytes: [u8; LENGTH]) -> Self {
                     Self(bytes)
+                }
+            }
+
+            impl<const LENGTH: usize> TryFrom<&[u8]> for $name<LENGTH> {
+                type Error = Error;
+
+                fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+                    <[u8; LENGTH]>::try_from(bytes)
+                        .map(Self::from)
+                        .map_err(|_| {
+                            Error(format!(
+                                "invalid byte length: {} given, {} expected",
+                                LENGTH,
+                                bytes.len()
+                            ))
+                        })
                 }
             }
 
