@@ -107,13 +107,12 @@ macro_rules! _define_byte_type {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
-
     use crate::{
         bytes_ser_de::test_serialization, CBytes, CryptoCoreError, CsRng, FixedSizeCBytes,
         RandomFixedSizeCBytes, Sampling,
     };
     use rand_core::SeedableRng;
+    use std::ops::Deref;
 
     /// Defines two new byte types (thus asserting definitions are hygienic),
     /// test their serializations and implement some more stuff for one of them
