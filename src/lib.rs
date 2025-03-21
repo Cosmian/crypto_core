@@ -5,6 +5,9 @@
 mod asymmetric_crypto;
 #[cfg(feature = "blake")]
 pub mod blake2;
+#[cfg(feature = "macro")]
+#[macro_use]
+pub mod bytes;
 #[cfg(feature = "ser")]
 pub mod bytes_ser_de;
 #[cfg(feature = "ecies")]
@@ -65,6 +68,11 @@ pub fn shuffle<X: Clone>(xs: &[X], rng: &mut impl CryptoRngCore) -> Vec<X> {
     let mut res = xs.to_vec();
     shuffle_in_place(&mut res, rng);
     res
+}
+
+/// A uniform sampling functionality.
+pub trait Sampling {
+    fn random(rng: &mut impl CryptoRngCore) -> Self;
 }
 
 /// Cryptographic bytes

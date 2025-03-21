@@ -317,6 +317,7 @@ dependencies = [
  "digest",
  "ed25519-dalek",
  "elliptic-curve",
+ "gensym",
  "getrandom 0.2.15",
  "leb128",
  "libc",
@@ -744,6 +745,18 @@ dependencies = [
  "typenum",
  "version_check",
  "zeroize",
+]
+
+[[package]]
+name = "gensym"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "913dce4c5f06c2ea40fc178c06f777ac89fc6b1383e90c254fafb1abe4ba3c82"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "uuid",
 ]
 
 [[package]]
