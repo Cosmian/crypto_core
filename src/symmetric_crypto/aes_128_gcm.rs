@@ -11,10 +11,7 @@ use super::{
     dem::{DemInPlace, DemStream, Instantiable},
     nonce::Nonce,
 };
-use crate::{
-    symmetric_crypto::{key::SymmetricKey, Dem},
-    RandomFixedSizeCBytes,
-};
+use crate::{symmetric_crypto::Dem, RandomFixedSizeCBytes, SymmetricKey};
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 128 GCM.
@@ -90,11 +87,10 @@ mod tests {
         symmetric_crypto::{
             aes_128_gcm::Aes128Gcm,
             dem::{DemStream, Instantiable},
-            key::SymmetricKey,
             nonce::Nonce,
             Dem, DemInPlace,
         },
-        CryptoCoreError, CsRng, RandomFixedSizeCBytes,
+        CryptoCoreError, CsRng, RandomFixedSizeCBytes, SymmetricKey,
     };
 
     #[test]

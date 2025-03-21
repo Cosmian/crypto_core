@@ -7,11 +7,10 @@ use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
 
 use super::{
     dem::{DemStream, Instantiable},
-    key::SymmetricKey,
     nonce::Nonce,
     Dem, DemInPlace,
 };
-use crate::RandomFixedSizeCBytes;
+use crate::{RandomFixedSizeCBytes, SymmetricKey};
 
 pub struct XChaCha20Poly1305(XChaCha20Poly1305Lib);
 
@@ -89,12 +88,11 @@ mod tests {
         reexport::rand_core::SeedableRng,
         symmetric_crypto::{
             dem::{DemStream, Instantiable},
-            key::SymmetricKey,
             nonce::Nonce,
             xchacha20_poly1305::XChaCha20Poly1305,
             Dem, DemInPlace,
         },
-        CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
+        CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes, SymmetricKey,
     };
 
     #[test]

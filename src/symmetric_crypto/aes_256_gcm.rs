@@ -12,8 +12,8 @@ use aes_gcm::Aes256Gcm as Aes256GcmLib;
 
 use super::dem::{DemInPlace, DemStream, Instantiable};
 use crate::{
-    symmetric_crypto::{key::SymmetricKey, nonce::Nonce, Dem},
-    RandomFixedSizeCBytes,
+    symmetric_crypto::{nonce::Nonce, Dem},
+    RandomFixedSizeCBytes, SymmetricKey,
 };
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
@@ -88,10 +88,9 @@ mod tests {
     use crate::{
         reexport::rand_core::SeedableRng,
         symmetric_crypto::{
-            aes_256_gcm::Aes256Gcm, dem::DemStream, key::SymmetricKey, nonce::Nonce, Dem,
-            DemInPlace, Instantiable,
+            aes_256_gcm::Aes256Gcm, dem::DemStream, nonce::Nonce, Dem, DemInPlace, Instantiable,
         },
-        CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes,
+        CryptoCoreError, CsRng, FixedSizeCBytes, RandomFixedSizeCBytes, SymmetricKey,
     };
 
     #[test]
