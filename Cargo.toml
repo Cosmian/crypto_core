@@ -1,6 +1,6 @@
 [package]
 name = "cosmian_crypto_core"
-version = "10.0.1"
+version = "10.1.0"
 authors = [
   "Bruno GRIEDER <bruno.grieder@cosmian.com>",
   "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
@@ -40,6 +40,7 @@ default = [
 ]
 ecies = ["aead", "crypto_box"]
 rsa = ["digest", "dep:rsa", "sha1", "sha2", "dep:sha3", "pkcs8", "rfc5649"]
+macro = ["gensym", "ser"]
 nist_curves = ["p384", "p256", "p224", "p192", "elliptic-curve", "pkcs8"]
 rfc5649 = ["aes", "chacha"]
 ser = ["leb128"]
@@ -64,6 +65,7 @@ elliptic-curve = { version = "0.13.8", default-features = false, features = [
   "pkcs8",
   "ecdh",
 ], optional = true }
+gensym = { version = "0.1.1", optional = true }
 getrandom = { version = "0.2", features = ["js"] } # needed to compile into WASM
 leb128 = { version = "0.2", optional = true }
 p192 = { version = "0.13", optional = true }

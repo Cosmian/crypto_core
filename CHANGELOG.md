@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [10.1.0] - 2025-04-14
+
+### 🚀 Features
+
+- adds a `define_byte_type` macro to easily derive byte types
+- always expose the `SymmetricKey` to avoid unnecessary feature activation
+- adds shuffling primitives based on a cryptographic RNG
+
 ## [10.0.1] - 2025-03-13
 
 ### 🐛 Bug Fixes

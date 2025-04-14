@@ -5,13 +5,17 @@
 mod asymmetric_crypto;
 #[cfg(feature = "blake")]
 pub mod blake2;
+#[cfg(feature = "macro")]
+#[macro_use]
+pub mod bytes;
 #[cfg(feature = "ser")]
 pub mod bytes_ser_de;
 #[cfg(feature = "ecies")]
 mod ecies;
 #[cfg(feature = "sha3")]
 pub mod kdf;
-#[cfg(any(feature = "certificate", feature = "rsa", feature = "nist_curves"))]
+mod key;
+#[cfg(any(feature = "rsa", feature = "nist_curves"))]
 mod pkcs8_fix;
 mod secret;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
@@ -41,6 +45,7 @@ pub use asymmetric_crypto::*;
 pub use ecies::*;
 #[cfg(feature = "sha3")]
 pub use kdf::*;
+pub use key::SymmetricKey;
 use reexport::rand_core::CryptoRngCore;
 pub use secret::Secret;
 #[cfg(any(feature = "aes", feature = "chacha"))]
@@ -49,6 +54,26 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.
 pub type CsRng = rand_chacha::ChaCha12Rng;
+
+/// Shuffles the given slice in a destructive way.
+pub fn shuffle_in_place<X>(xs: &mut [X], rng: &mut impl CryptoRngCore) {
+    for i in 0..xs.len() {
+        let j = rng.next_u32() as usize % xs.len();
+        xs.swap(i, j);
+    }
+}
+
+/// Returns a vector containing a shuffled copy of the given elements.
+pub fn shuffle<X: Clone>(xs: &[X], rng: &mut impl CryptoRngCore) -> Vec<X> {
+    let mut res = xs.to_vec();
+    shuffle_in_place(&mut res, rng);
+    res
+}
+
+/// A uniform sampling functionality.
+pub trait Sampling {
+    fn random(rng: &mut impl CryptoRngCore) -> Self;
+}
 
 /// Cryptographic bytes
 ///
