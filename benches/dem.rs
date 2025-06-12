@@ -228,11 +228,15 @@ pub(crate) fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
     c.bench_function(
         "AES 128 GCM DEM decryption in place of a 2048-bytes message without additional data",
         |b| {
-            b.iter(|| {
-                aes_128_gcm
-                    .decrypt_in_place_detached(&nonce, &mut bytes, &tag_aes_128_gcm, None)
-                    .unwrap();
-            });
+            b.iter_batched(
+                || bytes,
+                |mut bytes| {
+                    aes_128_gcm
+                        .decrypt_in_place_detached(&nonce, &mut bytes, &tag_aes_128_gcm, None)
+                        .unwrap();
+                },
+                criterion::BatchSize::SmallInput,
+            );
         },
     );
 
@@ -245,11 +249,15 @@ pub(crate) fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
     c.bench_function(
         "AES 256 GCM DEM decryption in place of a 2048-bytes message without additional data",
         |b| {
-            b.iter(|| {
-                aes_256_gcm
-                    .decrypt_in_place_detached(&nonce, &mut bytes, &tag_aes_256_gcm, None)
-                    .unwrap();
-            });
+            b.iter_batched(
+                || bytes,
+                |mut bytes| {
+                    aes_256_gcm
+                        .decrypt_in_place_detached(&nonce, &mut bytes, &tag_aes_256_gcm, None)
+                        .unwrap();
+                },
+                criterion::BatchSize::SmallInput,
+            );
         },
     );
 
@@ -261,11 +269,15 @@ pub(crate) fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
     c.bench_function(
         "ChaCha20 Poly1305 DEM decryption in place of a 2048-bytes message without additional data",
         |b| {
-            b.iter(|| {
-                chacha20_poly1305
-                    .decrypt_in_place_detached(&nonce, &mut bytes, &tag_chacha20_poly1305, None)
-                    .unwrap();
-            });
+            b.iter_batched(
+                || bytes,
+                |mut bytes| {
+                    chacha20_poly1305
+                        .decrypt_in_place_detached(&nonce, &mut bytes, &tag_chacha20_poly1305, None)
+                        .unwrap();
+                },
+                criterion::BatchSize::SmallInput,
+            );
         },
     );
 
@@ -279,11 +291,20 @@ pub(crate) fn bench_symmetric_decryption_in_place(c: &mut Criterion) {
         "XChaCha20 Poly1305 DEM decryption in place of a 2048-bytes message without additional \
          data",
         |b| {
-            b.iter(|| {
-                xchacha20_poly1305
-                    .decrypt_in_place_detached(&nonce, &mut bytes, &tag_xchacha20_poly1305, None)
-                    .unwrap();
-            });
+            b.iter_batched(
+                || bytes,
+                |mut bytes| {
+                    xchacha20_poly1305
+                        .decrypt_in_place_detached(
+                            &nonce,
+                            &mut bytes,
+                            &tag_xchacha20_poly1305,
+                            None,
+                        )
+                        .unwrap();
+                },
+                criterion::BatchSize::SmallInput,
+            );
         },
     );
 }
