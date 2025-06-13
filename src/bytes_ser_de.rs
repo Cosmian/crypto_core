@@ -347,6 +347,9 @@ fn unpack(mut bytes: impl Iterator<Item = u8>) -> Result<Vec<bool>, CryptoCoreEr
                     };
                 }
             }
+            return Err(CryptoCoreError::GenericDeserializationError(
+                "invalid packed boolean byte: marker bit 0 is missing".to_string(),
+            ));
         }
     }
 }
