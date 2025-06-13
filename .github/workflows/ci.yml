@@ -7,19 +7,19 @@ jobs:
   cargo-lint:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-lint.yml@develop
     with:
-      toolchain: stable
+      toolchain: 1.87.0
   cargo-semver:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-semver.yml@develop
   cargo-dry-publish:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-publish.yml@develop
     with:
-      toolchain: stable
+      toolchain: 1.87.0
       publish: false
   wasm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: dtolnay/rust-toolchain@1.83.0
+      - uses: dtolnay/rust-toolchain@1.87.0
         with:
           components: rustfmt, clippy
       - name: Build
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.87.0
           override: true
       - name: Install cargo-hack
         run: cargo install --locked cargo-hack || true
@@ -53,5 +53,5 @@ jobs:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-publish.yml@develop
     if: startsWith(github.ref, 'refs/tags/')
     with:
-      toolchain: stable
+      toolchain: 1.87.0
     secrets: inherit
