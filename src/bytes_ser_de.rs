@@ -1,7 +1,7 @@
 //! Implements the `Serializer` and `Deserializer` objects using LEB128.
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, LinkedList},
     fmt::Debug,
     hash::Hash,
     io::{Read, Write},
@@ -361,6 +361,27 @@ impl Serializable for String {
 }
 
 impl<T: Serializable> Serializable for Vec<T>
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.iter().map(Serializable::length).sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter()
+            .try_fold(ser.write(&self.len())?, |n, t| Ok(n + ser.write(t)?))
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let length = de.read::<usize>()?;
+        (0..length).map(|_| de.read::<T>()).collect()
+    }
+}
+
+impl<T: Serializable> Serializable for LinkedList<T>
 where
     T::Error: From<CryptoCoreError>,
 {
