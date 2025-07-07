@@ -379,13 +379,8 @@ where
     }
 }
 
-impl<
-        E: std::error::Error + From<CryptoCoreError>,
-        K: Hash + Eq + Serializable<Error = E>,
-        V: Serializable<Error = E>,
-    > Serializable for HashMap<K, V>
-{
-    type Error = E;
+impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V> {
+    type Error = CryptoCoreError;
 
     fn length(&self) -> usize {
         self.len().length()
@@ -396,15 +391,29 @@ impl<
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
-        self.iter().try_fold(ser.write(&self.len())?, |n, (k, v)| {
-            Ok(n + ser.write(k)? + ser.write(v)?)
-        })
+        self.iter()
+            .try_fold(ser.write(&self.len())?, |mut n, (k, v)| {
+                n += ser
+                    .write(k)
+                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?;
+                n += ser
+                    .write(v)
+                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?;
+                Ok(n)
+            })
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         let length = de.read::<usize>()?;
         (0..length)
-            .map(|_| Ok((de.read::<K>()?, de.read::<V>()?)))
+            .map(|_| {
+                Ok((
+                    de.read::<K>()
+                        .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
+                    de.read::<V>()
+                        .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
+                ))
+            })
             .collect()
     }
 }
