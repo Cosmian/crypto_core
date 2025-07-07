@@ -360,6 +360,36 @@ impl Serializable for String {
     }
 }
 
+impl<T: Serializable> Serializable for Option<T>
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        1 + self.as_ref().map(|t| t.length()).unwrap_or_default()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        if let Some(t) = self {
+            let mut n = ser.write(&true)?;
+            n += ser.write(t)?;
+            Ok(n)
+        } else {
+            ser.write(&false).map_err(Self::Error::from)
+        }
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let is_some = de.read::<bool>()?;
+        if is_some {
+            de.read().map(Some)
+        } else {
+            Ok(None)
+        }
+    }
+}
+
 impl<T: Serializable> Serializable for Vec<T>
 where
     T::Error: From<CryptoCoreError>,
