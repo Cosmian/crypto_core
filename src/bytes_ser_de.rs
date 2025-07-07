@@ -318,6 +318,25 @@ impl Serializable for usize {
     }
 }
 
+impl Serializable for String {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.len()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_vec(self.as_bytes())
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_vec().and_then(|bytes| {
+            String::from_utf8(bytes)
+                .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))
+        })
+    }
+}
+
 impl<T: Serializable> Serializable for Vec<T>
 where
     T::Error: From<CryptoCoreError>,
@@ -635,6 +654,11 @@ mod tests {
     #[test]
     fn test_base_serializations() {
         let mut rng = CsRng::from_entropy();
+        let s = format!(
+            "{:?}",
+            (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>()
+        );
+        test_serialization(&s).unwrap();
         let v = (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>();
         test_serialization(&v).unwrap();
         let s = (0..1000).map(|_| rng.next_u64()).collect::<HashSet<_>>();
