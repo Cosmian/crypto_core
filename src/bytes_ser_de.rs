@@ -1,7 +1,9 @@
 //! Implements the `Serializer` and `Deserializer` objects using LEB128.
 
 use std::{
+    collections::{HashMap, HashSet},
     fmt::Debug,
+    hash::Hash,
     io::{Read, Write},
 };
 
@@ -273,6 +275,121 @@ pub fn to_leb128_len(n: usize) -> usize {
     size
 }
 
+impl Serializable for u64 {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        // Re-code `to_leb128_len` in order to avoid breaking change.
+        let mut n = *self >> 7;
+        let mut size = 1;
+        while n != 0 {
+            size += 1;
+            n >>= 7;
+        }
+        size
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_leb128_u64(*self)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_leb128_u64()
+    }
+}
+
+impl Serializable for usize {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        to_leb128_len(*self)
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_leb128_u64(*self as u64)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_leb128_u64().and_then(|n| {
+            usize::try_from(n).map_err(|_| {
+                CryptoCoreError::GenericDeserializationError("not an usize number".to_string())
+            })
+        })
+    }
+}
+
+impl<T: Serializable> Serializable for Vec<T>
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.iter().map(Serializable::length).sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter()
+            .try_fold(ser.write(&self.len())?, |n, t| Ok(n + ser.write(t)?))
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let length = de.read::<usize>()?;
+        (0..length).map(|_| de.read::<T>()).collect()
+    }
+}
+
+impl<T: Hash + Eq + Serializable> Serializable for HashSet<T>
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.iter().map(Serializable::length).sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter()
+            .try_fold(ser.write(&self.len())?, |n, t| Ok(n + ser.write(t)?))
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let length = de.read::<usize>()?;
+        (0..length).map(|_| de.read::<T>()).collect()
+    }
+}
+
+impl<
+        E: std::error::Error + From<CryptoCoreError>,
+        K: Hash + Eq + Serializable<Error = E>,
+        V: Serializable<Error = E>,
+    > Serializable for HashMap<K, V>
+{
+    type Error = E;
+
+    fn length(&self) -> usize {
+        self.len().length()
+            + self
+                .iter()
+                .map(|(k, v)| k.length() + v.length())
+                .sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter().try_fold(ser.write(&self.len())?, |n, (k, v)| {
+            Ok(n + ser.write(k)? + ser.write(v)?)
+        })
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let length = de.read::<usize>()?;
+        (0..length)
+            .map(|_| Ok((de.read::<K>()?, de.read::<V>()?)))
+            .collect()
+    }
+}
+
 struct ByteIterator<'a>(&'a mut Deserializer<'a>);
 
 impl<'a> ByteIterator<'a> {
@@ -390,7 +507,9 @@ pub fn test_serialization<T: PartialEq + Debug + Serializable>(v: &T) -> Result<
 
 #[cfg(test)]
 mod tests {
-    use super::{to_leb128_len, Deserializer, Serializable, Serializer};
+    use std::collections::{HashMap, HashSet};
+
+    use super::{test_serialization, to_leb128_len, Deserializer, Serializable, Serializer};
     use crate::{
         bytes_ser_de::{pack, unpack},
         reexport::rand_core::{RngCore, SeedableRng},
@@ -408,7 +527,7 @@ mod tests {
         type Error = CryptoCoreError;
 
         fn length(&self) -> usize {
-            to_leb128_len(self.bytes.len()) + self.bytes.len()
+            self.bytes.len().length() + self.bytes.len()
         }
 
         fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
@@ -428,7 +547,7 @@ mod tests {
         let mut ser = Serializer::new();
         for i in 1..1000 {
             let n = rng.next_u32();
-            let length = ser.write_leb128_u64(u64::from(n)).unwrap();
+            let length = ser.write_leb128_u64(n as u64).unwrap();
             assert_eq!(
                 length,
                 to_leb128_len(n as usize),
@@ -511,5 +630,18 @@ mod tests {
             let res = Deserializer::new(&bytes).read_packed_booleans().unwrap();
             assert_eq!(booleans, res);
         }
+    }
+
+    #[test]
+    fn test_base_serializations() {
+        let mut rng = CsRng::from_entropy();
+        let v = (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>();
+        test_serialization(&v).unwrap();
+        let s = (0..1000).map(|_| rng.next_u64()).collect::<HashSet<_>>();
+        test_serialization(&s).unwrap();
+        let m = (0..1000)
+            .map(|_| (rng.next_u64(), rng.next_u64()))
+            .collect::<HashMap<_, _>>();
+        test_serialization(&m).unwrap();
     }
 }
