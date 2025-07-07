@@ -275,6 +275,29 @@ pub fn to_leb128_len(n: usize) -> usize {
     size
 }
 
+impl Serializable for bool {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        1
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_leb128_u64(*self as u64)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let b = de.read_leb128_u64()?;
+        match b {
+            0 => Ok(false),
+            1 => Ok(true),
+            _ => Err(CryptoCoreError::GenericDeserializationError(format!(
+                "not a valid boolean value serialization {b}"
+            ))),
+        }
+    }
+}
+
 impl Serializable for u64 {
     type Error = CryptoCoreError;
 
