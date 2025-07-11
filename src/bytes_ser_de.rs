@@ -260,10 +260,6 @@ impl Default for Serializer {
 /// → 0xE5 0x8E 0x26            Output stream (LSB to MSB)
 ///
 /// Source: [Wikipedia](https://en.wikipedia.org/wiki/LEB128#Encoding_format)
-///
-/// # Parameters
-///
-/// - `n`   : `usize` for which to compute the length of the serialization
 #[must_use]
 pub fn to_leb128_len(n: usize) -> usize {
     let mut n = n >> 7;
@@ -302,14 +298,11 @@ impl Serializable for u64 {
     type Error = CryptoCoreError;
 
     fn length(&self) -> usize {
-        // Re-code `to_leb128_len` in order to avoid breaking change.
-        let mut n = *self >> 7;
-        let mut size = 1;
-        while n != 0 {
-            size += 1;
-            n >>= 7;
+        if *self == 0 {
+            1
+        } else {
+            (64 - self.leading_zeros()).div_ceil(7) as usize
         }
-        size
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
@@ -737,15 +730,37 @@ mod tests {
     #[test]
     fn test_base_serializations() {
         let mut rng = CsRng::from_entropy();
-        let s = format!(
+
+        let n = 0u64;
+        test_serialization(&n).unwrap();
+
+        #[cfg(target_pointer_width = "64")]
+        {
+            for i in 0..64 {
+                let n: u64 = 1 << i;
+                assert_eq!(n.length(), to_leb128_len(n as usize))
+            }
+        }
+        #[cfg(target_pointer_width = "32")]
+        {
+            for i in 0..32 {
+                let n: u64 = 1 << i;
+                assert_eq!(n.length(), to_leb128_len(n as usize))
+            }
+        }
+
+        let string = format!(
             "{:?}",
             (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>()
         );
-        test_serialization(&s).unwrap();
+        test_serialization(&string).unwrap();
+
         let v = (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>();
         test_serialization(&v).unwrap();
+
         let s = (0..1000).map(|_| rng.next_u64()).collect::<HashSet<_>>();
         test_serialization(&s).unwrap();
+
         let m = (0..1000)
             .map(|_| (rng.next_u64(), rng.next_u64()))
             .collect::<HashMap<_, _>>();
