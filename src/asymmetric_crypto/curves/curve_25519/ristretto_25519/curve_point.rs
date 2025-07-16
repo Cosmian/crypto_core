@@ -51,18 +51,16 @@ impl From<&R25519PrivateKey> for R25519CurvePoint {
 
 #[cfg(feature = "ser")]
 impl Serializable for R25519CurvePoint {
-    type Error = CryptoCoreError;
-
     fn length(&self) -> usize {
         Self::LENGTH
     }
 
-    fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(&self.0.compress().to_bytes())
+    fn write<S: crate::bytes_ser_de::Serializer>(&self, ser: &mut S) -> Result<usize, S::Error> {
+        self.0.compress().to_bytes().write(ser)
     }
 
-    fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
-        Self::try_from_bytes(de.read_array::<{ Self::LENGTH }>()?)
+    fn read<D: crate::bytes_ser_de::Deserializer>(de: &mut D) -> Result<Self, D::Error> {
+        Self::try_from_bytes(<[u8; Self::LENGTH]>::read(de)?).map_err(D::Error::from)
     }
 }
 

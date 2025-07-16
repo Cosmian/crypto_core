@@ -149,19 +149,17 @@ where
     <C as CurveArithmetic>::AffinePoint: sec1::ToEncodedPoint<C>,
     <C as CurveArithmetic>::AffinePoint: sec1::FromEncodedPoint<C>,
 {
-    type Error = CryptoCoreError;
-
     fn length(&self) -> usize {
         LENGTH
     }
 
-    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(self.to_bytes().as_ref())
+    fn write<S: Serializer>(&self, ser: &mut S) -> Result<usize, S::Error> {
+        self.to_bytes().write(ser)
     }
 
-    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
-        let bytes = de.read_array::<LENGTH>()?;
-        Self::try_from_bytes(bytes)
+    fn read<D: Deserializer>(de: &mut D) -> Result<Self, D::Error> {
+        let bytes = <[u8; LENGTH]>::read(de)?;
+        Self::try_from_bytes(bytes).map_err(D::Error::from)
     }
 }
 

@@ -7,7 +7,8 @@ use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[cfg(feature = "ser")]
-use crate::{bytes_ser_de::Serializable, CryptoCoreError};
+use crate::bytes_ser_de::Serializable;
+use crate::bytes_ser_de::{Deserializer, Serializer};
 
 /// Holds a secret information of `LENGTH` bytes.
 ///
@@ -95,21 +96,16 @@ impl<const LENGTH: usize> ZeroizeOnDrop for Secret<LENGTH> {}
 
 #[cfg(feature = "ser")]
 impl<const LENGTH: usize> Serializable for Secret<LENGTH> {
-    type Error = CryptoCoreError;
-
-    #[inline(always)]
     fn length(&self) -> usize {
         LENGTH
     }
 
-    #[inline(always)]
-    fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(&**self)
+    fn write<S: Serializer>(&self, ser: &mut S) -> Result<usize, S::Error> {
+        ser.write_bytes(&**self)
     }
 
-    #[inline(always)]
-    fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
-        let mut bytes = de.read_array::<LENGTH>()?;
+    fn read<D: Deserializer>(de: &mut D) -> Result<Self, D::Error> {
+        let mut bytes = <[u8; LENGTH]>::read(de)?;
         Ok(Self::from_unprotected_bytes(&mut bytes))
     }
 }
