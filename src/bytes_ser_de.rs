@@ -1,7 +1,9 @@
 //! Implements the `Serializer` and `Deserializer` objects using LEB128.
 
 use std::{
+    collections::{HashMap, HashSet, LinkedList},
     fmt::Debug,
+    hash::Hash,
     io::{Read, Write},
 };
 
@@ -90,6 +92,12 @@ impl<'a> Deserializer<'a> {
             }
         })?;
         Ok(buf)
+    }
+
+    /// Reads a packed vector of Boolean values.
+    pub fn read_packed_booleans(&'a mut self) -> Result<Vec<bool>, CryptoCoreError> {
+        let byte_iter = ByteIterator::<'a>::new(self);
+        unpack(byte_iter)
     }
 
     /// Reads a vector of bytes from the `Deserializer`.
@@ -187,6 +195,20 @@ impl Serializer {
             })
     }
 
+    /// Writes a vector of Boolean values in a packed manner.
+    ///
+    /// Each boolean value is converted into a bit to form a big number. Then,
+    /// each byte of this number is written in a LEB128-fashion except for the
+    /// last byte. Indeed, where LEB128 does not care about leading zeros since
+    /// they are not significant, interpreting leading zeros as leading false
+    /// values would change the returned value. Therefore, the highest bit of
+    /// each non-terminating byte is 0 while the leading bits of the terminating
+    /// bytes are a sequence of ones followed by a single 0. Only the remaining
+    /// bits are interpreted as boolean values.
+    pub fn write_packed_booleans(&mut self, booleans: &[bool]) -> Result<usize, CryptoCoreError> {
+        self.write_array(&pack(booleans))
+    }
+
     /// Writes a vector of bytes to the `Serializer`.
     ///
     /// Vectors serialization overhead is `size_of(LEB128(vector_size))`, where
@@ -238,10 +260,6 @@ impl Default for Serializer {
 /// → 0xE5 0x8E 0x26            Output stream (LSB to MSB)
 ///
 /// Source: [Wikipedia](https://en.wikipedia.org/wiki/LEB128#Encoding_format)
-///
-/// # Parameters
-///
-/// - `n`   : `usize` for which to compute the length of the serialization
 #[must_use]
 pub fn to_leb128_len(n: usize) -> usize {
     let mut n = n >> 7;
@@ -251,6 +269,301 @@ pub fn to_leb128_len(n: usize) -> usize {
         n >>= 7;
     }
     size
+}
+
+impl Serializable for bool {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        1
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_leb128_u64(*self as u64)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let b = de.read_leb128_u64()?;
+        match b {
+            0 => Ok(false),
+            1 => Ok(true),
+            _ => Err(CryptoCoreError::GenericDeserializationError(format!(
+                "not a valid boolean value serialization {b}"
+            ))),
+        }
+    }
+}
+
+impl Serializable for u64 {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        if *self == 0 {
+            1
+        } else {
+            (64 - self.leading_zeros()).div_ceil(7) as usize
+        }
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_leb128_u64(*self)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_leb128_u64()
+    }
+}
+
+impl Serializable for usize {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        to_leb128_len(*self)
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_leb128_u64(*self as u64)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_leb128_u64().and_then(|n| {
+            usize::try_from(n).map_err(|_| {
+                CryptoCoreError::GenericDeserializationError("not an usize number".to_string())
+            })
+        })
+    }
+}
+
+impl Serializable for String {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.len()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_vec(self.as_bytes())
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_vec().and_then(|bytes| {
+            String::from_utf8(bytes)
+                .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))
+        })
+    }
+}
+
+impl<T: Serializable> Serializable for Option<T>
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        1 + self.as_ref().map(|t| t.length()).unwrap_or_default()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        if let Some(t) = self {
+            let mut n = ser.write(&true)?;
+            n += ser.write(t)?;
+            Ok(n)
+        } else {
+            ser.write(&false).map_err(Self::Error::from)
+        }
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let is_some = de.read::<bool>()?;
+        if is_some {
+            de.read().map(Some)
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+impl<T: Serializable> Serializable for Vec<T>
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.iter().map(Serializable::length).sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter()
+            .try_fold(ser.write(&self.len())?, |n, t| Ok(n + ser.write(t)?))
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let length = de.read::<usize>()?;
+        (0..length).map(|_| de.read::<T>()).collect()
+    }
+}
+
+impl<T: Serializable> Serializable for LinkedList<T>
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.iter().map(Serializable::length).sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter()
+            .try_fold(ser.write(&self.len())?, |n, t| Ok(n + ser.write(t)?))
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let length = de.read::<usize>()?;
+        (0..length).map(|_| de.read::<T>()).collect()
+    }
+}
+
+impl<T: Hash + Eq + Serializable> Serializable for HashSet<T>
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.iter().map(Serializable::length).sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter()
+            .try_fold(ser.write(&self.len())?, |n, t| Ok(n + ser.write(t)?))
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let length = de.read::<usize>()?;
+        (0..length).map(|_| de.read::<T>()).collect()
+    }
+}
+
+impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V> {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.len().length()
+            + self
+                .iter()
+                .map(|(k, v)| k.length() + v.length())
+                .sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter()
+            .try_fold(ser.write(&self.len())?, |mut n, (k, v)| {
+                n += ser
+                    .write(k)
+                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?;
+                n += ser
+                    .write(v)
+                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?;
+                Ok(n)
+            })
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let length = de.read::<usize>()?;
+        (0..length)
+            .map(|_| {
+                Ok((
+                    de.read::<K>()
+                        .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
+                    de.read::<V>()
+                        .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
+                ))
+            })
+            .collect()
+    }
+}
+
+struct ByteIterator<'a>(&'a mut Deserializer<'a>);
+
+impl<'a> ByteIterator<'a> {
+    fn new(de: &'a mut Deserializer<'a>) -> Self {
+        Self(de)
+    }
+}
+
+impl Iterator for ByteIterator<'_> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut buf = [0];
+        self.0.readable.read_exact(&mut buf).ok().map(|_| buf[0])
+    }
+}
+
+fn pack(choices: &[bool]) -> Vec<u8> {
+    let (q, r) = (choices.len().div_euclid(7), choices.len() % 7);
+    let mut res = Vec::with_capacity(q + 1);
+    for i in 0..q {
+        // In the nominal case, the marker bit (highest bit) is 0, so we
+        // just need to fill the lower ones when accumulating from 0.
+        let mut a = 0u8;
+        for j in 0..7 {
+            if choices[i * 7 + j] {
+                a += 1 << j;
+            }
+        }
+        res.push(a);
+    }
+
+    // The last byte can contain 0 to 6 bits of data, which leaves the
+    // room for the minimum-two final marker bits.
+    let mut a = 0;
+    for j in 0..r {
+        a += (choices[q * 7 + j] as u8) << j;
+    }
+    // All the remaining upper bits but the one in position r are ones.
+    for j in r + 1..8 {
+        a += 1 << j;
+    }
+    res.push(a);
+    res
+}
+
+fn unpack(mut bytes: impl Iterator<Item = u8>) -> Result<Vec<bool>, CryptoCoreError> {
+    let mut res = Vec::new();
+    loop {
+        let mut byte = bytes
+            .next()
+            .ok_or(CryptoCoreError::DeserializationEmptyError)?;
+
+        if byte < (1 << 7) {
+            for _ in 0..7 {
+                res.push(byte % 2 == 1);
+                byte >>= 1;
+            }
+        } else {
+            // The highest byte is set: this is the terminating byte. First look
+            // for the position of the second terminating bit (the first 0 to
+            // the left), then interpret all bits from right to left until this
+            // position.
+            for i in (0..8).rev() {
+                if (byte >> i) % 2 == 0 {
+                    return {
+                        for _ in 0..i {
+                            res.push(byte % 2 == 1);
+                            byte >>= 1;
+                        }
+                        Ok(res)
+                    };
+                }
+            }
+            return Err(CryptoCoreError::GenericDeserializationError(
+                "invalid packed boolean byte: marker bit 0 is missing".to_string(),
+            ));
+        }
+    }
 }
 
 /// Test that for the given value, the following holds:
@@ -289,8 +602,11 @@ pub fn test_serialization<T: PartialEq + Debug + Serializable>(v: &T) -> Result<
 
 #[cfg(test)]
 mod tests {
-    use super::{to_leb128_len, Deserializer, Serializable, Serializer};
+    use std::collections::{HashMap, HashSet};
+
+    use super::{test_serialization, to_leb128_len, Deserializer, Serializable, Serializer};
     use crate::{
+        bytes_ser_de::{pack, unpack},
         reexport::rand_core::{RngCore, SeedableRng},
         CryptoCoreError, CsRng,
     };
@@ -306,7 +622,7 @@ mod tests {
         type Error = CryptoCoreError;
 
         fn length(&self) -> usize {
-            to_leb128_len(self.bytes.len()) + self.bytes.len()
+            self.bytes.len().length() + self.bytes.len()
         }
 
         fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
@@ -326,7 +642,7 @@ mod tests {
         let mut ser = Serializer::new();
         for i in 1..1000 {
             let n = rng.next_u32();
-            let length = ser.write_leb128_u64(u64::from(n)).unwrap();
+            let length = ser.write_leb128_u64(n as u64).unwrap();
             assert_eq!(
                 length,
                 to_leb128_len(n as usize),
@@ -371,5 +687,83 @@ mod tests {
         test_serialization(&dummy).unwrap();
 
         Ok(())
+    }
+
+    #[test]
+    fn test_packing() {
+        {
+            // Single byte filled with ones except for the second termination
+            // marker placed in second highest position.
+            let bits = [true; 6];
+            let res = [u8::MAX - (1 << 6)];
+            assert_eq!(&pack(&bits), &res);
+            assert_eq!(&bits, &*unpack(res.into_iter()).unwrap());
+        }
+
+        {
+            // First byte filled with ones except for the continuation marker,
+            // second byte filled with ones except for the second termination
+            // marker in lowest position.
+            let bits = [true; 7];
+            let res = [u8::MAX - (1 << 7), u8::MAX - 1];
+            assert_eq!(&pack(&bits), &res);
+            assert_eq!(&bits, &*unpack(res.into_iter()).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_boolean_serialization() {
+        // Tests all vector lengths from 0 to 2^12 ~ 4096, which is a
+        // significant-enough sample of values, leading to write both
+        // terminating and non-terminating bytes.
+        let mut rng = CsRng::from_entropy();
+        for i in 0..(1 << 12) {
+            let booleans = (0..i).map(|_| rng.next_u32() % 2 == 0).collect::<Vec<_>>();
+            let mut ser = Serializer::new();
+            ser.write_packed_booleans(&booleans).unwrap();
+            let bytes = ser.finalize();
+            let res = Deserializer::new(&bytes).read_packed_booleans().unwrap();
+            assert_eq!(booleans, res);
+        }
+    }
+
+    #[test]
+    fn test_base_serializations() {
+        let mut rng = CsRng::from_entropy();
+
+        let n = 0u64;
+        test_serialization(&n).unwrap();
+
+        #[cfg(target_pointer_width = "64")]
+        {
+            for i in 0..64 {
+                let n: u64 = 1 << i;
+                assert_eq!(n.length(), to_leb128_len(n as usize))
+            }
+        }
+        #[cfg(target_pointer_width = "32")]
+        {
+            for i in 0..32 {
+                let n: u64 = 1 << i;
+                assert_eq!(n.length(), to_leb128_len(n as usize))
+            }
+        }
+
+        let string = format!(
+            "{:?}",
+            (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>()
+        );
+        test_serialization(&string).unwrap();
+
+        let v = (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>();
+        test_serialization(&v).unwrap();
+
+        let s = (0..1000).map(|_| rng.next_u64()).collect::<HashSet<_>>();
+        test_serialization(&s).unwrap();
+
+        let m = (0..1000)
+            .map(|_| (rng.next_u64(), rng.next_u64()))
+            .collect::<HashMap<_, _>>();
+        test_serialization(&m).unwrap();
     }
 }

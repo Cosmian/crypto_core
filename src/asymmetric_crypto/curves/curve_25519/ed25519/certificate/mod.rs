@@ -159,7 +159,7 @@ mod tests {
     fn test_certificate() -> Result<(), CryptoCoreError> {
         // Init
         let tmp_dir = TempDir::new().unwrap();
-        let tmp_path = tmp_dir.into_path();
+        let tmp_path = tmp_dir.keep();
 
         let export_public_key_filename =
             tmp_path.join("public_key.pem").to_str().unwrap().to_owned();
