@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [10.2.0] - 2025-07-17
+
+### 🚀 Features
+
+- implements `Serializable` for different base types from the std; this helps
+  when implementing `Serializable` for complex types.
+- implements methods to serialize packed boolean values.
+
 ## [10.1.0] - 2025-04-14
 
 ### 🚀 Features
