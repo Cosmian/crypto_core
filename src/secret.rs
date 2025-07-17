@@ -7,8 +7,7 @@ use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[cfg(feature = "ser")]
-use crate::bytes_ser_de::Serializable;
-use crate::bytes_ser_de::{Deserializer, Serializer};
+use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
 
 /// Holds a secret information of `LENGTH` bytes.
 ///
