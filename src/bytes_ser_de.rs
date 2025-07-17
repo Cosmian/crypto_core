@@ -5,6 +5,7 @@ use std::{
     fmt::Debug,
     hash::Hash,
     io::{Read, Write},
+    num::NonZeroUsize,
 };
 
 use leb128;
@@ -330,6 +331,26 @@ impl Serializable for usize {
             usize::try_from(n).map_err(|_| {
                 CryptoCoreError::GenericDeserializationError("not an usize number".to_string())
             })
+        })
+    }
+}
+
+impl Serializable for NonZeroUsize {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.get().length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.get().write(ser)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Self::new(de.read()?).ok_or_else(|| {
+            Self::Error::GenericDeserializationError(
+                "null value read while a non-zero value was expected".to_string(),
+            )
         })
     }
 }
