@@ -11,7 +11,7 @@ jobs:
   cargo-semver:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-semver.yml@develop
     with:
-      toolchain: 1.87.0
+      toolchain: 1.88.0
   wasm:
     runs-on: ubuntu-latest
     steps:
@@ -41,7 +41,7 @@ jobs:
           command: hack
           args: check --feature-powerset --clean-per-run --no-dev-deps
   cargo-publish:
-    uses: Cosmian/reusable_workflows/.github/workflows/cargo-publish.yml@develop
+    uses: Cosmian/reusable_workflows/.github/workflows/cargo-publish-workspace.yml@develop
     with:
       toolchain: 1.87.0
     secrets:
