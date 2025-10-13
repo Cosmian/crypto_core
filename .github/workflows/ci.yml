@@ -10,11 +10,8 @@ jobs:
       toolchain: 1.87.0
   cargo-semver:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-semver.yml@develop
-  cargo-dry-publish:
-    uses: Cosmian/reusable_workflows/.github/workflows/cargo-publish.yml@develop
     with:
       toolchain: 1.87.0
-      publish: false
   wasm:
     runs-on: ubuntu-latest
     steps:
@@ -44,14 +41,8 @@ jobs:
           command: hack
           args: check --feature-powerset --clean-per-run --no-dev-deps
   cargo-publish:
-    needs:
-      - cargo-lint
-      - cargo-semver
-      - cargo-dry-publish
-      - wasm
-      - hack
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-publish.yml@develop
-    if: startsWith(github.ref, 'refs/tags/')
     with:
       toolchain: 1.87.0
-    secrets: inherit
+    secrets:
+      token: ${{ secrets.CRATES_IO }}
