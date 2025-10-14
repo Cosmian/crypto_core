@@ -404,6 +404,29 @@ where
     }
 }
 
+impl<const LENGTH: usize, T: Default + Serializable> Serializable for [T; LENGTH]
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        self.iter().map(Serializable::length).sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter().try_fold(0, |n, t| Ok(n + ser.write(t)?))
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let mut res = std::array::from_fn(|_| T::default());
+        for res_i in &mut res {
+            *res_i = de.read::<T>()?;
+        }
+        Ok(res)
+    }
+}
+
 impl<T: Serializable> Serializable for Vec<T>
 where
     T::Error: From<CryptoCoreError>,
@@ -777,6 +800,9 @@ mod tests {
         test_serialization(&string).unwrap();
 
         let v = (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>();
+        test_serialization(&v).unwrap();
+
+        let v = <[u64; 1000]>::try_from(v.as_slice()).unwrap();
         test_serialization(&v).unwrap();
 
         let s = (0..1000).map(|_| rng.next_u64()).collect::<HashSet<_>>();
