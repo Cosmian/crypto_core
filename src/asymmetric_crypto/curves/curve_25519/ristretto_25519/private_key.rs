@@ -51,19 +51,17 @@ impl SecretCBytes<{ R25519_PRIVATE_KEY_LENGTH }> for R25519PrivateKey {}
 /// Key Serialization framework
 #[cfg(feature = "ser")]
 impl Serializable for R25519PrivateKey {
-    type Error = CryptoCoreError;
-
     fn length(&self) -> usize {
         Self::LENGTH
     }
 
-    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(self.as_bytes())
+    fn write<S: Serializer>(&self, ser: &mut S) -> Result<usize, S::Error> {
+        ser.write_bytes(self.as_bytes())
     }
 
-    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
-        let bytes = de.read_array::<{ Self::LENGTH }>()?;
-        Self::try_from_bytes(bytes)
+    fn read<D: Deserializer>(de: &mut D) -> Result<Self, D::Error> {
+        let bytes = <[u8; Self::LENGTH]>::read(de)?;
+        Self::try_from_bytes(bytes).map_err(D::Error::from)
     }
 }
 

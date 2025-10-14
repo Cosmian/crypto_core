@@ -29,9 +29,7 @@ macro_rules! _define_byte_type {
 
             use std::ops::{Deref, DerefMut};
 
-            use $crate::{
-                bytes_ser_de::Serializable, reexport::rand_core::RngCore, CryptoCoreError, Sampling,
-            };
+            use $crate::{bytes_ser_de::Serializable, reexport::rand_core::RngCore, Sampling};
 
             impl<const LENGTH: usize> Deref for $name<LENGTH> {
                 type Target = [u8; LENGTH];
@@ -84,21 +82,21 @@ macro_rules! _define_byte_type {
             }
 
             impl<const LENGTH: usize> Serializable for $name<LENGTH> {
-                type Error = CryptoCoreError;
-
                 fn length(&self) -> usize {
                     LENGTH
                 }
 
-                fn write(
+                fn write<S: $crate::bytes_ser_de::Serializer>(
                     &self,
-                    ser: &mut $crate::bytes_ser_de::Serializer,
-                ) -> Result<usize, Self::Error> {
-                    ser.write_array(&self.0)
+                    ser: &mut S,
+                ) -> Result<usize, S::Error> {
+                    ser.write_bytes(&self.0)
                 }
 
-                fn read(de: &mut $crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
-                    de.read_array::<LENGTH>().map(Self)
+                fn read<D: $crate::bytes_ser_de::Deserializer>(
+                    de: &mut D,
+                ) -> Result<Self, D::Error> {
+                    <[u8; LENGTH]>::read(de).map(Self)
                 }
             }
         }
