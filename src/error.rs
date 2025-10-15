@@ -26,6 +26,7 @@ pub enum CryptoCoreError {
     EllipticCurveError(String),
     EncryptionError,
     GenericDeserializationError(String),
+    GenericSerializationError(String),
     InvalidBytesLength(String, usize, Option<usize>),
     PlaintextTooBigError {
         plaintext_len: usize,
@@ -90,6 +91,9 @@ impl Display for CryptoCoreError {
             CryptoCoreError::EncryptionError => write!(f, "error during encryption"),
             CryptoCoreError::GenericDeserializationError(err) => {
                 write!(f, "deserialization error: {err}")
+            }
+            CryptoCoreError::GenericSerializationError(err) => {
+                write!(f, "serialization error: {err}")
             }
             CryptoCoreError::InvalidBytesLength(message, given, expected) => match expected {
                 Some(expected_length) => write!(
