@@ -121,10 +121,9 @@ impl<const LENGTH: usize> Serializable for SymmetricKey<LENGTH> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{
-        bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng, CsRng,
-        RandomFixedSizeCBytes, SymmetricKey,
-    };
+    #[cfg(feature = "ser")]
+    use crate::bytes_ser_de::test_serialization;
+    use crate::{reexport::rand_core::SeedableRng, CsRng, RandomFixedSizeCBytes, SymmetricKey};
 
     const KEY_LENGTH: usize = 32;
 
@@ -136,6 +135,7 @@ mod tests {
         let key_2 = SymmetricKey::new(&mut cs_rng);
         assert_eq!(KEY_LENGTH, key_2.len());
         assert_ne!(key_1, key_2);
+        #[cfg(feature = "ser")]
         test_serialization(&key_1).unwrap();
     }
 }
