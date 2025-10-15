@@ -5,6 +5,8 @@ use std::ops::DerefMut;
 
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
+#[cfg(feature = "ser")]
+use crate::bytes_ser_de::Serializable;
 #[cfg(feature = "sha3")]
 use crate::kdf256;
 use crate::{
@@ -99,10 +101,30 @@ impl<const KEY_LENGTH: usize> SymmetricKey<KEY_LENGTH> {
     }
 }
 
+#[cfg(feature = "ser")]
+impl<const LENGTH: usize> Serializable for SymmetricKey<LENGTH> {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.0.length()
+    }
+
+    fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
+        self.0.write(ser)
+    }
+
+    fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
+        de.read().map(Self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
-    use crate::{reexport::rand_core::SeedableRng, CsRng, RandomFixedSizeCBytes, SymmetricKey};
+    use crate::{
+        bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng, CsRng,
+        RandomFixedSizeCBytes, SymmetricKey,
+    };
 
     const KEY_LENGTH: usize = 32;
 
@@ -114,5 +136,6 @@ mod tests {
         let key_2 = SymmetricKey::new(&mut cs_rng);
         assert_eq!(KEY_LENGTH, key_2.len());
         assert_ne!(key_1, key_2);
+        test_serialization(&key_1).unwrap();
     }
 }
