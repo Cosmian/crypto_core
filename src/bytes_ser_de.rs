@@ -437,6 +437,22 @@ where
     }
 }
 
+impl<const LENGTH: usize> Serializable for [u8; LENGTH] {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        LENGTH
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_array(self)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_array::<LENGTH>()
+    }
+}
+
 impl<const LENGTH: usize, T: Default + Serializable> Serializable for [T; LENGTH]
 where
     T::Error: From<CryptoCoreError>,
