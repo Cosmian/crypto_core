@@ -30,7 +30,6 @@ default = [
   "certificate",
   "ecies",
   "curve25519",
-  "certificate",
   "nist_curves",
   "rsa",
   "ser",
