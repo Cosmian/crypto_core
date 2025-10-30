@@ -1,6 +1,6 @@
 [package]
 name = "cosmian_crypto_core"
-version = "10.2.0"
+version = "10.3.0"
 authors = [
   "Bruno GRIEDER <bruno.grieder@cosmian.com>",
   "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
