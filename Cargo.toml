@@ -1,6 +1,6 @@
 [package]
 name = "cosmian_crypto_core"
-version = "10.2.0"
+version = "10.3.0"
 authors = [
   "Bruno GRIEDER <bruno.grieder@cosmian.com>",
   "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
@@ -30,7 +30,6 @@ default = [
   "certificate",
   "ecies",
   "curve25519",
-  "certificate",
   "nist_curves",
   "rsa",
   "ser",
@@ -85,7 +84,7 @@ sha1 = { version = "0.10", optional = true }
 sha2 = { version = "0.10", optional = true }
 sha3 = { version = "0.10", optional = true }
 signature = { version = "2.2", optional = true }
-tiny-keccak = { version = "2.0.2", features = ["shake"], optional = true }
+tiny-keccak = { version = "2.0.2", features = ["kmac", "sha3", "shake"], optional = true }
 uuid = { version = "=1.11", features = ["v4"], optional = true }
 x509-cert = { version = "0.2.5", features = [
   "pem",

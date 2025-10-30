@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [10.3.0] - 2025-10-30
+
+### 🚀 Features
+
+- reexport KMAC and SHA3 from `tinny_keccak`
+- implements `Serializable` for symmetric keys
+- implements `Serializable` for byte arrays
+- implements `Serializable` for pairs
+
 ## [10.2.0] - 2025-07-17
 
 ### 🚀 Features

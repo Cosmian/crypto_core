@@ -404,6 +404,78 @@ where
     }
 }
 
+impl<T1: Serializable, T2: Serializable> Serializable for (T1, T2)
+where
+    T1::Error: From<CryptoCoreError>,
+    T2::Error: From<CryptoCoreError>,
+{
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.0.length() + self.1.length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        let mut n = self
+            .0
+            .write(ser)
+            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?;
+        n += self
+            .1
+            .write(ser)
+            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?;
+        Ok(n)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Ok((
+            de.read()
+                .map_err(|e: T1::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T2::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+        ))
+    }
+}
+
+impl<const LENGTH: usize> Serializable for [u8; LENGTH] {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        LENGTH
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_array(self)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_array::<LENGTH>()
+    }
+}
+
+impl<const LENGTH: usize, T: Default + Serializable> Serializable for [T; LENGTH]
+where
+    T::Error: From<CryptoCoreError>,
+{
+    type Error = T::Error;
+
+    fn length(&self) -> usize {
+        self.iter().map(Serializable::length).sum::<usize>()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.iter().try_fold(0, |n, t| Ok(n + ser.write(t)?))
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let mut res = std::array::from_fn(|_| T::default());
+        for res_i in &mut res {
+            *res_i = de.read::<T>()?;
+        }
+        Ok(res)
+    }
+}
+
 impl<T: Serializable> Serializable for Vec<T>
 where
     T::Error: From<CryptoCoreError>,
@@ -777,6 +849,9 @@ mod tests {
         test_serialization(&string).unwrap();
 
         let v = (0..1000).map(|_| rng.next_u64()).collect::<Vec<_>>();
+        test_serialization(&v).unwrap();
+
+        let v = <[u64; 1000]>::try_from(v.as_slice()).unwrap();
         test_serialization(&v).unwrap();
 
         let s = (0..1000).map(|_| rng.next_u64()).collect::<HashSet<_>>();
