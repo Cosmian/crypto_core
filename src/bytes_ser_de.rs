@@ -493,7 +493,11 @@ where
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         let length = de.read::<usize>()?;
-        (0..length).map(|_| de.read::<T>()).collect()
+        let mut res = Vec::with_capacity(length);
+        for _ in 0..length {
+            res.push(de.read::<T>()?);
+        }
+        Ok(res)
     }
 }
 
@@ -535,7 +539,11 @@ where
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         let length = de.read::<usize>()?;
-        (0..length).map(|_| de.read::<T>()).collect()
+        let mut res = HashSet::with_capacity(length);
+        for _ in 0..length {
+            res.insert(de.read::<T>()?);
+        }
+        Ok(res)
     }
 }
 
@@ -565,16 +573,16 @@ impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         let length = de.read::<usize>()?;
-        (0..length)
-            .map(|_| {
-                Ok((
-                    de.read::<K>()
-                        .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
-                    de.read::<V>()
-                        .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
-                ))
-            })
-            .collect()
+        let mut res = HashMap::with_capacity(length);
+        for _ in 0..length {
+            res.insert(
+                de.read::<K>()
+                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
+                de.read::<V>()
+                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
+            );
+        }
+        Ok(res)
     }
 }
 
