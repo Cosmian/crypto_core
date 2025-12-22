@@ -36,7 +36,7 @@ repos:
         args: [--mapping, '2', --sequence, '4', --offset, '2']
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1
+    rev: v1.31.1
     hooks:
       - id: typos
 
