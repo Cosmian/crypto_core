@@ -91,7 +91,7 @@ pub fn key_wrap(plain: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
 pub fn key_unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
     let n = ciphertext.len();
 
-    if n % 8 != 0 || n < 16 {
+    if !n.is_multiple_of(8) || n < 16 {
         return Err(CryptoCoreError::InvalidBytesLength(
             "The ciphertext size should be >= 16 and a multiple of 8".to_string(),
             n,
@@ -182,7 +182,7 @@ pub fn key_wrap_64(plain: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError>
 fn _wrap_64(plain: &[u8], kek: &[u8], iv: Option<u64>) -> Result<Vec<u8>, CryptoCoreError> {
     let n = plain.len();
 
-    if n % 8 != 0 {
+    if !n.is_multiple_of(8) {
         return Err(CryptoCoreError::InvalidBytesLength(
             "The plaintext size should be a multiple of 8".to_string(),
             n,
@@ -279,7 +279,7 @@ pub fn key_unwrap_64(cipher: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreErr
 fn _unwrap_64(ciphertext: &[u8], kek: &[u8]) -> Result<(u64, Vec<u8>), CryptoCoreError> {
     let n = ciphertext.len();
 
-    if n % 8 != 0 || n < 16 {
+    if !n.is_multiple_of(8) || n < 16 {
         return Err(CryptoCoreError::InvalidBytesLength(
             "The ciphertext size should be >= 16 and a multiple of 8".to_string(),
             n,

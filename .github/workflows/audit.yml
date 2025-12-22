@@ -8,16 +8,8 @@ on:
     - cron: 30 8 * * *
 
 jobs:
-  audit:
-    name: Audit
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@1.87.0
-        with:
-          components: rustfmt, clippy
-      - name: Install cargo-deny
-        run: |
-          cargo install --locked cargo-deny@0.17.0
-          cargo deny check
+  cargo-deny:
+    uses: Cosmian/reusable_workflows/.github/workflows/cargo-audit.yml@develop
+    name: Security Audit
+    with:
+      toolchain: 1.90.0
