@@ -21,6 +21,8 @@ mod secret;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;
 
+pub mod traits;
+
 mod error;
 pub use error::CryptoCoreError;
 
