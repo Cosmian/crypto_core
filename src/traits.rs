@@ -1,5 +1,21 @@
-use crate::{reexport::rand_core::CryptoRngCore, SymmetricKey};
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Sub, SubAssign};
+use crate::reexport::rand_core::CryptoRngCore;
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
+/// Cryptographic bytes.
+pub trait CBytes: Eq + PartialEq + Send + Sync {}
+
+/// Fixed-size cryptographic bytes.
+pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
+    /// Key length.
+    const LENGTH: usize = LENGTH;
+}
+
+/// Fixed-size cryptographic secret bytes.
+pub trait SecretCBytes<const LENGTH: usize>:
+    FixedSizeCBytes<LENGTH> + Zeroize + ZeroizeOnDrop
+{
+}
 
 pub trait Sampling {
     /// Returns a fresh uniformly-random element.
@@ -23,9 +39,9 @@ pub trait One {
 
 /// A monoid is a set of elements endowed with an associative binary operation
 /// for which there exists a neutral element in this group.
-pub trait Monoid: Sized {
+pub trait Monoid: Sized + Eq + PartialEq {
     /// Neutral element.
-    fn e() -> Self;
+    fn id() -> Self;
     /// Monoidal operation.
     fn op(&self, rhs: &Self) -> Self;
 }
@@ -33,10 +49,8 @@ pub trait Monoid: Sized {
 /// A group is a set of elements endowed with a binary operation for which there
 /// exists a neutral element in this group and for which each element has an
 /// inverse.
-pub trait Group: Sized {
-    fn e() -> Self;
-    fn op(&self, rhs: &Self) -> Self;
-    fn inverse(&self) -> Self;
+pub trait Group: Monoid {
+    fn invert(&self) -> Self;
 }
 
 /// An Abelian group is a group which operation is commutative.
@@ -48,11 +62,13 @@ pub trait AbelianGroup:
     + Zero
     + Add<Output = Self>
     + AddAssign
+    + Neg
     + Sub<Output = Self>
     + SubAssign
     + for<'a> Add<&'a Self, Output = Self>
     + for<'a> Sub<&'a Self, Output = Self>
 where
+    for<'a> &'a Self: Neg<Output = Self>,
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
 {
@@ -60,11 +76,14 @@ where
 
 /// A ring is an Abelian group endowed with a monoidal operation that
 /// distributes over the group operation.
-pub trait Ring: AbelianGroup + Monoid
+pub trait Ring: AbelianGroup
 where
+    for<'a> &'a Self: Neg<Output = Self>,
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
 {
+    fn id() -> Self;
+    fn op(&self, rhs: &Self) -> Self;
 }
 
 /// A field is a set of elements endowed with two binary operations (+ and *),
@@ -79,6 +98,7 @@ pub trait Field:
     + for<'a> Mul<&'a Self, Output = Self>
     + for<'a> Div<&'a Self, Output = Result<Self, Self::InvError>>
 where
+    for<'a> &'a Self: Neg<Output = Self>,
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
     for<'a, 'b> &'a Self: Mul<&'b Self, Output = Self>,
@@ -88,7 +108,7 @@ where
     type InvError: std::error::Error;
 
     /// Inverse operation for the multiplicative law.
-    fn inverse(&self) -> Result<Self, Self::InvError>;
+    fn invert(&self) -> Result<Self, Self::InvError>;
 }
 
 /// A cyclic group is a group in which there exists a generator element g such
@@ -101,10 +121,14 @@ where
 ///
 /// By associativity of the group operation, a generated group is also an
 /// abelian group.
-pub trait CyclicGroup: AbelianGroup
+pub trait CyclicGroup: AbelianGroup + One
 where
+    Self: From<Self::Multiplicity>,
+    for<'a> Self: From<&'a Self::Multiplicity>,
+    for<'a> &'a Self: Neg<Output = Self>,
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
+    for<'a> &'a Self::Multiplicity: Neg<Output = Self::Multiplicity>,
     for<'a, 'b> &'a Self::Multiplicity: Add<&'b Self::Multiplicity, Output = Self::Multiplicity>,
     for<'a, 'b> &'a Self::Multiplicity: Sub<&'b Self::Multiplicity, Output = Self::Multiplicity>,
     for<'a, 'b> &'a Self::Multiplicity: Mul<&'b Self::Multiplicity, Output = Self::Multiplicity>,
@@ -114,42 +138,16 @@ where
     >,
 {
     type Multiplicity: Field;
-
-    /// Returns the group generator.
-    fn g() -> Self;
 }
 
 /// Authenticated encryption scheme.
-pub trait AE {
-    // Should the key be a SymmetricKey<KEY_LENGTH> instead?
-    //
-    // Rational:
-    // ========
-    //
-    // All authenticated encryption schemes I know of only operate on bytes and
-    // use fixed-length bit strings as key. In this crate, we defined the type
-    // SymmetricKey<const LENGTH: usize> to represent such keys (the type
-    // enforces zeroization and provides useful functions for key generation and
-    // derivation).
-    //
-    // Pro: enforces the use of a safe and convenient type.
-    // Con: the key length is not constrained by the trait.
-    //
-    // Alternatively:
-    // =============
-    //
-    // Constrain the key to implement a trait constrained by its length like
-    // Sampling + FixedSizeCByte<const LENGTH: usize>.
-    //
-    // In both cases, the keygen method can be dropped.
-    type Key;
+pub trait AE<const KEY_LENGTH: usize> {
     type Plaintext;
     type Ciphertext;
 
-    type Error: std::error::Error;
+    type Key: Sampling + FixedSizeCBytes<KEY_LENGTH>;
 
-    /// Returns a new key.
-    fn keygen(&self) -> Self::Key;
+    type Error: std::error::Error;
 
     /// Encrypts the given plaintext using the given key.
     fn encrypt(
@@ -220,8 +218,10 @@ pub trait KeyHomomorphicNike: Nike
 where
     Self::PublicKey: CyclicGroup<Multiplicity = Self::SecretKey>,
     Self::SecretKey: Field,
+    for<'a> &'a Self::PublicKey: Neg<Output = Self::PublicKey>,
     for<'a, 'b> &'a Self::PublicKey: Add<&'b Self::PublicKey, Output = Self::PublicKey>,
     for<'a, 'b> &'a Self::PublicKey: Sub<&'b Self::PublicKey, Output = Self::PublicKey>,
+    for<'a> &'a Self::SecretKey: Neg<Output = Self::SecretKey>,
     for<'a, 'b> &'a Self::SecretKey: Add<&'b Self::SecretKey, Output = Self::SecretKey>,
     for<'a, 'b> &'a Self::SecretKey: Sub<&'b Self::SecretKey, Output = Self::SecretKey>,
     for<'a, 'b> &'a Self::SecretKey: Mul<&'b Self::SecretKey, Output = Self::SecretKey>,
