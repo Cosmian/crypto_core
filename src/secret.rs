@@ -1,13 +1,14 @@
+use rand_core::CryptoRngCore;
 use std::{
     ops::{Deref, DerefMut},
     pin::Pin,
 };
-
-use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[cfg(feature = "ser")]
-use crate::{bytes_ser_de::Serializable, CryptoCoreError};
+use crate::bytes_ser_de::Serializable;
+#[cfg(any(feature = "sha3", feature = "ser"))]
+use crate::CryptoCoreError;
 
 /// Holds a secret information of `LENGTH` bytes.
 ///
