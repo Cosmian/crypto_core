@@ -35,11 +35,11 @@ pub trait Monoid: Sized {
 /// inverse.
 pub trait Group: Sized {
     fn e() -> Self;
-    fn inverse(&self) -> Self;
     fn op(&self, rhs: &Self) -> Self;
+    fn inverse(&self) -> Self;
 }
 
-/// An Abelian group is which operation is commutative.
+/// An Abelian group is a group which operation is commutative.
 ///
 /// We therefore use the standard + and - to represent the group operation and
 /// inversion.
