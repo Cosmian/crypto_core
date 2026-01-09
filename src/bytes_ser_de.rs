@@ -295,6 +295,38 @@ impl Serializable for bool {
     }
 }
 
+impl Serializable for f32 {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        4
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_array(&self.to_le_bytes())
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_array::<4>().map(f32::from_le_bytes)
+    }
+}
+
+impl Serializable for f64 {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        8
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_array(&self.to_le_bytes())
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_array::<8>().map(f64::from_le_bytes)
+    }
+}
+
 impl Serializable for u64 {
     type Error = CryptoCoreError;
 
