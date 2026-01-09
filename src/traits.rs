@@ -91,15 +91,33 @@ where
     fn inverse(&self) -> Result<Self, Self::InvError>;
 }
 
-pub trait GeneratedGroup: Group + One
+/// A generated group is a group in which there exists a generator element g
+/// such that for each element, there exists a multiplicity m such that this
+/// element can be obtained by folding m instances of g with the group
+/// operation.
+///
+/// Noting m·g the operation of folding m instances of g, we have:
+///
+/// ∀ p ∈ G, ∃ m : p = m·g
+///
+/// By associativity of the group operation, a generated group is also an
+/// abelian group.
+pub trait GeneratedGroup: AbelianGroup
 where
-    for<'a, 'b> &'a Self::Scalar: Add<&'b Self::Scalar, Output = Self::Scalar>,
-    for<'a, 'b> &'a Self::Scalar: Sub<&'b Self::Scalar, Output = Self::Scalar>,
-    for<'a, 'b> &'a Self::Scalar: Mul<&'b Self::Scalar, Output = Self::Scalar>,
-    for<'a, 'b> &'a Self::Scalar:
-        Div<&'b Self::Scalar, Output = Result<Self::Scalar, <Self::Scalar as Field>::InvError>>,
+    for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
+    for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
+    for<'a, 'b> &'a Self::Multiplicity: Add<&'b Self::Multiplicity, Output = Self::Multiplicity>,
+    for<'a, 'b> &'a Self::Multiplicity: Sub<&'b Self::Multiplicity, Output = Self::Multiplicity>,
+    for<'a, 'b> &'a Self::Multiplicity: Mul<&'b Self::Multiplicity, Output = Self::Multiplicity>,
+    for<'a, 'b> &'a Self::Multiplicity: Div<
+        &'b Self::Multiplicity,
+        Output = Result<Self::Multiplicity, <Self::Multiplicity as Field>::InvError>,
+    >,
 {
-    type Scalar: Field;
+    type Multiplicity: Field;
+
+    /// Returns the group generator.
+    fn g() -> Self;
 }
 
 pub trait AE<const KEY_LENGTH: usize> {
@@ -173,8 +191,10 @@ pub trait Nike {
 
 pub trait KeyHomomorphicNike: Nike
 where
-    Self::PublicKey: GeneratedGroup<Scalar = Self::SecretKey>,
+    Self::PublicKey: GeneratedGroup<Multiplicity = Self::SecretKey>,
     Self::SecretKey: Field,
+    for<'a, 'b> &'a Self::PublicKey: Add<&'b Self::PublicKey, Output = Self::PublicKey>,
+    for<'a, 'b> &'a Self::PublicKey: Sub<&'b Self::PublicKey, Output = Self::PublicKey>,
     for<'a, 'b> &'a Self::SecretKey: Add<&'b Self::SecretKey, Output = Self::SecretKey>,
     for<'a, 'b> &'a Self::SecretKey: Sub<&'b Self::SecretKey, Output = Self::SecretKey>,
     for<'a, 'b> &'a Self::SecretKey: Mul<&'b Self::SecretKey, Output = Self::SecretKey>,
