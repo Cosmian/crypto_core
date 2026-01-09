@@ -91,10 +91,9 @@ where
     fn inverse(&self) -> Result<Self, Self::InvError>;
 }
 
-/// A generated group is a group in which there exists a generator element g
-/// such that for each element, there exists a multiplicity m such that this
-/// element can be obtained by folding m instances of g with the group
-/// operation.
+/// A cyclic group is a group in which there exists a generator element g such
+/// that for each element, there exists a multiplicity m such that this element
+/// can be obtained by folding m instances of g with the group operation.
 ///
 /// Noting m·g the operation of folding m instances of g, we have:
 ///
@@ -102,7 +101,7 @@ where
 ///
 /// By associativity of the group operation, a generated group is also an
 /// abelian group.
-pub trait GeneratedGroup: AbelianGroup
+pub trait CyclicGroup: AbelianGroup
 where
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
@@ -216,7 +215,7 @@ pub trait Nike {
 
 pub trait KeyHomomorphicNike: Nike
 where
-    Self::PublicKey: GeneratedGroup<Multiplicity = Self::SecretKey>,
+    Self::PublicKey: CyclicGroup<Multiplicity = Self::SecretKey>,
     Self::SecretKey: Field,
     for<'a, 'b> &'a Self::PublicKey: Add<&'b Self::PublicKey, Output = Self::PublicKey>,
     for<'a, 'b> &'a Self::PublicKey: Sub<&'b Self::PublicKey, Output = Self::PublicKey>,
