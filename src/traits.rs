@@ -120,11 +120,36 @@ where
     fn g() -> Self;
 }
 
-pub trait AE<const KEY_LENGTH: usize> {
+/// Authenticated encryption scheme.
+pub trait AE {
+    // Should the key be a SymmetricKey<KEY_LENGTH> instead?
+    //
+    // Rational:
+    // ========
+    //
+    // All authenticated encryption schemes I know of only operate on bytes and
+    // use fixed-length bit strings as key. In this crate, we defined the type
+    // SymmetricKey<const LENGTH: usize> to represent such keys (the type
+    // enforces zeroization and provides useful functions for key generation and
+    // derivation).
+    //
+    // Pro: enforces the use of a safe and convenient type.
+    // Con: the key length is not constrained by the trait.
+    //
+    // Alternatively:
+    // ==============
+    //
+    // Constrain the key to implement a trait constrained by its length like
+    // Sampling + FixedSizeCByte<const LENGTH: usize>.
+    //
+    // In both cases, the keygen method can be dropped.
     type Key;
     type Plaintext;
     type Ciphertext;
     type Error: std::error::Error;
+
+    /// Returns a new key.
+    fn keygen(&self) -> Self::Key;
 
     /// Encrypts the given plaintext using the given key.
     fn encrypt(
@@ -138,10 +163,7 @@ pub trait AE<const KEY_LENGTH: usize> {
     /// # Error
     ///
     /// Returns an error if the integrity of the ciphertext could not be verified.
-    fn decrypt(
-        key: &SymmetricKey<KEY_LENGTH>,
-        ctx: &Self::Ciphertext,
-    ) -> Result<Self::Plaintext, Self::Error>;
+    fn decrypt(key: &Self::Key, ctx: &Self::Ciphertext) -> Result<Self::Plaintext, Self::Error>;
 }
 
 pub trait Kem {
