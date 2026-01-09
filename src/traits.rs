@@ -166,6 +166,7 @@ pub trait AE {
     fn decrypt(key: &Self::Key, ctx: &Self::Ciphertext) -> Result<Self::Plaintext, Self::Error>;
 }
 
+/// Key-Encapsulation Mechanism.
 pub trait Kem {
     type SessionKey;
     type Encapsulation;
@@ -194,6 +195,7 @@ pub trait Kem {
     ) -> Result<Self::SessionKey, Self::Error>;
 }
 
+/// Non-Interactive Key Exchange.
 pub trait Nike {
     type SessionKey;
     type SecretKey;
@@ -213,6 +215,7 @@ pub trait Nike {
     ) -> Result<Self::SessionKey, Self::Error>;
 }
 
+/// Non-Interactive Key Exchange which public keys for a cyclic group.
 pub trait KeyHomomorphicNike: Nike
 where
     Self::PublicKey: CyclicGroup<Multiplicity = Self::SecretKey>,
