@@ -85,7 +85,7 @@ where
     for<'a, 'b> &'a Self: Div<&'b Self, Output = Result<Self, Self::InvError>>,
 {
     /// Error thrown by the inversion for the multiplicative law.
-    type InvError;
+    type InvError: std::error::Error;
 
     /// Inverse operation for the multiplicative law.
     fn inverse(&self) -> Result<Self, Self::InvError>;
@@ -137,7 +137,7 @@ pub trait AE {
     // Con: the key length is not constrained by the trait.
     //
     // Alternatively:
-    // ==============
+    // =============
     //
     // Constrain the key to implement a trait constrained by its length like
     // Sampling + FixedSizeCByte<const LENGTH: usize>.
@@ -146,6 +146,7 @@ pub trait AE {
     type Key;
     type Plaintext;
     type Ciphertext;
+
     type Error: std::error::Error;
 
     /// Returns a new key.
@@ -171,6 +172,7 @@ pub trait Kem {
     type Encapsulation;
     type EncapsulationKey;
     type DecapsulationKey;
+
     type Error: std::error::Error;
 
     /// Generates a new random keypair.
@@ -197,6 +199,7 @@ pub trait Nike {
     type SessionKey;
     type SecretKey;
     type PublicKey;
+
     type Error: std::error::Error;
 
     /// Generates a new random keypair.
