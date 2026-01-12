@@ -2,6 +2,10 @@ use crate::reexport::rand_core::CryptoRngCore;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
+// NOTE: the following four traits mirror those from `lib.rs` and should be
+// those used in the end. In order to prevent a breaking change, their new
+// version lives here for now.
+
 /// Cryptographic bytes.
 pub trait CBytes: Eq + PartialEq + Send + Sync {}
 
