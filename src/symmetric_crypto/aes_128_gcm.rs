@@ -6,12 +6,17 @@ use std::{fmt::Debug, ops::Deref};
 
 use aead::{generic_array::GenericArray, KeyInit};
 use aes_gcm::Aes128Gcm as Aes128GcmLib;
+use rand_core::CryptoRngCore;
+use zeroize::Zeroizing;
 
 use super::{
     dem::{DemInPlace, DemStream, Instantiable},
     nonce::Nonce,
 };
-use crate::{symmetric_crypto::Dem, RandomFixedSizeCBytes, SymmetricKey};
+use crate::{
+    symmetric_crypto::Dem, traits::AE, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes,
+    SymmetricKey,
+};
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 128 GCM.
@@ -74,6 +79,35 @@ impl DemStream<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH 
 
     fn into_aead_stream_backend(self) -> Aes128GcmLib {
         self.0
+    }
+}
+
+impl AE<{ Self::KEY_LENGTH }> for Aes128Gcm {
+    type Plaintext = Zeroizing<Vec<u8>>;
+    type Ciphertext = Vec<u8>;
+    type Error = CryptoCoreError;
+
+    fn encrypt(
+        key: &SymmetricKey<{ Self::KEY_LENGTH }>,
+        ptx: &Self::Plaintext,
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Self::Ciphertext, Self::Error> {
+        let nonce = Nonce::<{ Self::NONCE_LENGTH }>::new(&mut *rng);
+        let ciphertext = Self::new(key).encrypt(&nonce, ptx, None)?;
+        Ok([nonce.as_bytes(), &ciphertext].concat())
+    }
+
+    fn decrypt(
+        key: &SymmetricKey<{ Self::KEY_LENGTH }>,
+        ctx: &Self::Ciphertext,
+    ) -> Result<Self::Plaintext, Self::Error> {
+        if ctx.len() < Self::NONCE_LENGTH {
+            return Err(CryptoCoreError::DecryptionError);
+        }
+        let nonce = Nonce::try_from_slice(&ctx[..Self::NONCE_LENGTH])?;
+        Self::new(key)
+            .decrypt(&nonce, &ctx[Self::NONCE_LENGTH..], None)
+            .map(Zeroizing::new)
     }
 }
 
