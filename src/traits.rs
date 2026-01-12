@@ -154,7 +154,7 @@ pub trait AE<const KEY_LENGTH: usize> {
     /// Encrypts the given plaintext using the given key.
     fn encrypt(
         key: &SymmetricKey<KEY_LENGTH>,
-        ptx: &Self::Plaintext,
+        ptx: &[u8],
         rng: &mut impl CryptoRngCore,
     ) -> Result<Self::Ciphertext, Self::Error>;
 
@@ -235,6 +235,27 @@ where
         Output = Result<Self::SecretKey, <Self::SecretKey as Field>::InvError>,
     >,
 {
+}
+
+pub trait Pke {
+    type Plaintext;
+    type Ciphertext;
+    type PublicKey;
+    type SecretKey;
+    type Error;
+
+    fn encrypt(
+        &self,
+        pk: &Self::PublicKey,
+        ptx: &[u8],
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Self::Ciphertext, Self::Error>;
+
+    fn decrypt(
+        &self,
+        sk: &Self::SecretKey,
+        ctx: &Self::Ciphertext,
+    ) -> Result<Self::Plaintext, Self::Error>;
 }
 
 pub mod tests {

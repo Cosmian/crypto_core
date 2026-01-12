@@ -89,7 +89,7 @@ impl AE<{ Self::KEY_LENGTH }> for Aes256Gcm {
 
     fn encrypt(
         key: &SymmetricKey<{ Self::KEY_LENGTH }>,
-        ptx: &Self::Plaintext,
+        ptx: &[u8],
         rng: &mut impl CryptoRngCore,
     ) -> Result<Self::Ciphertext, Self::Error> {
         let nonce = Nonce::<{ Self::NONCE_LENGTH }>::new(&mut *rng);
