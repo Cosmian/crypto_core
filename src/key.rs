@@ -7,8 +7,8 @@ use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 #[cfg(feature = "sha3")]
 use crate::kdf256;
 use crate::{
-    bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError,
-    FixedSizeCBytes, RandomFixedSizeCBytes, Secret, SecretCBytes,
+    bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore, traits::Sampling, CBytes,
+    CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, Secret, SecretCBytes,
 };
 
 /// A type that holds symmetric key of a fixed  size.
@@ -40,6 +40,12 @@ impl<const LENGTH: usize> RandomFixedSizeCBytes<LENGTH> for SymmetricKey<LENGTH>
     #[inline(always)]
     fn as_bytes(&self) -> &[u8] {
         self.as_ref()
+    }
+}
+
+impl<const LENGTH: usize> Sampling for SymmetricKey<LENGTH> {
+    fn random(rng: &mut impl CryptoRngCore) -> Self {
+        Self(Secret::random(rng))
     }
 }
 

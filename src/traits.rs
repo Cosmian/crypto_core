@@ -1,4 +1,4 @@
-use crate::reexport::rand_core::CryptoRngCore;
+use crate::{reexport::rand_core::CryptoRngCore, SymmetricKey};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -149,13 +149,11 @@ pub trait AE<const KEY_LENGTH: usize> {
     type Plaintext;
     type Ciphertext;
 
-    type Key: Sampling + FixedSizeCBytes<KEY_LENGTH>;
-
     type Error: std::error::Error;
 
     /// Encrypts the given plaintext using the given key.
     fn encrypt(
-        key: &Self::Key,
+        key: &SymmetricKey<KEY_LENGTH>,
         ptx: &Self::Plaintext,
         rng: &mut impl CryptoRngCore,
     ) -> Result<Self::Ciphertext, Self::Error>;
@@ -165,7 +163,10 @@ pub trait AE<const KEY_LENGTH: usize> {
     /// # Error
     ///
     /// Returns an error if the integrity of the ciphertext could not be verified.
-    fn decrypt(key: &Self::Key, ctx: &Self::Ciphertext) -> Result<Self::Plaintext, Self::Error>;
+    fn decrypt(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ctx: &Self::Ciphertext,
+    ) -> Result<Self::Plaintext, Self::Error>;
 }
 
 /// Key-Encapsulation Mechanism.
