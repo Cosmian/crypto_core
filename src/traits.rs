@@ -260,8 +260,9 @@ pub mod tests {
 }
 
 pub mod macros {
+    /// Given a group, implements an Abelian group.
     #[macro_export]
-    macro_rules! implement_abelian_group_arithmetic {
+    macro_rules! implement_abelian_group {
         ($type: ty, $constuctor: tt) => {
             mod abelian_group_arithmetic {
                 use super::*;
@@ -352,14 +353,17 @@ pub mod macros {
                         *self = <$type as Monoid>::op(&self, &<$type as Group>::invert(&rhs))
                     }
                 }
+
+                impl AbelianGroup for $type {}
             }
         };
     }
 
+    /// Given a ring, implements a commutative ring (the ring operation is *).
     #[macro_export]
-    macro_rules! implement_field_arithmetic {
+    macro_rules! implement_commutative_ring {
         ($type: ty, $constuctor: tt) => {
-            mod field_arithmetic {
+            mod commutative_ring {
                 use super::*;
                 use std::ops::{Mul, MulAssign};
 

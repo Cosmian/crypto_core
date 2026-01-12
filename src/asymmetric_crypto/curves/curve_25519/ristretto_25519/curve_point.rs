@@ -1,7 +1,7 @@
 use super::R25519Scalar;
 use crate::{
     bytes_ser_de::Serializable,
-    implement_abelian_group_arithmetic,
+    implement_abelian_group,
     traits::{AbelianGroup, CBytes, CyclicGroup, FixedSizeCBytes, Group, Monoid, One, Zero},
     CryptoCoreError,
 };
@@ -46,9 +46,7 @@ impl Group for R25519Point {
     }
 }
 
-implement_abelian_group_arithmetic!(R25519Point, R25519CurvePoint);
-
-impl AbelianGroup for R25519Point {}
+implement_abelian_group!(R25519Point, R25519CurvePoint);
 
 impl One for R25519Point {
     fn one() -> Self {
