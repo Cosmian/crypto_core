@@ -2,19 +2,21 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
-use std::{
-    fmt::{self, Debug, Formatter},
-    ops::Deref,
-};
-
-use aead::{generic_array::GenericArray, KeyInit};
-use aes_gcm::Aes256Gcm as Aes256GcmLib;
 
 use super::dem::{DemInPlace, DemStream, Instantiable};
 use crate::{
     symmetric_crypto::{nonce::Nonce, Dem},
-    RandomFixedSizeCBytes, SymmetricKey,
+    traits::AE,
+    CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SymmetricKey,
 };
+use aead::{generic_array::GenericArray, KeyInit};
+use aes_gcm::Aes256Gcm as Aes256GcmLib;
+use rand_core::CryptoRngCore;
+use std::{
+    fmt::{self, Debug, Formatter},
+    ops::Deref,
+};
+use zeroize::Zeroizing;
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 256 GCM.
@@ -77,6 +79,35 @@ impl DemStream<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH 
 
     fn into_aead_stream_backend(self) -> Aes256GcmLib {
         self.0
+    }
+}
+
+impl AE<{ Self::KEY_LENGTH }> for Aes256Gcm {
+    type Plaintext = Zeroizing<Vec<u8>>;
+    type Ciphertext = Vec<u8>;
+    type Error = CryptoCoreError;
+
+    fn encrypt(
+        key: &SymmetricKey<{ Self::KEY_LENGTH }>,
+        ptx: &Self::Plaintext,
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Self::Ciphertext, Self::Error> {
+        let nonce = Nonce::<{ Self::NONCE_LENGTH }>::new(&mut *rng);
+        let ciphertext = Self::new(key).encrypt(&nonce, ptx, None)?;
+        Ok([nonce.as_bytes(), &ciphertext].concat())
+    }
+
+    fn decrypt(
+        key: &SymmetricKey<{ Self::KEY_LENGTH }>,
+        ctx: &Self::Ciphertext,
+    ) -> Result<Self::Plaintext, Self::Error> {
+        if ctx.len() < Self::NONCE_LENGTH {
+            return Err(CryptoCoreError::DecryptionError);
+        }
+        let nonce = Nonce::try_from_slice(&ctx[..Self::NONCE_LENGTH])?;
+        Self::new(key)
+            .decrypt(&nonce, &ctx[Self::NONCE_LENGTH..], None)
+            .map(Zeroizing::new)
     }
 }
 
