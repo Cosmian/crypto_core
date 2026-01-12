@@ -188,7 +188,7 @@ where
     }
 }
 
-#[cfg(all(test, feature = "aes"))]
+#[cfg(all(test, feature = "aes", feature = "nist_curves"))]
 mod tests {
     use elliptic_curve::{sec1, Curve, CurveArithmetic};
     use p192::NistP192;
@@ -197,10 +197,11 @@ mod tests {
     use p384::NistP384;
     use rand_core::SeedableRng;
 
+    use super::*;
     use crate::{
-        CsRng, NistPrivateKey, NistPublicKey, P192_PRIVATE_KEY_LENGTH, P192_PUBLIC_KEY_LENGTH,
-        P224_PRIVATE_KEY_LENGTH, P224_PUBLIC_KEY_LENGTH, P256_PRIVATE_KEY_LENGTH,
-        P256_PUBLIC_KEY_LENGTH, P384_PRIVATE_KEY_LENGTH, P384_PUBLIC_KEY_LENGTH,
+        CsRng, P192_PRIVATE_KEY_LENGTH, P192_PUBLIC_KEY_LENGTH, P224_PRIVATE_KEY_LENGTH,
+        P224_PUBLIC_KEY_LENGTH, P256_PRIVATE_KEY_LENGTH, P256_PUBLIC_KEY_LENGTH,
+        P384_PRIVATE_KEY_LENGTH, P384_PUBLIC_KEY_LENGTH,
     };
 
     fn serialization_deserialization_test<

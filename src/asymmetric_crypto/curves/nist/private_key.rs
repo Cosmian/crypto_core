@@ -10,15 +10,19 @@ use pkcs8::{
     pkcs5::{pbes2, scrypt},
     EncodePrivateKey, EncryptedPrivateKeyInfo, SecretDocument,
 };
+#[cfg(feature = "aes")]
+use rand_core::CryptoRngCore;
 use rand_core::{RngCore, SeedableRng};
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 use crate::{
+    asymmetric_crypto::curves::nist::public_key::NistPublicKey, pkcs8_fix, CBytes, CryptoCoreError,
+    CsRng,
+};
+#[cfg(feature = "aes")]
+use crate::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
-    pkcs8_fix,
-    reexport::rand_core::CryptoRngCore,
-    CBytes, CryptoCoreError, CsRng, FixedSizeCBytes, NistPublicKey, RandomFixedSizeCBytes,
-    SecretCBytes,
+    FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes,
 };
 
 /// Nist Curve private key
