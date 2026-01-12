@@ -1,9 +1,10 @@
 use rand_chacha::rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
-use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes};
+use crate::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
+    CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes,
+};
 
 /// Length of a Curve25519 secret in bytes.
 pub const CURVE_25519_SECRET_LENGTH: usize = 32;
@@ -39,7 +40,6 @@ impl RandomFixedSizeCBytes<{ CURVE_25519_SECRET_LENGTH }> for Curve25519Secret {
 impl SecretCBytes<{ CURVE_25519_SECRET_LENGTH }> for Curve25519Secret {}
 
 /// Key Serialization framework
-#[cfg(feature = "ser")]
 impl Serializable for Curve25519Secret {
     type Error = CryptoCoreError;
 

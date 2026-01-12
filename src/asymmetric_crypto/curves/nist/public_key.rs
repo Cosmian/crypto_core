@@ -1,13 +1,13 @@
+use super::private_key::NistPrivateKey;
+use crate::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
+    CBytes, CryptoCoreError, FixedSizeCBytes, NistCurvePoint,
+};
 use elliptic_curve::{
     group::Curve as Curve_,
     sec1::{self, ToEncodedPoint},
     Curve, CurveArithmetic, ProjectivePoint, PublicKey,
 };
-
-use super::private_key::NistPrivateKey;
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
-use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, NistCurvePoint};
 
 /// Nist Curve public key
 ///
@@ -141,7 +141,6 @@ where
 }
 
 /// Key Serialization framework
-#[cfg(feature = "ser")]
 impl<C, const LENGTH: usize> Serializable for NistPublicKey<C, LENGTH>
 where
     C: Curve + CurveArithmetic + pkcs8::AssociatedOid,

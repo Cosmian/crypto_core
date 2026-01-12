@@ -36,7 +36,6 @@ pub enum CryptoCoreError {
     Certificate(String),
     #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
     Pkcs8Error(String),
-    #[cfg(feature = "ser")]
     ReadLeb128Error(leb128::read::Error),
     #[cfg(feature = "rsa")]
     RsaError(String),
@@ -111,7 +110,6 @@ impl Display for CryptoCoreError {
             ),
             #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
             CryptoCoreError::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
-            #[cfg(feature = "ser")]
             CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
             #[cfg(feature = "rsa")]
             CryptoCoreError::RsaError(e) => write!(f, "RSA error: {e}"),

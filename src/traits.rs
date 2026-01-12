@@ -231,3 +231,174 @@ where
     >,
 {
 }
+
+pub mod tests {
+    use super::Nike;
+    use crate::{reexport::rand_core::SeedableRng, CsRng};
+    use std::fmt::Debug;
+
+    /// A non-interactive key exchange must allow generating the same session key on
+    /// both sides.
+    pub fn test_nike<Scheme: Nike>()
+    where
+        Scheme::SessionKey: Eq + Debug,
+    {
+        let mut rng = CsRng::from_entropy();
+
+        let keypair_1 = Scheme::keygen(&mut rng).unwrap();
+        let keypair_2 = Scheme::keygen(&mut rng).unwrap();
+
+        let session_key_1 = Scheme::session_key(&keypair_1.0, &keypair_2.1).unwrap();
+        let session_key_2 = Scheme::session_key(&keypair_2.0, &keypair_1.1).unwrap();
+
+        assert_eq!(session_key_1, session_key_2);
+    }
+}
+
+pub mod macros {
+    #[macro_export]
+    macro_rules! implement_abelian_group_arithmetic {
+        ($type: ty, $constuctor: tt) => {
+            mod abelian_group_arithmetic {
+                use super::*;
+                use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
+
+                impl Zero for $type {
+                    fn zero() -> Self {
+                        <Self as Monoid>::id()
+                    }
+
+                    fn is_zero(&self) -> bool {
+                        self == &Self::zero()
+                    }
+                }
+
+                impl Add for $type {
+                    type Output = Self;
+
+                    fn add(self, rhs: Self) -> Self::Output {
+                        <$type as Monoid>::op(&self, &rhs)
+                    }
+                }
+
+                impl Add<&$type> for $type {
+                    type Output = $type;
+
+                    fn add(self, rhs: &$type) -> Self::Output {
+                        <$type as Monoid>::op(&self, &rhs)
+                    }
+                }
+
+                impl Add<&$type> for &$type {
+                    type Output = $type;
+
+                    fn add(self, rhs: &$type) -> Self::Output {
+                        <$type as Monoid>::op(&self, &rhs)
+                    }
+                }
+
+                impl AddAssign for $type {
+                    fn add_assign(&mut self, rhs: Self) {
+                        *self = <$type as Monoid>::op(&self, &rhs)
+                    }
+                }
+
+                impl Neg for $type {
+                    type Output = Self;
+
+                    fn neg(self) -> Self::Output {
+                        <$type as Group>::invert(&self)
+                    }
+                }
+
+                impl Neg for &$type {
+                    type Output = $type;
+
+                    fn neg(self) -> Self::Output {
+                        <$type as Group>::invert(self)
+                    }
+                }
+
+                impl Sub for $type {
+                    type Output = Self;
+
+                    fn sub(self, rhs: Self) -> Self::Output {
+                        <$type as Monoid>::op(&self, &<$type as Group>::invert(&rhs))
+                    }
+                }
+
+                impl Sub<&$type> for $type {
+                    type Output = Self;
+
+                    fn sub(self, rhs: &$type) -> Self::Output {
+                        <$type as Monoid>::op(&self, &<$type as Group>::invert(&rhs))
+                    }
+                }
+
+                impl Sub<&$type> for &$type {
+                    type Output = $type;
+
+                    fn sub(self, rhs: &$type) -> Self::Output {
+                        <$type as Monoid>::op(&self, &<$type as Group>::invert(&rhs))
+                    }
+                }
+
+                impl SubAssign for $type {
+                    fn sub_assign(&mut self, rhs: Self) {
+                        *self = <$type as Monoid>::op(&self, &<$type as Group>::invert(&rhs))
+                    }
+                }
+            }
+        };
+    }
+
+    #[macro_export]
+    macro_rules! implement_field_arithmetic {
+        ($type: ty, $constuctor: tt) => {
+            mod field_arithmetic {
+                use super::*;
+                use std::ops::{Mul, MulAssign};
+
+                impl One for $type {
+                    fn one() -> Self {
+                        <Self as Ring>::id()
+                    }
+
+                    fn is_one(&self) -> bool {
+                        self == &Self::one()
+                    }
+                }
+
+                impl Mul for $type {
+                    type Output = Self;
+
+                    fn mul(self, rhs: Self) -> Self::Output {
+                        <$type as Ring>::op(&self, &rhs)
+                    }
+                }
+
+                impl Mul<&$type> for $type {
+                    type Output = $type;
+
+                    fn mul(self, rhs: &$type) -> Self::Output {
+                        <$type as Ring>::op(&self, &rhs)
+                    }
+                }
+
+                impl Mul<&$type> for &$type {
+                    type Output = $type;
+
+                    fn mul(self, rhs: &$type) -> Self::Output {
+                        <$type as Ring>::op(&self, &rhs)
+                    }
+                }
+
+                impl MulAssign for $type {
+                    fn mul_assign(&mut self, rhs: Self) {
+                        *self = <$type as Ring>::op(&self, &rhs)
+                    }
+                }
+            }
+        };
+    }
+}

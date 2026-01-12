@@ -1,29 +1,139 @@
-use std::{
-    iter::Sum,
-    ops::{Add, Div, Mul, Sub},
+use crate::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
+    implement_abelian_group_arithmetic, implement_field_arithmetic,
+    traits::{
+        AbelianGroup, CBytes, Field, FixedSizeCBytes, Group, Monoid, One, Ring, Sampling,
+        SecretCBytes, Zero,
+    },
+    CryptoCoreError,
 };
-
 use curve25519_dalek::Scalar;
-use rand_core::CryptoRngCore;
+use std::ops::Div;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
-use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes};
+#[cfg(feature = "sha3")]
+use crate::traits::Seedable;
 
-pub const R25519_PRIVATE_KEY_LENGTH: usize = 32;
+pub const R25519_SCALAR_LENGTH: usize = 32;
 
 #[derive(Hash, Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
-pub struct R25519PrivateKey(pub(crate) Scalar);
+pub struct R25519Scalar(pub(crate) Scalar);
 
-impl CBytes for R25519PrivateKey {}
+impl CBytes for R25519Scalar {}
 
-impl FixedSizeCBytes<{ R25519_PRIVATE_KEY_LENGTH }> for R25519PrivateKey {
-    fn to_bytes(&self) -> [u8; Self::LENGTH] {
-        self.0.to_bytes()
+impl FixedSizeCBytes<{ R25519_SCALAR_LENGTH }> for R25519Scalar {}
+
+impl SecretCBytes<{ R25519_SCALAR_LENGTH }> for R25519Scalar {}
+
+impl Sampling for R25519Scalar {
+    fn random(rng: &mut impl rand_core::CryptoRngCore) -> Self {
+        Self(Scalar::random(rng))
+    }
+}
+
+#[cfg(feature = "sha3")]
+impl Seedable<{ Self::LENGTH }> for R25519Scalar {
+    fn from_seed(seed: &[u8; Self::LENGTH]) -> Self {
+        use crate::{kdf256, Secret};
+
+        let mut bytes = Secret::<64>::default();
+        kdf256!(&mut *bytes, seed);
+        Self(Scalar::from_bytes_mod_order_wide(&bytes))
+    }
+}
+
+impl Monoid for R25519Scalar {
+    fn id() -> Self {
+        Self(Scalar::ZERO)
     }
 
-    fn try_from_bytes(bytes: [u8; Self::LENGTH]) -> Result<Self, CryptoCoreError> {
+    fn op(&self, rhs: &Self) -> Self {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl Group for R25519Scalar {
+    fn invert(&self) -> Self {
+        Self(-self.0)
+    }
+}
+
+implement_abelian_group_arithmetic!(R25519Scalar, R25519PrivateKey);
+
+impl AbelianGroup for R25519Scalar {}
+
+impl Ring for R25519Scalar {
+    fn id() -> Self {
+        Self(Scalar::ONE)
+    }
+
+    fn op(&self, rhs: &Self) -> Self {
+        Self(self.0 * rhs.0)
+    }
+}
+
+implement_field_arithmetic!(R25519Scalar, R25519PrivateKey);
+
+#[allow(clippy::suspicious_arithmetic_impl)]
+impl Div<&R25519Scalar> for &R25519Scalar {
+    type Output = Result<R25519Scalar, CryptoCoreError>;
+
+    fn div(self, rhs: &R25519Scalar) -> Self::Output {
+        if rhs.is_zero() {
+            Err(CryptoCoreError::EllipticCurveError(
+                "scalar division by zero".to_string(),
+            ))
+        } else {
+            Ok(R25519Scalar(self.0 * rhs.0.invert()))
+        }
+    }
+}
+
+impl Div<&R25519Scalar> for R25519Scalar {
+    type Output = Result<Self, CryptoCoreError>;
+
+    fn div(self, rhs: &R25519Scalar) -> Self::Output {
+        &self / rhs
+    }
+}
+
+#[allow(clippy::suspicious_arithmetic_impl)]
+impl Div for R25519Scalar {
+    type Output = Result<Self, CryptoCoreError>;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        &self / &rhs
+    }
+}
+
+impl Field for R25519Scalar {
+    type InvError = CryptoCoreError;
+
+    fn invert(&self) -> Result<Self, Self::InvError> {
+        if self.is_zero() {
+            Err(CryptoCoreError::EllipticCurveError(
+                "scalar division by zero".to_string(),
+            ))
+        } else {
+            Ok(Self(self.0.invert()))
+        }
+    }
+}
+
+/// Key Serialization framework
+impl Serializable for R25519Scalar {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        Self::LENGTH
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_array(self.0.as_bytes())
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        let bytes = de.read_array::<{ Self::LENGTH }>()?;
         <Option<_>>::from(Scalar::from_canonical_bytes(bytes))
             .map(Self)
             .ok_or_else(|| {
@@ -34,141 +144,17 @@ impl FixedSizeCBytes<{ R25519_PRIVATE_KEY_LENGTH }> for R25519PrivateKey {
     }
 }
 
-impl RandomFixedSizeCBytes<{ R25519_PRIVATE_KEY_LENGTH }> for R25519PrivateKey {
-    fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-        let mut bytes = [0; 2 * Self::LENGTH];
-        rng.fill_bytes(&mut bytes);
-        Self(Scalar::from_bytes_mod_order_wide(&bytes))
-    }
+#[cfg(test)]
+mod tests {
+    use super::R25519Scalar;
+    use crate::{
+        bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng, traits::Sampling, CsRng,
+    };
 
-    fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
-    }
-}
-
-impl SecretCBytes<{ R25519_PRIVATE_KEY_LENGTH }> for R25519PrivateKey {}
-
-/// Key Serialization framework
-#[cfg(feature = "ser")]
-impl Serializable for R25519PrivateKey {
-    type Error = CryptoCoreError;
-
-    fn length(&self) -> usize {
-        Self::LENGTH
-    }
-
-    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(self.as_bytes())
-    }
-
-    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
-        let bytes = de.read_array::<{ Self::LENGTH }>()?;
-        Self::try_from_bytes(bytes)
-    }
-}
-
-/// Facades
-///
-/// Facades are used to hide the underlying types and provide a more
-/// user friendly interface to the user.
-impl R25519PrivateKey {
-    /// Generate a random private key
-    ///
-    /// This is a facade to `RandomFixedSizeCBytes::new`
-    pub fn new<R: CryptoRngCore>(rng: &mut R) -> Self {
-        <Self as RandomFixedSizeCBytes<R25519_PRIVATE_KEY_LENGTH>>::new(rng)
-    }
-
-    /// Get the underlying bytes slice of the private key
-    ///
-    /// This is a facade to `RandomFixedSizeCBytes::as_bytes`
-    #[must_use]
-    pub fn as_bytes(&self) -> &[u8] {
-        <Self as RandomFixedSizeCBytes<R25519_PRIVATE_KEY_LENGTH>>::as_bytes(self)
-    }
-
-    /// Serialize the `PrivateKey` as a non zero scalar
-    ///
-    /// This is a facade to `<Self as FixedSizeCBytes>::to_bytes`
-    #[must_use]
-    pub fn to_bytes(&self) -> [u8; R25519_PRIVATE_KEY_LENGTH] {
-        <Self as FixedSizeCBytes<R25519_PRIVATE_KEY_LENGTH>>::to_bytes(self)
-    }
-
-    /// Deserialize the `PrivateKey` from a non zero scalar
-    ///
-    /// This is a facade to `<Self as
-    /// FixedSizeCBytes<R25519_PRIVATE_KEY_LENGTH>>::try_from_bytes`
-    pub fn try_from_bytes(bytes: [u8; R25519_PRIVATE_KEY_LENGTH]) -> Result<Self, CryptoCoreError> {
-        <Self as FixedSizeCBytes<R25519_PRIVATE_KEY_LENGTH>>::try_from_bytes(bytes)
-    }
-
-    pub fn from_raw_bytes(bytes: &[u8; 64]) -> Self {
-        Self(Scalar::from_bytes_mod_order_wide(bytes))
-    }
-
-    /// Neutral scalar element for the addition.
-    #[inline(always)]
-    pub const fn zero() -> Self {
-        Self(Scalar::ZERO)
-    }
-
-    /// Neutral scalar element for the multiplication.
-    #[inline(always)]
-    pub const fn one() -> Self {
-        Self(Scalar::ONE)
-    }
-}
-
-// Curve arithmetic
-
-impl Add for R25519PrivateKey {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl Add<&R25519PrivateKey> for &R25519PrivateKey {
-    type Output = R25519PrivateKey;
-
-    fn add(self, rhs: &R25519PrivateKey) -> Self::Output {
-        R25519PrivateKey(self.0 + rhs.0)
-    }
-}
-
-impl Sub<&R25519PrivateKey> for &R25519PrivateKey {
-    type Output = R25519PrivateKey;
-
-    fn sub(self, rhs: &R25519PrivateKey) -> Self::Output {
-        R25519PrivateKey(self.0 - rhs.0)
-    }
-}
-
-impl Mul<&R25519PrivateKey> for &R25519PrivateKey {
-    type Output = R25519PrivateKey;
-
-    fn mul(self, rhs: &R25519PrivateKey) -> Self::Output {
-        R25519PrivateKey(self.0 * rhs.0)
-    }
-}
-
-impl Div<&R25519PrivateKey> for &R25519PrivateKey {
-    type Output = Result<R25519PrivateKey, CryptoCoreError>;
-
-    fn div(self, rhs: &R25519PrivateKey) -> Self::Output {
-        if rhs.0 == Scalar::ZERO {
-            return Err(CryptoCoreError::EllipticCurveError(
-                "division by zero".to_string(),
-            ));
-        }
-        Ok(R25519PrivateKey(self.0 * rhs.0.invert()))
-    }
-}
-
-impl Sum for R25519PrivateKey {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::zero(), Add::add)
+    #[test]
+    fn test_private_key_serialization() {
+        let mut rng = CsRng::from_entropy();
+        let sk = R25519Scalar::random(&mut rng);
+        test_serialization(&sk).unwrap();
     }
 }

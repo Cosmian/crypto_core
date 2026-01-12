@@ -31,7 +31,9 @@ pub const P192_PUBLIC_KEY_LENGTH: usize = 25;
 pub type P192PublicKey = public_key::NistPublicKey<NistP192, P192_PUBLIC_KEY_LENGTH>;
 
 pub(crate) use curve_point::NistCurvePoint;
+#[cfg(feature = "ecies")]
 pub(crate) use private_key::NistPrivateKey;
+#[cfg(feature = "ecies")]
 pub(crate) use public_key::NistPublicKey;
 
 #[cfg(test)]

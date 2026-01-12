@@ -2,16 +2,13 @@
 
 use core::{hash::Hash, ops::Deref};
 use std::ops::DerefMut;
-
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::Serializable;
 #[cfg(feature = "sha3")]
 use crate::kdf256;
 use crate::{
-    reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, FixedSizeCBytes,
-    RandomFixedSizeCBytes, Secret, SecretCBytes,
+    bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError,
+    FixedSizeCBytes, RandomFixedSizeCBytes, Secret, SecretCBytes,
 };
 
 /// A type that holds symmetric key of a fixed  size.
@@ -101,7 +98,6 @@ impl<const KEY_LENGTH: usize> SymmetricKey<KEY_LENGTH> {
     }
 }
 
-#[cfg(feature = "ser")]
 impl<const LENGTH: usize> Serializable for SymmetricKey<LENGTH> {
     type Error = CryptoCoreError;
 
@@ -121,9 +117,10 @@ impl<const LENGTH: usize> Serializable for SymmetricKey<LENGTH> {
 #[cfg(test)]
 mod tests {
 
-    #[cfg(feature = "ser")]
-    use crate::bytes_ser_de::test_serialization;
-    use crate::{reexport::rand_core::SeedableRng, CsRng, RandomFixedSizeCBytes, SymmetricKey};
+    use crate::{
+        bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng, CsRng,
+        RandomFixedSizeCBytes, SymmetricKey,
+    };
 
     const KEY_LENGTH: usize = 32;
 
@@ -135,7 +132,6 @@ mod tests {
         let key_2 = SymmetricKey::new(&mut cs_rng);
         assert_eq!(KEY_LENGTH, key_2.len());
         assert_ne!(key_1, key_2);
-        #[cfg(feature = "ser")]
         test_serialization(&key_1).unwrap();
     }
 }

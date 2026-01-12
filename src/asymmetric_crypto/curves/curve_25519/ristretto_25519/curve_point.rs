@@ -1,56 +1,122 @@
-use core::ops::{Add, Mul, Sub};
-use std::iter::Sum;
-
-use curve25519_dalek::{
-    constants::{self, RISTRETTO_BASEPOINT_POINT},
-    ristretto::{CompressedRistretto, RistrettoPoint},
-    traits::Identity,
+use super::R25519Scalar;
+use crate::{
+    bytes_ser_de::Serializable,
+    implement_abelian_group_arithmetic,
+    traits::{AbelianGroup, CBytes, CyclicGroup, FixedSizeCBytes, Group, Monoid, One, Zero},
+    CryptoCoreError,
 };
+use core::iter::Sum;
+use curve25519_dalek::{
+    constants::{self},
+    ristretto::{CompressedRistretto, RistrettoPoint},
+};
+use std::ops::Mul;
 use zeroize::Zeroize;
 
-use super::R25519PrivateKey;
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::Serializable;
-use crate::{CBytes, CryptoCoreError, FixedSizeCBytes};
-
 /// Curve Point of a Ristretto Curve25519.
-///
-/// Internally, a Ristretto point is used. It wraps an Edwards point and its
-/// compressed form is used for serialization, which makes it 256-bit long.
 #[derive(Clone, PartialEq, Eq, Debug, Zeroize)]
-pub struct R25519CurvePoint(pub(crate) RistrettoPoint);
-
-impl CBytes for R25519CurvePoint {}
+pub struct R25519Point(pub(crate) RistrettoPoint);
 
 /// Length of a Ristretto curve point in bytes.
-pub const R25519_CURVE_POINT_LENGTH: usize = 32;
+pub const R25519_POINT_LENGTH: usize = 32;
 
-impl FixedSizeCBytes<R25519_CURVE_POINT_LENGTH> for R25519CurvePoint {
-    fn to_bytes(&self) -> [u8; Self::LENGTH] {
-        self.0.compress().to_bytes()
-    }
+impl CBytes for R25519Point {}
 
-    fn try_from_bytes(
-        bytes: [u8; R25519_CURVE_POINT_LENGTH],
-    ) -> Result<Self, crate::CryptoCoreError> {
-        Ok(Self(CompressedRistretto(bytes).decompress().ok_or_else(
-            || {
-                CryptoCoreError::ConversionError(
-                    "Cannot decompress given bytes into a valid curve point!".to_string(),
-                )
-            },
-        )?))
+impl FixedSizeCBytes<R25519_POINT_LENGTH> for R25519Point {}
+
+impl From<&R25519Point> for [u8; R25519Point::LENGTH] {
+    fn from(value: &R25519Point) -> Self {
+        value.0.compress().to_bytes()
     }
 }
 
-impl From<&R25519PrivateKey> for R25519CurvePoint {
-    fn from(private_key: &R25519PrivateKey) -> Self {
-        Self(RistrettoPoint::mul_base(&private_key.0))
+impl Monoid for R25519Point {
+    fn id() -> Self {
+        Self(constants::RISTRETTO_BASEPOINT_POINT)
+    }
+
+    fn op(&self, rhs: &Self) -> Self {
+        Self(self.0 + rhs.0)
     }
 }
 
-#[cfg(feature = "ser")]
-impl Serializable for R25519CurvePoint {
+impl Group for R25519Point {
+    fn invert(&self) -> Self {
+        Self(-self.0)
+    }
+}
+
+implement_abelian_group_arithmetic!(R25519Point, R25519CurvePoint);
+
+impl AbelianGroup for R25519Point {}
+
+impl One for R25519Point {
+    fn one() -> Self {
+        Self(constants::RISTRETTO_BASEPOINT_POINT)
+    }
+
+    fn is_one(&self) -> bool {
+        self.0 == constants::RISTRETTO_BASEPOINT_POINT
+    }
+}
+
+impl From<&R25519Scalar> for R25519Point {
+    fn from(private_key: &R25519Scalar) -> Self {
+        Self(&private_key.0 * constants::RISTRETTO_BASEPOINT_TABLE)
+    }
+}
+
+impl From<R25519Scalar> for R25519Point {
+    fn from(multiplicity: R25519Scalar) -> Self {
+        Self::from(&multiplicity)
+    }
+}
+
+impl CyclicGroup for R25519Point {
+    type Multiplicity = R25519Scalar;
+}
+
+impl Mul<R25519Scalar> for R25519Point {
+    type Output = Self;
+
+    fn mul(self, rhs: R25519Scalar) -> Self::Output {
+        Self(self.0 * rhs.0)
+    }
+}
+
+impl Mul<&R25519Scalar> for R25519Point {
+    type Output = Self;
+
+    fn mul(self, rhs: &R25519Scalar) -> Self::Output {
+        Self(self.0 * rhs.0)
+    }
+}
+
+impl Mul<R25519Scalar> for &R25519Point {
+    type Output = R25519Point;
+
+    fn mul(self, rhs: R25519Scalar) -> Self::Output {
+        R25519Point(self.0 * rhs.0)
+    }
+}
+
+impl Mul<&R25519Scalar> for &R25519Point {
+    type Output = R25519Point;
+
+    fn mul(self, rhs: &R25519Scalar) -> Self::Output {
+        R25519Point(self.0 * rhs.0)
+    }
+}
+
+impl<'a> Sum<&'a R25519Point> for R25519Point {
+    fn sum<I: Iterator<Item = &'a R25519Point>>(iter: I) -> Self {
+        iter.fold(<Self as Monoid>::id(), |acc, e| {
+            <Self as Monoid>::op(&acc, e)
+        })
+    }
+}
+
+impl Serializable for R25519Point {
     type Error = CryptoCoreError;
 
     fn length(&self) -> usize {
@@ -62,118 +128,30 @@ impl Serializable for R25519CurvePoint {
     }
 
     fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
-        Self::try_from_bytes(de.read_array::<{ Self::LENGTH }>()?)
-    }
-}
-
-impl From<R25519PrivateKey> for R25519CurvePoint {
-    fn from(private_key: R25519PrivateKey) -> Self {
-        Self(&private_key.0 * constants::RISTRETTO_BASEPOINT_TABLE)
-    }
-}
-
-impl Sub<&R25519CurvePoint> for &R25519CurvePoint {
-    type Output = R25519CurvePoint;
-
-    fn sub(self, rhs: &R25519CurvePoint) -> Self::Output {
-        R25519CurvePoint(self.0 - rhs.0)
-    }
-}
-
-impl Add<&R25519CurvePoint> for &R25519CurvePoint {
-    type Output = R25519CurvePoint;
-
-    fn add(self, rhs: &R25519CurvePoint) -> Self::Output {
-        R25519CurvePoint(self.0 + rhs.0)
-    }
-}
-
-impl Mul<&R25519PrivateKey> for &R25519CurvePoint {
-    type Output = R25519CurvePoint;
-
-    fn mul(self, rhs: &R25519PrivateKey) -> Self::Output {
-        R25519CurvePoint(self.0 * rhs.0)
-    }
-}
-
-/// Facade.
-///
-/// Facades are used to hide the underlying types and provide a more
-/// user friendly interface to the user.
-impl R25519CurvePoint {
-    /// Serialize the curve point.
-    ///
-    /// Facade to [`FixedSizeCBytes::to_bytes`].
-    #[must_use]
-    pub fn to_bytes(&self) -> [u8; R25519_CURVE_POINT_LENGTH] {
-        <Self as FixedSizeCBytes<R25519_CURVE_POINT_LENGTH>>::to_bytes(self)
-    }
-
-    /// Deserialize the curve point.
-    ///
-    /// Facade to [`FixedSizeCBytes::try_from_bytes`].
-    pub fn try_from_bytes(
-        bytes: [u8; R25519_CURVE_POINT_LENGTH],
-    ) -> Result<Self, crate::CryptoCoreError> {
-        <Self as FixedSizeCBytes<R25519_CURVE_POINT_LENGTH>>::try_from_bytes(bytes)
-    }
-
-    /// Tries to create the curve point from the given slice of bytes into a
-    /// key.
-    ///
-    /// Facade to [`FixedSizeCBytes::try_from_slice`].
-    pub fn try_from_slice(slice: &[u8]) -> Result<Self, CryptoCoreError> {
-        <Self as FixedSizeCBytes<R25519_CURVE_POINT_LENGTH>>::try_from_slice(slice)
-    }
-
-    /// Returns the identity element of the curve.
-    #[must_use]
-    pub fn identity() -> Self {
-        Self(RistrettoPoint::identity())
-    }
-
-    /// Returns the generator element of the curve.
-    #[must_use]
-    pub fn generator() -> Self {
-        Self(RISTRETTO_BASEPOINT_POINT)
-    }
-}
-
-impl<'a> Add<&'a R25519CurvePoint> for R25519CurvePoint {
-    type Output = R25519CurvePoint;
-
-    fn add(self, rhs: &'a R25519CurvePoint) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl<'a> Sum<&'a R25519CurvePoint> for R25519CurvePoint {
-    fn sum<I: Iterator<Item = &'a R25519CurvePoint>>(iter: I) -> Self {
-        iter.fold(Self::identity(), Add::add)
+        Ok(Self(
+            CompressedRistretto(de.read_array::<{ Self::LENGTH }>()?)
+                .decompress()
+                .ok_or_else(|| {
+                    CryptoCoreError::ConversionError(
+                        "Cannot decompress given bytes into a valid curve point!".to_string(),
+                    )
+                })?,
+        ))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{R25519CurvePoint, R25519PrivateKey};
-    use crate::{reexport::rand_core::SeedableRng, CsRng};
-
-    #[test]
-    fn test_private_key_serialization() {
-        let mut rng = CsRng::from_entropy();
-        let sk = R25519PrivateKey::new(&mut rng);
-        let bytes = sk.to_bytes();
-        let recovered = R25519PrivateKey::try_from_bytes(bytes).unwrap();
-        assert_eq!(sk, recovered);
-    }
+    use super::{R25519Point, R25519Scalar};
+    use crate::{
+        bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng, traits::Sampling, CsRng,
+    };
 
     #[test]
     fn test_public_key_serialization() {
         let mut rng = CsRng::from_entropy();
-        let sk = R25519PrivateKey::new(&mut rng);
-        let pk = R25519CurvePoint::from(&sk);
-        let bytes = pk.to_bytes();
-        let recovered = R25519CurvePoint::try_from_bytes(bytes).unwrap();
-        assert_eq!(pk, recovered);
+        let sk = R25519Scalar::random(&mut rng);
+        let pk = R25519Point::from(&sk);
+        test_serialization(&pk).unwrap();
     }
 }
