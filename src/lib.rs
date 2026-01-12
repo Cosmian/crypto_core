@@ -21,6 +21,8 @@ mod pkcs8_fix;
 mod symmetric_crypto;
 
 pub mod bytes_ser_de;
+
+#[macro_use]
 pub mod traits;
 
 #[cfg(feature = "macro")]
