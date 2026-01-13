@@ -72,6 +72,12 @@ impl<const LENGTH: usize> Default for SymmetricKey<LENGTH> {
     }
 }
 
+impl<const LENGTH: usize> From<Secret<LENGTH>> for SymmetricKey<LENGTH> {
+    fn from(secret: Secret<LENGTH>) -> Self {
+        Self(secret)
+    }
+}
+
 impl<const LENGTH: usize> From<SymmetricKey<LENGTH>> for Zeroizing<Vec<u8>> {
     fn from(value: SymmetricKey<LENGTH>) -> Self {
         Zeroizing::new(value.0.to_vec())
