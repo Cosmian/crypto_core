@@ -6,13 +6,13 @@ pub use private_key::{R25519Scalar, R25519_SCALAR_LENGTH};
 
 use crate::{
     reexport::rand_core::CryptoRngCore,
-    traits::{KeyHomomorphicNike, Nike, Sampling},
+    traits::{KeyHomomorphicNike, Sampling, NIKE},
     CryptoCoreError,
 };
 
 pub struct R25519;
 
-impl Nike for R25519 {
+impl NIKE for R25519 {
     type Error = CryptoCoreError;
     type SecretKey = R25519Scalar;
     type PublicKey = R25519Point;
