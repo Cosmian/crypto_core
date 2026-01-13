@@ -2,6 +2,8 @@ use crate::{reexport::rand_core::CryptoRngCore, SymmetricKey};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
+pub mod kem_to_pke;
+
 // NOTE: the following four traits mirror those from `lib.rs` and should be
 // those used in the end. In order to prevent a breaking change, their new
 // version lives here for now.
@@ -170,7 +172,7 @@ pub trait AE<const KEY_LENGTH: usize> {
 }
 
 /// Key-Encapsulation Mechanism.
-pub trait Kem {
+pub trait KEM {
     type SessionKey;
     type Encapsulation;
     type EncapsulationKey;
@@ -199,7 +201,7 @@ pub trait Kem {
 }
 
 /// Non-Interactive Key Exchange.
-pub trait Nike {
+pub trait NIKE {
     type SessionKey;
     type SecretKey;
     type PublicKey;
@@ -219,7 +221,7 @@ pub trait Nike {
 }
 
 /// Non-Interactive Key Exchange which public keys for a cyclic group.
-pub trait KeyHomomorphicNike: Nike
+pub trait KeyHomomorphicNike: NIKE
 where
     Self::PublicKey: CyclicGroup<Multiplicity = Self::SecretKey>,
     Self::SecretKey: Field,
@@ -237,7 +239,37 @@ where
 {
 }
 
-pub trait Pke {
+impl<T: NIKE> KEM for T {
+    type SessionKey = T::SessionKey;
+    type Encapsulation = T::PublicKey;
+    type EncapsulationKey = T::PublicKey;
+    type DecapsulationKey = T::SecretKey;
+    type Error = T::Error;
+
+    fn keygen(
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error> {
+        T::keygen(rng)
+    }
+
+    fn enc(
+        ek: &Self::EncapsulationKey,
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<(Self::SessionKey, Self::Encapsulation), Self::Error> {
+        let (sk, pk_) = T::keygen(rng)?;
+        let ss = T::session_key(&sk, ek)?;
+        Ok((ss, pk_))
+    }
+
+    fn dec(
+        dk: &Self::DecapsulationKey,
+        enc: &Self::Encapsulation,
+    ) -> Result<Self::SessionKey, Self::Error> {
+        T::session_key(dk, enc)
+    }
+}
+
+pub trait PKE {
     type Plaintext;
     type Ciphertext;
     type PublicKey;
@@ -245,27 +277,25 @@ pub trait Pke {
     type Error;
 
     fn encrypt(
-        &self,
         pk: &Self::PublicKey,
         ptx: &[u8],
         rng: &mut impl CryptoRngCore,
     ) -> Result<Self::Ciphertext, Self::Error>;
 
     fn decrypt(
-        &self,
         sk: &Self::SecretKey,
         ctx: &Self::Ciphertext,
     ) -> Result<Self::Plaintext, Self::Error>;
 }
 
 pub mod tests {
-    use super::Nike;
+    use super::NIKE;
     use crate::{reexport::rand_core::SeedableRng, CsRng};
     use std::fmt::Debug;
 
     /// A non-interactive key exchange must allow generating the same session key on
     /// both sides.
-    pub fn test_nike<Scheme: Nike>()
+    pub fn test_nike<Scheme: NIKE>()
     where
         Scheme::SessionKey: Eq + Debug,
     {
