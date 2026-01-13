@@ -172,8 +172,7 @@ pub trait AE<const KEY_LENGTH: usize> {
 }
 
 /// Key-Encapsulation Mechanism.
-pub trait KEM {
-    type SessionKey;
+pub trait KEM<const KEY_LENGTH: usize> {
     type Encapsulation;
     type EncapsulationKey;
     type DecapsulationKey;
@@ -190,19 +189,18 @@ pub trait KEM {
     fn enc(
         ek: &Self::EncapsulationKey,
         rng: &mut impl CryptoRngCore,
-    ) -> Result<(Self::SessionKey, Self::Encapsulation), Self::Error>;
+    ) -> Result<(SymmetricKey<KEY_LENGTH>, Self::Encapsulation), Self::Error>;
 
     /// Attempts opening the given encapsulation. Upon failure to decapsulate,
     /// returns a random session key.
     fn dec(
         dk: &Self::DecapsulationKey,
         enc: &Self::Encapsulation,
-    ) -> Result<Self::SessionKey, Self::Error>;
+    ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
 }
 
 /// Non-Interactive Key Exchange.
-pub trait NIKE {
-    type SessionKey;
+pub trait NIKE<const KEY_LENGTH: usize> {
     type SecretKey;
     type PublicKey;
 
@@ -217,11 +215,11 @@ pub trait NIKE {
     fn session_key(
         sk: &Self::SecretKey,
         pk: &Self::PublicKey,
-    ) -> Result<Self::SessionKey, Self::Error>;
+    ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
 }
 
 /// Non-Interactive Key Exchange which public keys for a cyclic group.
-pub trait KeyHomomorphicNike: NIKE
+pub trait KeyHomomorphicNike<const KEY_LENGTH: usize>: NIKE<KEY_LENGTH>
 where
     Self::PublicKey: CyclicGroup<Multiplicity = Self::SecretKey>,
     Self::SecretKey: Field,
@@ -239,8 +237,7 @@ where
 {
 }
 
-impl<T: NIKE> KEM for T {
-    type SessionKey = T::SessionKey;
+impl<const KEY_LENGTH: usize, T: NIKE<KEY_LENGTH>> KEM<KEY_LENGTH> for T {
     type Encapsulation = T::PublicKey;
     type EncapsulationKey = T::PublicKey;
     type DecapsulationKey = T::SecretKey;
@@ -255,7 +252,7 @@ impl<T: NIKE> KEM for T {
     fn enc(
         ek: &Self::EncapsulationKey,
         rng: &mut impl CryptoRngCore,
-    ) -> Result<(Self::SessionKey, Self::Encapsulation), Self::Error> {
+    ) -> Result<(SymmetricKey<KEY_LENGTH>, Self::Encapsulation), Self::Error> {
         let (sk, pk) = T::keygen(rng)?;
         let ss = T::session_key(&sk, ek)?;
         Ok((ss, pk))
@@ -264,7 +261,7 @@ impl<T: NIKE> KEM for T {
     fn dec(
         dk: &Self::DecapsulationKey,
         enc: &Self::Encapsulation,
-    ) -> Result<Self::SessionKey, Self::Error> {
+    ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
         T::session_key(dk, enc)
     }
 }
@@ -294,17 +291,11 @@ pub mod tests {
         traits::{CyclicGroup, Field, KeyHomomorphicNike, Zero, KEM, NIKE},
         CsRng,
     };
-    use std::{
-        fmt::Debug,
-        ops::{Add, Div, Mul, Neg, Sub},
-    };
+    use std::ops::{Add, Div, Mul, Neg, Sub};
 
     /// A non-interactive key exchange must allow generating the same session key on
     /// both sides.
-    pub fn test_nike<Scheme: NIKE>()
-    where
-        Scheme::SessionKey: Eq + Debug,
-    {
+    pub fn test_nike<const KEY_LENGTH: usize, Scheme: NIKE<KEY_LENGTH>>() {
         let mut rng = CsRng::from_entropy();
 
         let keypair_1 = Scheme::keygen(&mut rng).unwrap();
@@ -316,10 +307,7 @@ pub mod tests {
         assert_eq!(session_key_1, session_key_2);
     }
 
-    pub fn test_kem<Scheme: KEM>()
-    where
-        Scheme::SessionKey: Eq + Debug,
-    {
+    pub fn test_kem<const KEY_LENGTH: usize, Scheme: KEM<KEY_LENGTH>>() {
         let mut rng = CsRng::from_entropy();
 
         let (dk_1, ek_1) = Scheme::keygen(&mut rng).unwrap();
@@ -335,9 +323,8 @@ pub mod tests {
         assert_eq!(ss_2, ss_2_);
     }
 
-    pub fn test_homomorphic_nike<Scheme: KeyHomomorphicNike>()
+    pub fn test_homomorphic_nike<const KEY_LENGTH: usize, Scheme: KeyHomomorphicNike<KEY_LENGTH>>()
     where
-        Scheme::SessionKey: Eq + Debug,
         Scheme::PublicKey: CyclicGroup<Multiplicity = Scheme::SecretKey>,
         Scheme::SecretKey: Field,
         for<'a> &'a Scheme::PublicKey: Neg<Output = Scheme::PublicKey>,

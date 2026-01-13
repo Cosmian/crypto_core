@@ -114,8 +114,8 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
     fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError>;
 }
 
-/// A Fixed Size Array of cryptographic bytes
-/// that can be generated from a cryptographically secure random generator.
+/// A Fixed Size Array of cryptographic bytes that can be generated from a
+/// cryptographically secure random generator.
 ///
 /// This may be a Nonce for instance
 pub trait RandomFixedSizeCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> {
