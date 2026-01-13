@@ -289,9 +289,15 @@ pub trait PKE {
 }
 
 pub mod tests {
-    use super::NIKE;
-    use crate::{reexport::rand_core::SeedableRng, CsRng};
-    use std::fmt::Debug;
+    use crate::{
+        reexport::rand_core::SeedableRng,
+        traits::{CyclicGroup, Field, KeyHomomorphicNike, Zero, KEM, NIKE},
+        CsRng,
+    };
+    use std::{
+        fmt::Debug,
+        ops::{Add, Div, Mul, Neg, Sub},
+    };
 
     /// A non-interactive key exchange must allow generating the same session key on
     /// both sides.
@@ -308,6 +314,60 @@ pub mod tests {
         let session_key_2 = Scheme::session_key(&keypair_2.0, &keypair_1.1).unwrap();
 
         assert_eq!(session_key_1, session_key_2);
+    }
+
+    pub fn test_kem<Scheme: KEM>()
+    where
+        Scheme::SessionKey: Eq + Debug,
+    {
+        let mut rng = CsRng::from_entropy();
+
+        let (dk_1, ek_1) = Scheme::keygen(&mut rng).unwrap();
+        let (dk_2, ek_2) = Scheme::keygen(&mut rng).unwrap();
+
+        let (ss_1, enc_1) = Scheme::enc(&ek_1, &mut rng).unwrap();
+        let (ss_2, enc_2) = Scheme::enc(&ek_2, &mut rng).unwrap();
+
+        let ss_1_ = Scheme::dec(&dk_1, &enc_1).unwrap();
+        let ss_2_ = Scheme::dec(&dk_2, &enc_2).unwrap();
+
+        assert_eq!(ss_1, ss_1_);
+        assert_eq!(ss_2, ss_2_);
+    }
+
+    pub fn test_homomorphic_nike<Scheme: KeyHomomorphicNike>()
+    where
+        Scheme::SessionKey: Eq + Debug,
+        Scheme::PublicKey: CyclicGroup<Multiplicity = Scheme::SecretKey>,
+        Scheme::SecretKey: Field,
+        for<'a> &'a Scheme::PublicKey: Neg<Output = Scheme::PublicKey>,
+        for<'a, 'b> &'a Scheme::PublicKey: Add<&'b Scheme::PublicKey, Output = Scheme::PublicKey>,
+        for<'a, 'b> &'a Scheme::PublicKey: Sub<&'b Scheme::PublicKey, Output = Scheme::PublicKey>,
+        for<'a> &'a Scheme::SecretKey: Neg<Output = Scheme::SecretKey>,
+        for<'a, 'b> &'a Scheme::SecretKey: Add<&'b Scheme::SecretKey, Output = Scheme::SecretKey>,
+        for<'a, 'b> &'a Scheme::SecretKey: Sub<&'b Scheme::SecretKey, Output = Scheme::SecretKey>,
+        for<'a, 'b> &'a Scheme::SecretKey: Mul<&'b Scheme::SecretKey, Output = Scheme::SecretKey>,
+        for<'a, 'b> &'a Scheme::SecretKey: Div<
+            &'b Scheme::SecretKey,
+            Output = Result<Scheme::SecretKey, <Scheme::SecretKey as Field>::InvError>,
+        >,
+    {
+        // NOTE: test is performed via the KEM interface. Maybe use the NIKE
+        // interface instead (may need to add more constraints,
+        // e.g. Scheme::SessionKey = Scheme::PublicKey).
+
+        let mut rng = CsRng::from_entropy();
+
+        const N: usize = 10;
+
+        let (sk, pk) = (0..N).map(|_| Scheme::keygen(&mut rng).unwrap()).fold(
+            (Scheme::SecretKey::zero(), Scheme::PublicKey::zero()),
+            |(sk, pk), (sk_i, pk_i)| (sk + sk_i, pk + pk_i),
+        );
+
+        let (ss, enc) = Scheme::enc(&pk, &mut rng).unwrap();
+        let ss_ = Scheme::dec(&sk, &enc).unwrap();
+        assert_eq!(ss, ss_);
     }
 }
 

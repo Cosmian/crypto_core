@@ -38,10 +38,15 @@ impl KeyHomomorphicNike for R25519 {}
 
 #[cfg(test)]
 mod tests {
-    use crate::{traits::tests::test_nike, R25519};
+    use crate::{
+        traits::tests::{test_homomorphic_nike, test_kem, test_nike},
+        R25519,
+    };
 
     #[test]
-    fn test_r25519_nike() {
+    fn test_r25519() {
         test_nike::<R25519>();
+        test_kem::<R25519>();
+        test_homomorphic_nike::<R25519>();
     }
 }

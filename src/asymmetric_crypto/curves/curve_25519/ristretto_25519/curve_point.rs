@@ -9,6 +9,7 @@ use core::ops::Mul;
 use curve25519_dalek::{
     constants::{self},
     ristretto::{CompressedRistretto, RistrettoPoint},
+    traits::Identity,
 };
 use zeroize::Zeroize;
 
@@ -31,7 +32,7 @@ impl From<&R25519Point> for [u8; R25519Point::LENGTH] {
 
 impl Monoid for R25519Point {
     fn id() -> Self {
-        Self(constants::RISTRETTO_BASEPOINT_POINT)
+        Self(RistrettoPoint::identity())
     }
 
     fn op(&self, rhs: &Self) -> Self {
