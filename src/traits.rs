@@ -256,9 +256,9 @@ impl<T: NIKE> KEM for T {
         ek: &Self::EncapsulationKey,
         rng: &mut impl CryptoRngCore,
     ) -> Result<(Self::SessionKey, Self::Encapsulation), Self::Error> {
-        let (sk, pk_) = T::keygen(rng)?;
+        let (sk, pk) = T::keygen(rng)?;
         let ss = T::session_key(&sk, ek)?;
-        Ok((ss, pk_))
+        Ok((ss, pk))
     }
 
     fn dec(
