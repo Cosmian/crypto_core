@@ -2,7 +2,7 @@ use super::R25519Scalar;
 use crate::{
     bytes_ser_de::Serializable,
     implement_abelian_group, implement_monoid_arithmetic,
-    traits::{AbelianGroup, CBytes, CyclicGroup, FixedSizeCBytes, Group, Monoid, One, Zero},
+    traits::{AbelianGroup, CBytes, FixedSizeCBytes, Group, Monoid, One, Sampling},
     CryptoCoreError,
 };
 use core::ops::Mul;
@@ -40,6 +40,12 @@ impl Monoid for R25519Point {
     }
 }
 
+impl Sampling for R25519Point {
+    fn random(rng: &mut impl rand_core::CryptoRngCore) -> Self {
+        Self::one() * R25519Scalar::random(rng)
+    }
+}
+
 implement_monoid_arithmetic!(R25519Point);
 
 impl Group for R25519Point {
@@ -58,22 +64,6 @@ impl One for R25519Point {
     fn is_one(&self) -> bool {
         self.0 == constants::RISTRETTO_BASEPOINT_POINT
     }
-}
-
-impl From<&R25519Scalar> for R25519Point {
-    fn from(private_key: &R25519Scalar) -> Self {
-        Self(&private_key.0 * constants::RISTRETTO_BASEPOINT_TABLE)
-    }
-}
-
-impl From<R25519Scalar> for R25519Point {
-    fn from(multiplicity: R25519Scalar) -> Self {
-        Self::from(&multiplicity)
-    }
-}
-
-impl CyclicGroup for R25519Point {
-    type Multiplicity = R25519Scalar;
 }
 
 impl Mul<R25519Scalar> for R25519Point {
@@ -136,14 +126,22 @@ impl Serializable for R25519Point {
 mod test {
     use super::{R25519Point, R25519Scalar};
     use crate::{
-        bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng, traits::Sampling, CsRng,
+        bytes_ser_de::test_serialization,
+        reexport::rand_core::SeedableRng,
+        traits::{tests::test_abelian_group, One, Sampling},
+        CsRng,
     };
+
+    #[test]
+    fn test_arithmetic() {
+        test_abelian_group::<R25519Point>();
+    }
 
     #[test]
     fn test_public_key_serialization() {
         let mut rng = CsRng::from_entropy();
         let sk = R25519Scalar::random(&mut rng);
-        let pk = R25519Point::from(&sk);
+        let pk = R25519Point::one() * &sk;
         test_serialization(&pk).unwrap();
     }
 }

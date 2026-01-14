@@ -1,7 +1,7 @@
 use crate::{
     bytes_ser_de::Serializable,
     ecies::traits::{EciesEcPrivateKey, EciesEcPublicKey, EciesEcSharedPoint},
-    traits::Sampling,
+    traits::{One, Sampling},
     R25519Point, R25519Scalar, R25519_POINT_LENGTH, R25519_SCALAR_LENGTH,
 };
 
@@ -30,7 +30,7 @@ impl EciesEcPublicKey<R25519_SCALAR_LENGTH, R25519_POINT_LENGTH> for R25519Point
     }
 
     fn from_private_key(private_key: &Self::PrivateKey) -> Self {
-        Self::from(private_key)
+        <Self as One>::one() * private_key
     }
 
     fn dh(&self, private_key: &Self::PrivateKey) -> Self::SharedPoint {

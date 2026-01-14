@@ -2,8 +2,8 @@ use crate::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
     traits::{
-        AbelianGroup, CBytes, Field, FixedSizeCBytes, Group, Monoid, One, Ring, Sampling,
-        SecretCBytes, Zero,
+        AbelianGroup, CBytes, Field, FixedSizeCBytes, Group, Monoid, Ring, Sampling, SecretCBytes,
+        Zero,
     },
     CryptoCoreError,
 };

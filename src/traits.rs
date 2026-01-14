@@ -1,7 +1,8 @@
-use crate::{reexport::rand_core::CryptoRngCore, SymmetricKey};
+use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, SymmetricKey};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
+pub mod cyclic_group_to_kem;
 pub mod kem_to_pke;
 
 // NOTE: the following four traits mirror those from `lib.rs` and should be
@@ -65,7 +66,6 @@ pub trait Group: Monoid {
 /// inversion.
 pub trait AbelianGroup:
     Group
-    + Zero
     + Add<Output = Self>
     + AddAssign
     + Neg
@@ -78,6 +78,21 @@ where
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
 {
+}
+
+impl<T: AbelianGroup> Zero for T
+where
+    for<'a> &'a Self: Neg<Output = Self>,
+    for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
+    for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
+{
+    fn zero() -> Self {
+        <Self as Monoid>::id()
+    }
+
+    fn is_zero(&self) -> bool {
+        self == &Self::zero()
+    }
 }
 
 /// A ring is an Abelian group endowed with a monoidal operation that
@@ -97,7 +112,6 @@ where
 /// form an Abelian group for the multiplication.
 pub trait Field:
     Ring
-    + One
     + Mul<Output = Self>
     + MulAssign
     + Div<Output = Result<Self, Self::InvError>>
@@ -117,8 +131,25 @@ where
     fn invert(&self) -> Result<Self, Self::InvError>;
 }
 
+impl<T: Field> One for T
+where
+    for<'a> &'a Self: Neg<Output = Self>,
+    for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
+    for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
+    for<'a, 'b> &'a Self: Mul<&'b Self, Output = Self>,
+    for<'a, 'b> &'a Self: Div<&'b Self, Output = Result<Self, <Self as Field>::InvError>>,
+{
+    fn one() -> Self {
+        <Self as Ring>::id()
+    }
+
+    fn is_one(&self) -> bool {
+        self == &Self::one()
+    }
+}
+
 /// A cyclic group is a group in which there exists a generator element g such
-/// that for each element, there exists a multiplicity m such that this element
+/// that: for each element, there exists a multiplicity m such that this element
 /// can be obtained by folding m instances of g with the group operation.
 ///
 /// Noting m·g the operation of folding m instances of g, we have:
@@ -127,13 +158,13 @@ where
 ///
 /// By associativity of the group operation, a generated group is also an
 /// abelian group.
-pub trait CyclicGroup: AbelianGroup + One
+pub trait CyclicGroup
 where
-    Self: From<Self::Multiplicity>,
-    for<'a> Self: From<&'a Self::Multiplicity>,
-    for<'a> &'a Self: Neg<Output = Self>,
-    for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
-    for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
+    for<'a> &'a Self::Element: Neg<Output = Self::Element>,
+    for<'a, 'b> &'a Self::Element: Add<&'b Self::Element, Output = Self::Element>,
+    for<'a, 'b> &'a Self::Element: Sub<&'b Self::Element, Output = Self::Element>,
+    for<'a, 'b> &'a Self::Element: Mul<Self::Multiplicity, Output = Self::Element>,
+    for<'a, 'b> &'a Self::Element: Mul<&'b Self::Multiplicity, Output = Self::Element>,
     for<'a> &'a Self::Multiplicity: Neg<Output = Self::Multiplicity>,
     for<'a, 'b> &'a Self::Multiplicity: Add<&'b Self::Multiplicity, Output = Self::Multiplicity>,
     for<'a, 'b> &'a Self::Multiplicity: Sub<&'b Self::Multiplicity, Output = Self::Multiplicity>,
@@ -143,7 +174,16 @@ where
         Output = Result<Self::Multiplicity, <Self::Multiplicity as Field>::InvError>,
     >,
 {
+    type Element: AbelianGroup
+        + One
+        + Mul<Self::Multiplicity, Output = Self::Element>
+        + for<'a> Mul<&'a Self::Multiplicity, Output = Self::Element>;
     type Multiplicity: Field;
+}
+
+/// Key Derivation Function.
+pub trait KDF<const KEY_LENGTH: usize> {
+    fn derive(key: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH>;
 }
 
 /// Authenticated encryption scheme.
@@ -169,6 +209,107 @@ pub trait AE<const KEY_LENGTH: usize> {
         key: &SymmetricKey<KEY_LENGTH>,
         ctx: &Self::Ciphertext,
     ) -> Result<Self::Plaintext, Self::Error>;
+}
+
+/// Non-Interactive Key Exchange.
+pub trait NIKE {
+    type SecretKey;
+    type PublicKey;
+    type SharedSecret;
+
+    type Error: std::error::Error;
+
+    /// Generates a new random keypair.
+    fn keygen(
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error>;
+
+    /// Generates the shared secret associated to the given keypair.
+    fn shared_secret(
+        sk: &Self::SecretKey,
+        pk: &Self::PublicKey,
+    ) -> Result<Self::SharedSecret, Self::Error>;
+}
+
+impl<T: CyclicGroup> NIKE for T
+where
+    T::Multiplicity: Sampling,
+    for<'a> &'a T::Element: Neg<Output = T::Element>,
+    for<'a, 'b> &'a T::Element: Add<&'b T::Element, Output = T::Element>,
+    for<'a, 'b> &'a T::Element: Sub<&'b T::Element, Output = T::Element>,
+    for<'a, 'b> &'a T::Element: Mul<T::Multiplicity, Output = T::Element>,
+    for<'a, 'b> &'a T::Element: Mul<&'b T::Multiplicity, Output = T::Element>,
+    for<'a> &'a T::Multiplicity: Neg<Output = T::Multiplicity>,
+    for<'a, 'b> &'a T::Multiplicity: Add<&'b T::Multiplicity, Output = T::Multiplicity>,
+    for<'a, 'b> &'a T::Multiplicity: Sub<&'b T::Multiplicity, Output = T::Multiplicity>,
+    for<'a, 'b> &'a T::Multiplicity: Mul<&'b T::Multiplicity, Output = T::Multiplicity>,
+    for<'a, 'b> &'a T::Multiplicity: Div<
+        &'b T::Multiplicity,
+        Output = Result<T::Multiplicity, <T::Multiplicity as Field>::InvError>,
+    >,
+{
+    type SecretKey = T::Multiplicity;
+
+    type PublicKey = T::Element;
+
+    type SharedSecret = T::Element;
+
+    type Error = CryptoCoreError;
+
+    fn keygen(
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error> {
+        let sk = T::Multiplicity::random(rng);
+        let pk = T::Element::one() * &sk;
+        Ok((sk, pk))
+    }
+
+    fn shared_secret(
+        sk: &Self::SecretKey,
+        pk: &Self::PublicKey,
+    ) -> Result<Self::SharedSecret, Self::Error> {
+        Ok(pk * sk)
+    }
+}
+
+/// Non-Interactive Key Exchange which public keys for a cyclic group.
+pub trait KeyHomomorphicNike:
+    CyclicGroup
+    + NIKE<SecretKey = Self::Multiplicity, PublicKey = Self::Element, SharedSecret = Self::Element>
+where
+    for<'a> &'a Self::PublicKey: Neg<Output = Self::PublicKey>,
+    for<'a, 'b> &'a Self::PublicKey: Add<&'b Self::PublicKey, Output = Self::PublicKey>,
+    for<'a, 'b> &'a Self::PublicKey: Sub<&'b Self::PublicKey, Output = Self::PublicKey>,
+    for<'a, 'b> &'a Self::PublicKey: Mul<Self::SecretKey, Output = Self::PublicKey>,
+    for<'a, 'b> &'a Self::PublicKey: Mul<&'b Self::SecretKey, Output = Self::PublicKey>,
+    for<'a> &'a Self::SecretKey: Neg<Output = Self::SecretKey>,
+    for<'a, 'b> &'a Self::SecretKey: Add<&'b Self::SecretKey, Output = Self::SecretKey>,
+    for<'a, 'b> &'a Self::SecretKey: Sub<&'b Self::SecretKey, Output = Self::SecretKey>,
+    for<'a, 'b> &'a Self::SecretKey: Mul<&'b Self::SecretKey, Output = Self::SecretKey>,
+    for<'a, 'b> &'a Self::SecretKey: Div<
+        &'b Self::SecretKey,
+        Output = Result<Self::SecretKey, <Self::SecretKey as Field>::InvError>,
+    >,
+{
+}
+
+impl<T: CyclicGroup> KeyHomomorphicNike for T
+where
+    T::Multiplicity: Sampling,
+    for<'a> &'a T::Element: Neg<Output = T::Element>,
+    for<'a, 'b> &'a T::Element: Add<&'b T::Element, Output = T::Element>,
+    for<'a, 'b> &'a T::Element: Sub<&'b T::Element, Output = T::Element>,
+    for<'a, 'b> &'a T::Element: Mul<T::Multiplicity, Output = T::Element>,
+    for<'a, 'b> &'a T::Element: Mul<&'b T::Multiplicity, Output = T::Element>,
+    for<'a> &'a T::Multiplicity: Neg<Output = T::Multiplicity>,
+    for<'a, 'b> &'a T::Multiplicity: Add<&'b T::Multiplicity, Output = T::Multiplicity>,
+    for<'a, 'b> &'a T::Multiplicity: Sub<&'b T::Multiplicity, Output = T::Multiplicity>,
+    for<'a, 'b> &'a T::Multiplicity: Mul<&'b T::Multiplicity, Output = T::Multiplicity>,
+    for<'a, 'b> &'a T::Multiplicity: Div<
+        &'b T::Multiplicity,
+        Output = Result<T::Multiplicity, <T::Multiplicity as Field>::InvError>,
+    >,
+{
 }
 
 /// Key-Encapsulation Mechanism.
@@ -199,73 +340,7 @@ pub trait KEM<const KEY_LENGTH: usize> {
     ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
 }
 
-/// Non-Interactive Key Exchange.
-pub trait NIKE<const KEY_LENGTH: usize> {
-    type SecretKey;
-    type PublicKey;
-
-    type Error: std::error::Error;
-
-    /// Generates a new random keypair.
-    fn keygen(
-        rng: &mut impl CryptoRngCore,
-    ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error>;
-
-    /// Generates the session key associated to the given keypair.
-    fn session_key(
-        sk: &Self::SecretKey,
-        pk: &Self::PublicKey,
-    ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
-}
-
-/// Non-Interactive Key Exchange which public keys for a cyclic group.
-pub trait KeyHomomorphicNike<const KEY_LENGTH: usize>: NIKE<KEY_LENGTH>
-where
-    Self::PublicKey: CyclicGroup<Multiplicity = Self::SecretKey>,
-    Self::SecretKey: Field,
-    for<'a> &'a Self::PublicKey: Neg<Output = Self::PublicKey>,
-    for<'a, 'b> &'a Self::PublicKey: Add<&'b Self::PublicKey, Output = Self::PublicKey>,
-    for<'a, 'b> &'a Self::PublicKey: Sub<&'b Self::PublicKey, Output = Self::PublicKey>,
-    for<'a> &'a Self::SecretKey: Neg<Output = Self::SecretKey>,
-    for<'a, 'b> &'a Self::SecretKey: Add<&'b Self::SecretKey, Output = Self::SecretKey>,
-    for<'a, 'b> &'a Self::SecretKey: Sub<&'b Self::SecretKey, Output = Self::SecretKey>,
-    for<'a, 'b> &'a Self::SecretKey: Mul<&'b Self::SecretKey, Output = Self::SecretKey>,
-    for<'a, 'b> &'a Self::SecretKey: Div<
-        &'b Self::SecretKey,
-        Output = Result<Self::SecretKey, <Self::SecretKey as Field>::InvError>,
-    >,
-{
-}
-
-impl<const KEY_LENGTH: usize, T: NIKE<KEY_LENGTH>> KEM<KEY_LENGTH> for T {
-    type Encapsulation = T::PublicKey;
-    type EncapsulationKey = T::PublicKey;
-    type DecapsulationKey = T::SecretKey;
-    type Error = T::Error;
-
-    fn keygen(
-        rng: &mut impl CryptoRngCore,
-    ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error> {
-        T::keygen(rng)
-    }
-
-    fn enc(
-        ek: &Self::EncapsulationKey,
-        rng: &mut impl CryptoRngCore,
-    ) -> Result<(SymmetricKey<KEY_LENGTH>, Self::Encapsulation), Self::Error> {
-        let (sk, pk) = T::keygen(rng)?;
-        let ss = T::session_key(&sk, ek)?;
-        Ok((ss, pk))
-    }
-
-    fn dec(
-        dk: &Self::DecapsulationKey,
-        enc: &Self::Encapsulation,
-    ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
-        T::session_key(dk, enc)
-    }
-}
-
+/// Public-Key Encryption.
 pub trait PKE {
     type Plaintext;
     type Ciphertext;
@@ -286,23 +361,170 @@ pub trait PKE {
 }
 
 pub mod tests {
+    use std::{
+        fmt::Debug,
+        ops::{Add, Div, Mul, Neg, Sub},
+    };
+
     use crate::{
         reexport::rand_core::SeedableRng,
-        traits::{CyclicGroup, Field, KeyHomomorphicNike, Zero, KEM, NIKE},
+        traits::{
+            AbelianGroup, CyclicGroup, Field, Group, Monoid, Ring, Sampling, Zero, KEM, NIKE,
+        },
         CsRng,
     };
-    use std::ops::{Add, Div, Mul, Neg, Sub};
+
+    pub fn test_monoid<M: Debug + Sampling + Monoid>() {
+        let mut rng = CsRng::from_entropy();
+
+        // Neutral element.
+        let id = M::id();
+        assert_eq!(id, M::op(&id, &id));
+
+        // Associativity.
+        let a = M::random(&mut rng);
+        let b = M::random(&mut rng);
+        let c = M::random(&mut rng);
+        assert_eq!(M::op(&a, &M::op(&b, &c)), M::op(&M::op(&a, &b), &c),);
+    }
+
+    pub fn test_group<G: Debug + Sampling + Group>() {
+        test_monoid::<G>();
+
+        let mut rng = CsRng::from_entropy();
+
+        // Inversion.
+        let a = G::random(&mut rng);
+        assert_eq!(G::id(), a.op(&a.invert()));
+    }
+
+    pub fn test_abelian_group<G: Debug + Sampling + AbelianGroup>()
+    where
+        for<'a> &'a G: Neg<Output = G>,
+        for<'a, 'b> &'a G: Add<&'b G, Output = G>,
+        for<'a, 'b> &'a G: Sub<&'b G, Output = G>,
+    {
+        test_group::<G>();
+
+        let mut rng = CsRng::from_entropy();
+
+        // Commutativity.
+        let a = G::random(&mut rng);
+        let b = G::random(&mut rng);
+        assert_eq!(a.op(&b), a.op(&b));
+    }
+
+    pub fn test_ring<R: Debug + Sampling + Ring>()
+    where
+        for<'a> &'a R: Neg<Output = R>,
+        for<'a, 'b> &'a R: Add<&'b R, Output = R>,
+        for<'a, 'b> &'a R: Sub<&'b R, Output = R>,
+    {
+        test_abelian_group::<R>();
+
+        let mut rng = CsRng::from_entropy();
+
+        // Neutral element.
+        let id = <R as Ring>::id();
+        assert_eq!(id, <R as Ring>::op(&id, &id));
+
+        // Associativity.
+        let a = R::random(&mut rng);
+        let b = R::random(&mut rng);
+        let c = R::random(&mut rng);
+        assert_eq!(
+            <R as Ring>::op(&a, &<R as Ring>::op(&b, &c)),
+            <R as Ring>::op(&<R as Ring>::op(&a, &b), &c),
+        );
+
+        // Distributivity.
+        assert_eq!(
+            <R as Ring>::op(&a, &<R as Monoid>::op(&b, &c)),
+            <R as Monoid>::op(&<R as Ring>::op(&a, &b), &<R as Ring>::op(&a, &c)),
+        )
+    }
+
+    pub fn test_field<F: Debug + Sampling + Field>()
+    where
+        for<'a> &'a F: Neg<Output = F>,
+        for<'a, 'b> &'a F: Add<&'b F, Output = F>,
+        for<'a, 'b> &'a F: Sub<&'b F, Output = F>,
+        for<'a, 'b> &'a F: Mul<&'b F, Output = F>,
+        for<'a, 'b> &'a F: Div<&'b F, Output = Result<F, F::InvError>>,
+    {
+        // Used not to throw a warning upon `&a / &a`.
+        #![allow(clippy::eq_op)]
+
+        test_ring::<F>();
+
+        let mut rng = CsRng::from_entropy();
+
+        // Inversion.
+        for _ in 0..10 {
+            let a = F::random(&mut rng);
+            if !a.is_zero() {
+                assert_eq!((&a / &a).unwrap(), <F as Ring>::id());
+                assert!((&a / &F::zero()).is_err());
+                return;
+            }
+        }
+        panic!("could not generate a non-null field element after 10 attempts")
+    }
+
+    pub fn test_cyclic_group<G: CyclicGroup>()
+    where
+        G::Element: Debug + Sampling,
+        G::Multiplicity: Debug + Sampling,
+        for<'a> &'a G::Element: Neg<Output = G::Element>,
+        for<'a, 'b> &'a G::Element: Add<&'b G::Element, Output = G::Element>,
+        for<'a, 'b> &'a G::Element: Sub<&'b G::Element, Output = G::Element>,
+        for<'a, 'b> &'a G::Element: Mul<G::Multiplicity, Output = G::Element>,
+        for<'a, 'b> &'a G::Element: Mul<&'b G::Multiplicity, Output = G::Element>,
+        for<'a> &'a G::Multiplicity: Neg<Output = G::Multiplicity>,
+        for<'a, 'b> &'a G::Multiplicity: Add<&'b G::Multiplicity, Output = G::Multiplicity>,
+        for<'a, 'b> &'a G::Multiplicity: Sub<&'b G::Multiplicity, Output = G::Multiplicity>,
+        for<'a, 'b> &'a G::Multiplicity: Mul<&'b G::Multiplicity, Output = G::Multiplicity>,
+        for<'a, 'b> &'a G::Multiplicity: Div<
+            &'b G::Multiplicity,
+            Output = Result<G::Multiplicity, <G::Multiplicity as Field>::InvError>,
+        >,
+    {
+        test_abelian_group::<G::Element>();
+        test_field::<G::Multiplicity>();
+
+        let mut rng = CsRng::from_entropy();
+
+        let a = G::Element::random(&mut rng);
+        let b = G::Element::random(&mut rng);
+        let x = G::Multiplicity::random(&mut rng);
+        let y = G::Multiplicity::random(&mut rng);
+
+        // Neutral element.
+        assert_eq!(G::Element::zero(), G::Element::zero() * &x);
+        assert_eq!(G::Element::zero(), G::Element::zero() * &y);
+
+        // Generator.
+        assert_eq!(G::Element::zero(), &a * G::Multiplicity::zero());
+        assert_eq!(G::Element::zero(), &b * G::Multiplicity::zero());
+
+        // Bilinearity.
+        assert_eq!(&a * &x + &a * &y, &a * (&x + &y));
+        assert_eq!(&a * &x + &b * &x, (&a + &b) * &x);
+    }
 
     /// A non-interactive key exchange must allow generating the same session key on
     /// both sides.
-    pub fn test_nike<const KEY_LENGTH: usize, Scheme: NIKE<KEY_LENGTH>>() {
+    pub fn test_nike<Scheme: NIKE>()
+    where
+        Scheme::SharedSecret: Debug + Eq,
+    {
         let mut rng = CsRng::from_entropy();
 
         let keypair_1 = Scheme::keygen(&mut rng).unwrap();
         let keypair_2 = Scheme::keygen(&mut rng).unwrap();
 
-        let session_key_1 = Scheme::session_key(&keypair_1.0, &keypair_2.1).unwrap();
-        let session_key_2 = Scheme::session_key(&keypair_2.0, &keypair_1.1).unwrap();
+        let session_key_1 = Scheme::shared_secret(&keypair_1.0, &keypair_2.1).unwrap();
+        let session_key_2 = Scheme::shared_secret(&keypair_2.0, &keypair_1.1).unwrap();
 
         assert_eq!(session_key_1, session_key_2);
     }
@@ -321,40 +543,6 @@ pub mod tests {
 
         assert_eq!(ss_1, ss_1_);
         assert_eq!(ss_2, ss_2_);
-    }
-
-    pub fn test_homomorphic_nike<const KEY_LENGTH: usize, Scheme: KeyHomomorphicNike<KEY_LENGTH>>()
-    where
-        Scheme::PublicKey: CyclicGroup<Multiplicity = Scheme::SecretKey>,
-        Scheme::SecretKey: Field,
-        for<'a> &'a Scheme::PublicKey: Neg<Output = Scheme::PublicKey>,
-        for<'a, 'b> &'a Scheme::PublicKey: Add<&'b Scheme::PublicKey, Output = Scheme::PublicKey>,
-        for<'a, 'b> &'a Scheme::PublicKey: Sub<&'b Scheme::PublicKey, Output = Scheme::PublicKey>,
-        for<'a> &'a Scheme::SecretKey: Neg<Output = Scheme::SecretKey>,
-        for<'a, 'b> &'a Scheme::SecretKey: Add<&'b Scheme::SecretKey, Output = Scheme::SecretKey>,
-        for<'a, 'b> &'a Scheme::SecretKey: Sub<&'b Scheme::SecretKey, Output = Scheme::SecretKey>,
-        for<'a, 'b> &'a Scheme::SecretKey: Mul<&'b Scheme::SecretKey, Output = Scheme::SecretKey>,
-        for<'a, 'b> &'a Scheme::SecretKey: Div<
-            &'b Scheme::SecretKey,
-            Output = Result<Scheme::SecretKey, <Scheme::SecretKey as Field>::InvError>,
-        >,
-    {
-        // NOTE: test is performed via the KEM interface. Maybe use the NIKE
-        // interface instead (may need to add more constraints,
-        // e.g. Scheme::SessionKey = Scheme::PublicKey).
-
-        let mut rng = CsRng::from_entropy();
-
-        const N: usize = 10;
-
-        let (sk, pk) = (0..N).map(|_| Scheme::keygen(&mut rng).unwrap()).fold(
-            (Scheme::SecretKey::zero(), Scheme::PublicKey::zero()),
-            |(sk, pk), (sk_i, pk_i)| (sk + sk_i, pk + pk_i),
-        );
-
-        let (ss, enc) = Scheme::enc(&pk, &mut rng).unwrap();
-        let ss_ = Scheme::dec(&sk, &enc).unwrap();
-        assert_eq!(ss, ss_);
     }
 }
 
@@ -392,16 +580,6 @@ pub mod macros {
             mod abelian_group_arithmetic {
                 use super::*;
                 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
-
-                impl Zero for $type {
-                    fn zero() -> Self {
-                        <Self as Monoid>::id()
-                    }
-
-                    fn is_zero(&self) -> bool {
-                        self == &Self::zero()
-                    }
-                }
 
                 impl Add for $type {
                     type Output = Self;
@@ -491,16 +669,6 @@ pub mod macros {
             mod commutative_ring {
                 use super::*;
                 use std::ops::{Mul, MulAssign};
-
-                impl One for $type {
-                    fn one() -> Self {
-                        <Self as Ring>::id()
-                    }
-
-                    fn is_one(&self) -> bool {
-                        self == &Self::one()
-                    }
-                }
 
                 impl Mul for $type {
                     type Output = Self;
