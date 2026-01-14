@@ -2,8 +2,8 @@
 use cosmian_crypto_core::{
     blake2b, blake2s, kdf128, kdf256,
     reexport::rand_core::{RngCore, SeedableRng},
-    traits::Sampling,
-    CsRng, R25519Point, R25519Scalar,
+    traits::NIKE,
+    CsRng, R25519,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use dem::{
@@ -19,11 +19,8 @@ mod signature;
 /// Diffie-Hellman key exchange. This gives an indication on how fast
 /// asymmetric schemes can be.
 fn bench_dh_r25519(c: &mut Criterion) {
-    let private_key = {
-        let mut rng = CsRng::from_entropy();
-        R25519Scalar::random(&mut rng)
-    };
-    let public_key = R25519Point::from(&private_key);
+    let mut rng = CsRng::from_entropy();
+    let (private_key, public_key) = R25519::keygen(&mut rng).unwrap();
     c.bench_function(
         "R25519 Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
         |b| b.iter(|| &public_key * &private_key),

@@ -15,5 +15,8 @@ pub use x25519::{
     X25519CurvePoint, X25519Keypair, X25519PrivateKey, X25519PublicKey, X25519_PUBLIC_KEY_LENGTH,
 };
 
+#[cfg(feature = "sha3")]
+pub use ristretto_25519::{R25519Kem, R25519_KEY_LENGTH};
+
 #[cfg(feature = "certificate")]
 pub use ed25519::{build_certificate, build_certificate_profile};
