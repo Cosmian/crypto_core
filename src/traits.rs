@@ -4,6 +4,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub mod cyclic_group_to_kem;
 pub mod kem_to_pke;
+pub mod providers;
 
 // NOTE: the following four traits mirror those from `lib.rs` and should be
 // those used in the end. In order to prevent a breaking change, their new
@@ -162,7 +163,7 @@ where
 /// ∀ p ∈ G, ∃ m : p = m·g
 ///
 /// By associativity of the group operation, a generated group is also an
-/// abelian group.
+/// Abelian group.
 pub trait CyclicGroup
 where
     for<'a> &'a Self::Element: Neg<Output = Self::Element>,
@@ -191,12 +192,15 @@ pub trait KDF<const KEY_LENGTH: usize> {
     fn derive(seed: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH>;
 }
 
-/// Authenticated encryption scheme.
+/// Authenticated Encryption scheme.
 pub trait AE<const KEY_LENGTH: usize> {
     type Plaintext;
     type Ciphertext;
 
     type Error: std::error::Error;
+
+    /// The length of the key.
+    const KEY_LENGTH: usize = KEY_LENGTH;
 
     /// Encrypts the given plaintext using the given key.
     fn encrypt(
@@ -214,6 +218,60 @@ pub trait AE<const KEY_LENGTH: usize> {
         key: &SymmetricKey<KEY_LENGTH>,
         ctx: &Self::Ciphertext,
     ) -> Result<Self::Plaintext, Self::Error>;
+}
+
+/// Authenticated Encryption scheme with Associated Data.
+pub trait AEAD<const KEY_LENGTH: usize> {
+    type Plaintext;
+    type Ciphertext;
+
+    type Error: std::error::Error;
+
+    /// The length of the key.
+    const KEY_LENGTH: usize = KEY_LENGTH;
+
+    /// Encrypts the given plaintext using the given key and associated data.
+    fn encrypt(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ptx: &[u8],
+        ad: &[u8],
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Self::Ciphertext, Self::Error>;
+
+    /// Decrypts the given ciphertext using the given key and associated data.
+    ///
+    /// # Error
+    ///
+    /// Returns an error if the integrity of the ciphertext could not be verified.
+    fn decrypt(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ctx: &Self::Ciphertext,
+        ad: &[u8],
+    ) -> Result<Self::Plaintext, Self::Error>;
+}
+
+// An AEAD trivially implements an AE.
+impl<const KEY_LENGTH: usize, Aead: AEAD<KEY_LENGTH>> AE<KEY_LENGTH> for Aead {
+    type Plaintext = Aead::Plaintext;
+
+    type Ciphertext = Aead::Ciphertext;
+
+    type Error = Aead::Error;
+
+    fn encrypt(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ptx: &[u8],
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<Self::Ciphertext, Self::Error> {
+        Aead::encrypt(key, ptx, b"", rng)
+    }
+
+    fn decrypt(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ctx: &Self::Ciphertext,
+    ) -> Result<Self::Plaintext, Self::Error> {
+        Aead::decrypt(key, ctx, b"")
+    }
 }
 
 /// Non-Interactive Key Exchange.
@@ -241,6 +299,7 @@ pub trait NIKE {
     ) -> Result<Self::SharedSecret, Self::Error>;
 }
 
+// A cyclic group trivially implements a NIKE.
 impl<T: CyclicGroup> NIKE for T
 where
     T::Multiplicity: Sampling,
@@ -303,6 +362,7 @@ where
 {
 }
 
+// A cyclic group trivially implements a key-homomorphic NIKE.
 impl<T: CyclicGroup> KeyHomomorphicNike for T
 where
     T::Multiplicity: Sampling,
@@ -329,6 +389,9 @@ pub trait KEM<const KEY_LENGTH: usize> {
     type DecapsulationKey;
 
     type Error: std::error::Error;
+
+    /// The length of the encapsulated session key.
+    const KEY_LENGTH: usize = KEY_LENGTH;
 
     /// Generates a new random keypair.
     fn keygen(
