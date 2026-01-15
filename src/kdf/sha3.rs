@@ -4,10 +4,10 @@ pub use tiny_keccak::{Hasher, Shake};
 pub struct Kdf;
 
 impl<const KEY_LENGTH: usize> KDF<KEY_LENGTH> for Kdf {
-    fn derive(key: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH> {
+    fn derive(seed: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH> {
         let mut bytes = SymmetricKey::default();
         let mut hasher = Shake::v256();
-        hasher.update(key);
+        hasher.update(seed);
         hasher.update(info);
         hasher.finalize(&mut *bytes);
         bytes

@@ -24,6 +24,8 @@ pub trait SecretCBytes<const LENGTH: usize>:
 {
 }
 
+// END NOTE //
+
 pub trait Sampling {
     /// Returns a fresh uniformly-random element.
     fn random(rng: &mut impl CryptoRngCore) -> Self;
@@ -80,6 +82,7 @@ where
 {
 }
 
+// In an Abelian group, the neutral element is associated to 0.
 impl<T: AbelianGroup> Zero for T
 where
     for<'a> &'a Self: Neg<Output = Self>,
@@ -131,6 +134,8 @@ where
     fn invert(&self) -> Result<Self, Self::InvError>;
 }
 
+// In a field, the neutral element for the multiplicative operation is
+// associated to 1.
 impl<T: Field> One for T
 where
     for<'a> &'a Self: Neg<Output = Self>,
@@ -183,7 +188,7 @@ where
 
 /// Key Derivation Function.
 pub trait KDF<const KEY_LENGTH: usize> {
-    fn derive(key: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH>;
+    fn derive(seed: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH>;
 }
 
 /// Authenticated encryption scheme.
@@ -215,6 +220,11 @@ pub trait AE<const KEY_LENGTH: usize> {
 pub trait NIKE {
     type SecretKey;
     type PublicKey;
+
+    /// The shared secret is not always a symmetric key, as such it is not
+    /// required to be uniformly-random over its domain and is not always
+    /// suitable to use as a symmetric key. However, provided it contains enough
+    /// entropy, it is suitable to use as a KDF seed.
     type SharedSecret;
 
     type Error: std::error::Error;
