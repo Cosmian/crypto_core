@@ -184,6 +184,8 @@ where
 {
     type Element: AbelianGroup
         + One
+        + From<Self::Multiplicity>
+        + for<'a> From<&'a Self::Multiplicity>
         + Mul<Self::Multiplicity, Output = Self::Element>
         + for<'a> Mul<&'a Self::Multiplicity, Output = Self::Element>;
     type Multiplicity: Field;

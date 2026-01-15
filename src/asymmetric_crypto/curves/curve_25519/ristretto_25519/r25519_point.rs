@@ -98,6 +98,18 @@ impl Mul<&R25519Scalar> for &R25519Point {
     }
 }
 
+impl From<R25519Scalar> for R25519Point {
+    fn from(s: R25519Scalar) -> Self {
+        Self::one() * s
+    }
+}
+
+impl From<&R25519Scalar> for R25519Point {
+    fn from(s: &R25519Scalar) -> Self {
+        Self::one() * s
+    }
+}
+
 impl Serializable for R25519Point {
     type Error = CryptoCoreError;
 
