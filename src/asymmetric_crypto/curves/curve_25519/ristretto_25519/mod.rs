@@ -4,7 +4,7 @@ mod private_key;
 pub use curve_point::{R25519Point, R25519_POINT_LENGTH};
 pub use private_key::{R25519Scalar, R25519_SCALAR_LENGTH};
 
-use crate::traits::CyclicGroup;
+use crate::traits::{providers::R25519GroupProvider, CyclicGroup};
 
 pub struct R25519;
 
@@ -13,6 +13,8 @@ impl CyclicGroup for R25519 {
 
     type Multiplicity = R25519Scalar;
 }
+
+impl R25519GroupProvider for R25519 {}
 
 #[cfg(test)]
 mod tests {
