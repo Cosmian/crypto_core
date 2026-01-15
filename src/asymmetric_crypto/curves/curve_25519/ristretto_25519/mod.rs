@@ -1,8 +1,8 @@
-mod curve_point;
-mod private_key;
+mod r25519_point;
+mod r25519_scalar;
 
-pub use curve_point::{R25519Point, R25519_POINT_LENGTH};
-pub use private_key::{R25519Scalar, R25519_SCALAR_LENGTH};
+pub use r25519_point::{R25519Point, R25519_POINT_LENGTH};
+pub use r25519_scalar::{R25519Scalar, R25519_SCALAR_LENGTH};
 
 use crate::traits::{providers::R25519GroupProvider, CyclicGroup};
 
