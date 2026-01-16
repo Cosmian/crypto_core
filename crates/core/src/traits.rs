@@ -1,4 +1,4 @@
-use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, SymmetricKey};
+use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, Secret, SymmetricKey};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -36,7 +36,7 @@ pub trait Sampling {
 
 pub trait Seedable<const LENGTH: usize> {
     /// Returns a fresh element deterministically computed from the given seed.
-    fn from_seed(seed: &[u8; LENGTH]) -> Self;
+    fn from_seed(seed: &Secret<LENGTH>) -> Self;
 }
 
 pub trait Zero {

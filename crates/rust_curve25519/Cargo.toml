@@ -1,7 +1,9 @@
 [package]
-name = "cosmian_rust_nist_ec_provider"
+name = "cosmian_rust_curve25519_provider"
 version = "1.0.0"
-authors = ["Théophile BRÉZOT <theophile.brezot@cosmian.com>"]
+authors = [
+  "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
+]
 categories = ["cryptography"]
 edition = "2021"
 keywords = ["cosmian", "crypto"]
@@ -11,11 +13,10 @@ description = "Cosmian base cryptographic library"
 
 [lib]
 crate-type = ["lib", "staticlib"]
-name = "cosmian_rust_nist_ec_provider"
+name = "cosmian_rust_curve25519_provider"
 path = "src/lib.rs"
 
 [dependencies]
 cosmian_crypto_core = { path = "../core", version = "10.4", default-features = false, features = ["curve25519"] }
-elliptic-curve = { workspace = true }
-p256 = { workspace = true }
-p384 = { workspace = true }
+curve25519-dalek = { workspace = true, features = ["rand_core"] }
+zeroize = { workspace = true }

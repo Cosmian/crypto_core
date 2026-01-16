@@ -253,11 +253,11 @@ mod tests {
         ecies::traits::{EciesEcPrivateKey, EciesEcPublicKey},
         reexport::rand_core::SeedableRng,
         Aes128Gcm, CryptoCoreError, CsRng, Ecies, EciesAes128, EciesStream, P192PublicKey,
-        P224PublicKey, P256PublicKey, P384PublicKey, R25519Point, X25519PublicKey,
+        P224PublicKey, P256PublicKey, P384PublicKey, R25519PublicKey, X25519PublicKey,
         CURVE_25519_SECRET_LENGTH, P192_PRIVATE_KEY_LENGTH, P192_PUBLIC_KEY_LENGTH,
         P224_PRIVATE_KEY_LENGTH, P224_PUBLIC_KEY_LENGTH, P256_PRIVATE_KEY_LENGTH,
         P256_PUBLIC_KEY_LENGTH, P384_PRIVATE_KEY_LENGTH, P384_PUBLIC_KEY_LENGTH,
-        R25519_POINT_LENGTH, R25519_SCALAR_LENGTH, X25519_PUBLIC_KEY_LENGTH,
+        R25519_PUBLIC_KEY_LENGTH, X25519_PUBLIC_KEY_LENGTH,
     };
 
     fn test_encrypt_decrypt<
@@ -536,7 +536,11 @@ mod tests {
 
     #[test]
     fn test_combinations() {
-        all_ecies_tests::<{ R25519_SCALAR_LENGTH }, { R25519_POINT_LENGTH }, R25519Point>();
+        all_ecies_tests::<
+            { CURVE_25519_SECRET_LENGTH },
+            { R25519_PUBLIC_KEY_LENGTH },
+            R25519PublicKey,
+        >();
         all_ecies_tests::<
             { CURVE_25519_SECRET_LENGTH },
             { X25519_PUBLIC_KEY_LENGTH },

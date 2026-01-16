@@ -1,17 +1,17 @@
 use super::R25519Scalar;
-use crate::{
-    bytes_ser_de::Serializable,
+use core::ops::Mul;
+use cosmian_crypto_core::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_monoid_arithmetic,
+    reexport::{rand_core::CryptoRngCore, zeroize::Zeroize},
     traits::{AbelianGroup, CBytes, FixedSizeCBytes, Group, Monoid, One, Sampling},
     CryptoCoreError,
 };
-use core::ops::Mul;
 use curve25519_dalek::{
     constants::{self},
     ristretto::{CompressedRistretto, RistrettoPoint},
     traits::Identity,
 };
-use zeroize::Zeroize;
 
 /// Curve Point of a Ristretto Curve25519.
 #[derive(Clone, PartialEq, Eq, Debug, Zeroize)]
@@ -41,7 +41,7 @@ impl Monoid for R25519Point {
 }
 
 impl Sampling for R25519Point {
-    fn random(rng: &mut impl rand_core::CryptoRngCore) -> Self {
+    fn random(rng: &mut impl CryptoRngCore) -> Self {
         Self::one() * R25519Scalar::random(rng)
     }
 }
@@ -117,11 +117,11 @@ impl Serializable for R25519Point {
         Self::LENGTH
     }
 
-    fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         ser.write_array(&self.0.compress().to_bytes())
     }
 
-    fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         Ok(Self(
             CompressedRistretto(de.read_array::<{ Self::LENGTH }>()?)
                 .decompress()
@@ -137,7 +137,7 @@ impl Serializable for R25519Point {
 #[cfg(test)]
 mod test {
     use super::{R25519Point, R25519Scalar};
-    use crate::{
+    use cosmian_crypto_core::{
         bytes_ser_de::test_serialization,
         reexport::rand_core::SeedableRng,
         traits::{tests::test_abelian_group, One, Sampling},

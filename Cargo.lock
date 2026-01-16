@@ -332,8 +332,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmian_rust_curve25519_provider"
+version = "1.0.0"
+dependencies = [
+ "cosmian_crypto_core",
+ "curve25519-dalek",
+ "zeroize",
+]
+
+[[package]]
 name = "cosmian_rust_nist_ec_provider"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cosmian_crypto_core",
  "elliptic-curve",

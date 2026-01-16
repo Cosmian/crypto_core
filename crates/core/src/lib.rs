@@ -44,7 +44,9 @@ pub mod reexport {
     pub use tiny_keccak;
     #[cfg(feature = "certificate")]
     pub use x509_cert;
-    pub use zeroize;
+    pub mod zeroize {
+        pub use zeroize::*;
+    }
 }
 
 pub use error::CryptoCoreError;

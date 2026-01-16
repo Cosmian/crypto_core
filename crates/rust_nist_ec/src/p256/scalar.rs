@@ -4,10 +4,10 @@ use cosmian_crypto_core::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
     reexport::rand_core::CryptoRngCore,
-    traits::{AbelianGroup, Field, Group, Monoid, Ring, Sampling},
-    CryptoCoreError,
+    traits::{AbelianGroup, Field, Group, Monoid, Ring, Sampling, Seedable},
+    CryptoCoreError, Secret,
 };
-use elliptic_curve::PrimeField;
+use elliptic_curve::{ops::Reduce, PrimeField};
 use p256::Scalar;
 
 const SERIALIZED_SCALAR_LENGTH: usize = 32;
@@ -18,6 +18,12 @@ pub struct P256Scalar(pub(crate) Scalar);
 impl Sampling for P256Scalar {
     fn random(rng: &mut impl CryptoRngCore) -> Self {
         Self(<Scalar as elliptic_curve::Field>::random(rng))
+    }
+}
+
+impl Seedable<SERIALIZED_SCALAR_LENGTH> for P256Scalar {
+    fn from_seed(seed: &Secret<SERIALIZED_SCALAR_LENGTH>) -> Self {
+        Self(Scalar::reduce_bytes((&**seed).into()))
     }
 }
 

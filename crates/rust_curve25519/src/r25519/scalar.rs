@@ -1,18 +1,16 @@
-use crate::{
+use cosmian_crypto_core::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
+    reexport::rand_core::CryptoRngCore,
     traits::{
         AbelianGroup, CBytes, Field, FixedSizeCBytes, Group, Monoid, Ring, Sampling, SecretCBytes,
-        Zero,
+        Seedable, Zero,
     },
-    CryptoCoreError,
+    CryptoCoreError, Secret,
 };
 use curve25519_dalek::Scalar;
 use std::ops::Div;
 use zeroize::{Zeroize, ZeroizeOnDrop};
-
-#[cfg(feature = "sha3")]
-use crate::traits::Seedable;
 
 pub const R25519_SCALAR_LENGTH: usize = 32;
 
@@ -26,19 +24,16 @@ impl FixedSizeCBytes<{ R25519_SCALAR_LENGTH }> for R25519Scalar {}
 impl SecretCBytes<{ R25519_SCALAR_LENGTH }> for R25519Scalar {}
 
 impl Sampling for R25519Scalar {
-    fn random(rng: &mut impl rand_core::CryptoRngCore) -> Self {
+    fn random(rng: &mut impl CryptoRngCore) -> Self {
         Self(Scalar::random(rng))
     }
 }
 
-#[cfg(feature = "sha3")]
 impl Seedable<{ Self::LENGTH }> for R25519Scalar {
-    fn from_seed(seed: &[u8; Self::LENGTH]) -> Self {
-        use crate::{kdf256, Secret};
-
-        let mut bytes = Secret::<64>::default();
-        kdf256!(&mut *bytes, seed);
-        Self(Scalar::from_bytes_mod_order_wide(&bytes))
+    fn from_seed(seed: &Secret<{ Self::LENGTH }>) -> Self {
+        let mut bytes = [0; Self::LENGTH];
+        seed.to_unprotected_bytes(&mut bytes);
+        Self(Scalar::from_bytes_mod_order(bytes))
     }
 }
 
@@ -147,7 +142,7 @@ impl Serializable for R25519Scalar {
 #[cfg(test)]
 mod tests {
     use super::R25519Scalar;
-    use crate::{
+    use cosmian_crypto_core::{
         bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng, traits::Sampling, CsRng,
     };
 

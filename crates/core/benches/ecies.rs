@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 #![cfg(feature = "default")]
 use cosmian_crypto_core::{
-    traits::NIKE, CsRng, Ecies, EciesAes128, EciesEcPrivateKey, EciesEcPublicKey,
-    EciesR25519Aes128, EciesSalsaSealBox, EciesX25519Aes128, EciesX25519XChaCha20,
-    X25519CurvePoint, X25519PrivateKey, R25519,
+    CsRng, Ecies, EciesAes128, EciesEcPrivateKey, EciesEcPublicKey, EciesR25519Aes128,
+    EciesSalsaSealBox, EciesX25519Aes128, EciesX25519XChaCha20, R25519CurvePoint, R25519PrivateKey,
+    X25519CurvePoint, X25519PrivateKey,
 };
 use criterion::Criterion;
 use rand_chacha::rand_core::SeedableRng;
@@ -11,8 +11,8 @@ use rand_chacha::rand_core::SeedableRng;
 pub(crate) fn ecies_r25519_aes128gcm_bench(c: &mut Criterion) {
     let mut rng = CsRng::from_entropy();
     // generate a key pair
-    let (private_key, public_key) = R25519::keygen(&mut rng).unwrap();
-
+    let private_key = R25519PrivateKey::new(&mut rng);
+    let public_key = R25519CurvePoint::from(&private_key);
     // encrypt
     let plaintext = b"Hello World!";
 

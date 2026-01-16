@@ -9,14 +9,12 @@ pub use ed25519::{
     ED25519_PUBLIC_KEY_LENGTH,
 };
 pub use ristretto_25519::{
-    R25519Point, R25519Scalar, R25519, R25519_POINT_LENGTH, R25519_SCALAR_LENGTH,
+    R25519CurvePoint, R25519PrivateKey, R25519PublicKey, R25519_PRIVATE_KEY_LENGTH,
+    R25519_PUBLIC_KEY_LENGTH,
 };
 pub use x25519::{
     X25519CurvePoint, X25519Keypair, X25519PrivateKey, X25519PublicKey, X25519_PUBLIC_KEY_LENGTH,
 };
-
-#[cfg(feature = "sha3")]
-pub use ristretto_25519::{R25519Kem, R25519_KEY_LENGTH};
 
 #[cfg(feature = "certificate")]
 pub use ed25519::{build_certificate, build_certificate_profile};
