@@ -332,6 +332,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmian_rust_nist_ec_provider"
+version = "0.1.0"
+dependencies = [
+ "cosmian_crypto_core",
+ "elliptic-curve",
+ "p256",
+ "p384",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"

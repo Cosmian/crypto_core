@@ -101,6 +101,7 @@ where
     for _ in 0..10 {
         let a = F::random(&mut rng);
         if !a.is_zero() {
+            assert_eq!(&a * &<F as Field>::invert(&a).unwrap(), <F as Ring>::id());
             assert_eq!((&a / &a).unwrap(), <F as Ring>::id());
             assert!((&a / &F::zero()).is_err());
             return;
