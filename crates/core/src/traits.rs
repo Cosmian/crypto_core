@@ -1,6 +1,6 @@
 use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, Secret, SymmetricKey};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
-use zeroize::{Zeroize, ZeroizeOnDrop};
+use zeroize::ZeroizeOnDrop;
 
 pub mod cyclic_group_to_kem;
 pub mod kem_to_pke;
@@ -22,10 +22,7 @@ pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
 }
 
 /// Fixed-size cryptographic secret bytes.
-pub trait SecretCBytes<const LENGTH: usize>:
-    FixedSizeCBytes<LENGTH> + Zeroize + ZeroizeOnDrop
-{
-}
+pub trait SecretCBytes<const LENGTH: usize>: FixedSizeCBytes<LENGTH> + ZeroizeOnDrop {}
 
 // END NOTE //
 
@@ -280,14 +277,14 @@ impl<const KEY_LENGTH: usize, Aead: AEAD<KEY_LENGTH>> AE<KEY_LENGTH> for Aead {
 
 /// Non-Interactive Key Exchange.
 pub trait NIKE {
-    type SecretKey: Zeroize + ZeroizeOnDrop;
+    type SecretKey: ZeroizeOnDrop;
     type PublicKey;
 
     /// The shared secret is not always a symmetric key, as such it is not
     /// required to be uniformly-random over its domain and is not always
     /// suitable to use as a symmetric key. However, provided it contains enough
     /// entropy, it is suitable to use as a KDF seed.
-    type SharedSecret: Zeroize + ZeroizeOnDrop;
+    type SharedSecret: ZeroizeOnDrop;
 
     type Error: std::error::Error;
 
@@ -306,8 +303,8 @@ pub trait NIKE {
 // A cyclic group trivially implements a NIKE.
 impl<T: CyclicGroup> NIKE for T
 where
-    T::Element: Zeroize + ZeroizeOnDrop,
-    T::Multiplicity: Sampling + Zeroize + ZeroizeOnDrop,
+    T::Element: ZeroizeOnDrop,
+    T::Multiplicity: Sampling + ZeroizeOnDrop,
     for<'a> &'a T::Element: Neg<Output = T::Element>,
     for<'a, 'b> &'a T::Element: Add<&'b T::Element, Output = T::Element>,
     for<'a, 'b> &'a T::Element: Sub<&'b T::Element, Output = T::Element>,
@@ -370,8 +367,8 @@ where
 // A cyclic group trivially implements a key-homomorphic NIKE.
 impl<T: CyclicGroup> KeyHomomorphicNike for T
 where
-    T::Element: Zeroize + ZeroizeOnDrop,
-    T::Multiplicity: Sampling + Zeroize + ZeroizeOnDrop,
+    T::Element: ZeroizeOnDrop,
+    T::Multiplicity: Sampling + ZeroizeOnDrop,
     for<'a> &'a T::Element: Neg<Output = T::Element>,
     for<'a, 'b> &'a T::Element: Add<&'b T::Element, Output = T::Element>,
     for<'a, 'b> &'a T::Element: Sub<&'b T::Element, Output = T::Element>,
@@ -392,7 +389,7 @@ where
 pub trait KEM<const KEY_LENGTH: usize> {
     type Encapsulation;
     type EncapsulationKey;
-    type DecapsulationKey: Zeroize + ZeroizeOnDrop;
+    type DecapsulationKey: ZeroizeOnDrop;
 
     type Error: std::error::Error;
 
@@ -424,7 +421,7 @@ pub trait PKE {
     type Plaintext;
     type Ciphertext;
     type PublicKey;
-    type SecretKey: Zeroize + ZeroizeOnDrop;
+    type SecretKey: ZeroizeOnDrop;
     type Error;
 
     fn encrypt(
