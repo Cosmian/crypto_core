@@ -29,6 +29,7 @@ pub mod traits;
 #[macro_use]
 pub mod bytes;
 
+#[cfg(feature = "sha3")]
 #[macro_use]
 pub mod kdf;
 

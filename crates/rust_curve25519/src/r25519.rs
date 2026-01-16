@@ -18,8 +18,11 @@ impl R25519GroupProvider for R25519 {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use cosmian_crypto_core::traits::tests::{test_cyclic_group, test_nike};
+    use crate::R25519;
+    use cosmian_crypto_core::{
+        kdf::Kdf,
+        traits::tests::{test_cyclic_group, test_nike},
+    };
 
     #[test]
     fn test_r25519_arithmetic() {
@@ -30,25 +33,13 @@ mod tests {
     fn test_r25519_nike() {
         test_nike::<R25519>();
     }
-}
 
-pub use kem::*;
+    #[test]
+    fn test_r25519_kem() {
+        use cosmian_crypto_core::traits::{cyclic_group_to_kem::GenericKem, tests::test_kem};
 
-mod kem {
-    use crate::R25519;
-    use cosmian_crypto_core::{kdf::Kdf, traits::cyclic_group_to_kem::GenericKem};
-
-    pub const R25519_KEY_LENGTH: usize = 32;
-    pub type R25519Kem = GenericKem<R25519_KEY_LENGTH, R25519, Kdf>;
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        use cosmian_crypto_core::traits::tests::test_kem;
-
-        #[test]
-        fn test_r25519_kem() {
-            test_kem::<R25519_KEY_LENGTH, R25519Kem>();
-        }
+        const R25519_KEY_LENGTH: usize = 32;
+        type R25519Kem = GenericKem<R25519_KEY_LENGTH, R25519, Kdf>;
+        test_kem::<R25519_KEY_LENGTH, R25519Kem>();
     }
 }

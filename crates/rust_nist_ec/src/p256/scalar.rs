@@ -1,5 +1,3 @@
-use std::ops::Div;
-
 use cosmian_crypto_core::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
@@ -9,6 +7,7 @@ use cosmian_crypto_core::{
 };
 use elliptic_curve::{ops::Reduce, PrimeField};
 use p256::Scalar;
+use std::ops::Div;
 
 const SERIALIZED_SCALAR_LENGTH: usize = 32;
 
