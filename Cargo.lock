@@ -348,6 +348,7 @@ dependencies = [
  "elliptic-curve",
  "p256",
  "p384",
+ "zeroize",
 ]
 
 [[package]]

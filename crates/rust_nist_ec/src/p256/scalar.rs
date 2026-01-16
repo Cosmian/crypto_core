@@ -7,12 +7,19 @@ use cosmian_crypto_core::{
 };
 use elliptic_curve::{ops::Reduce, PrimeField};
 use p256::Scalar;
-use std::ops::Div;
+use std::{hash::Hash, ops::Div};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 const SERIALIZED_SCALAR_LENGTH: usize = 32;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct P256Scalar(pub(crate) Scalar);
+
+impl Hash for P256Scalar {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write(&self.0.to_bytes())
+    }
+}
 
 impl Sampling for P256Scalar {
     fn random(rng: &mut impl CryptoRngCore) -> Self {
