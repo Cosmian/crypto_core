@@ -1,7 +1,10 @@
 use cosmian_crypto_core::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
-    reexport::rand_core::CryptoRngCore,
+    reexport::{
+        rand_core::CryptoRngCore,
+        zeroize::{Zeroize, ZeroizeOnDrop},
+    },
     traits::{
         AbelianGroup, CBytes, Field, FixedSizeCBytes, Group, Monoid, Ring, Sampling, SecretCBytes,
         Seedable, Zero,
@@ -10,7 +13,6 @@ use cosmian_crypto_core::{
 };
 use curve25519_dalek::Scalar;
 use std::ops::Div;
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub const R25519_SCALAR_LENGTH: usize = 32;
 

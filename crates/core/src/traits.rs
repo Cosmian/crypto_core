@@ -280,14 +280,14 @@ impl<const KEY_LENGTH: usize, Aead: AEAD<KEY_LENGTH>> AE<KEY_LENGTH> for Aead {
 
 /// Non-Interactive Key Exchange.
 pub trait NIKE {
-    type SecretKey;
+    type SecretKey: Zeroize + ZeroizeOnDrop;
     type PublicKey;
 
     /// The shared secret is not always a symmetric key, as such it is not
     /// required to be uniformly-random over its domain and is not always
     /// suitable to use as a symmetric key. However, provided it contains enough
     /// entropy, it is suitable to use as a KDF seed.
-    type SharedSecret;
+    type SharedSecret: Zeroize + ZeroizeOnDrop;
 
     type Error: std::error::Error;
 
@@ -306,7 +306,8 @@ pub trait NIKE {
 // A cyclic group trivially implements a NIKE.
 impl<T: CyclicGroup> NIKE for T
 where
-    T::Multiplicity: Sampling,
+    T::Element: Zeroize + ZeroizeOnDrop,
+    T::Multiplicity: Sampling + Zeroize + ZeroizeOnDrop,
     for<'a> &'a T::Element: Neg<Output = T::Element>,
     for<'a, 'b> &'a T::Element: Add<&'b T::Element, Output = T::Element>,
     for<'a, 'b> &'a T::Element: Sub<&'b T::Element, Output = T::Element>,
@@ -369,7 +370,8 @@ where
 // A cyclic group trivially implements a key-homomorphic NIKE.
 impl<T: CyclicGroup> KeyHomomorphicNike for T
 where
-    T::Multiplicity: Sampling,
+    T::Element: Zeroize + ZeroizeOnDrop,
+    T::Multiplicity: Sampling + Zeroize + ZeroizeOnDrop,
     for<'a> &'a T::Element: Neg<Output = T::Element>,
     for<'a, 'b> &'a T::Element: Add<&'b T::Element, Output = T::Element>,
     for<'a, 'b> &'a T::Element: Sub<&'b T::Element, Output = T::Element>,
@@ -390,7 +392,7 @@ where
 pub trait KEM<const KEY_LENGTH: usize> {
     type Encapsulation;
     type EncapsulationKey;
-    type DecapsulationKey;
+    type DecapsulationKey: Zeroize + ZeroizeOnDrop;
 
     type Error: std::error::Error;
 
@@ -422,7 +424,7 @@ pub trait PKE {
     type Plaintext;
     type Ciphertext;
     type PublicKey;
-    type SecretKey;
+    type SecretKey: Zeroize + ZeroizeOnDrop;
     type Error;
 
     fn encrypt(

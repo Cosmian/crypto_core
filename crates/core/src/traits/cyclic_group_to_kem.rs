@@ -8,6 +8,7 @@ use std::{
     marker::PhantomData,
     ops::{Add, Div, Mul, Neg, Sub},
 };
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct GenericKem<const KEY_LENGTH: usize, Group: CyclicGroup, Kdf: KDF<KEY_LENGTH>>
@@ -32,8 +33,8 @@ where
 impl<const KEY_LENGTH: usize, Group: CyclicGroup, Kdf: KDF<KEY_LENGTH>> KEM<KEY_LENGTH>
     for GenericKem<KEY_LENGTH, Group, Kdf>
 where
-    Group::Element: Serializable,
-    Group::Multiplicity: Sampling,
+    Group::Element: Serializable + Zeroize + ZeroizeOnDrop,
+    Group::Multiplicity: Sampling + Zeroize + ZeroizeOnDrop,
     for<'a> &'a Group::Element: Neg<Output = Group::Element>,
     for<'a, 'b> &'a Group::Element: Add<&'b Group::Element, Output = Group::Element>,
     for<'a, 'b> &'a Group::Element: Sub<&'b Group::Element, Output = Group::Element>,

@@ -1,14 +1,16 @@
 use cosmian_crypto_core::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
-    reexport::rand_core::CryptoRngCore,
+    reexport::{
+        rand_core::CryptoRngCore,
+        zeroize::{Zeroize, ZeroizeOnDrop},
+    },
     traits::{AbelianGroup, Field, Group, Monoid, Ring, Sampling, Seedable},
     CryptoCoreError, Secret,
 };
 use elliptic_curve::{ops::Reduce, PrimeField};
 use p256::Scalar;
 use std::{hash::Hash, ops::Div};
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 const SERIALIZED_SCALAR_LENGTH: usize = 32;
 

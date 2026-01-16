@@ -1,20 +1,22 @@
 use cosmian_crypto_core::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_monoid_arithmetic,
-    reexport::rand_core::CryptoRngCore,
+    reexport::{
+        rand_core::CryptoRngCore,
+        zeroize::{Zeroize, ZeroizeOnDrop},
+    },
     traits::{AbelianGroup, Group, Monoid, One, Sampling},
     CryptoCoreError,
 };
 use elliptic_curve::group::GroupEncoding;
 use p256::ProjectivePoint;
 use std::{hash::Hash, ops::Mul};
-use zeroize::Zeroize;
 
 use crate::p256::P256Scalar;
 
 const SERIALIZED_POINT_LENGTH: usize = 33;
 
-#[derive(Clone, Debug, PartialEq, Eq, Zeroize)]
+#[derive(Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
 pub struct P256Point(ProjectivePoint);
 
 impl Hash for P256Point {

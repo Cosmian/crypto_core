@@ -3,7 +3,10 @@ use core::ops::Mul;
 use cosmian_crypto_core::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_monoid_arithmetic,
-    reexport::{rand_core::CryptoRngCore, zeroize::Zeroize},
+    reexport::{
+        rand_core::CryptoRngCore,
+        zeroize::{Zeroize, ZeroizeOnDrop},
+    },
     traits::{AbelianGroup, CBytes, FixedSizeCBytes, Group, Monoid, One, Sampling},
     CryptoCoreError,
 };
@@ -14,7 +17,7 @@ use curve25519_dalek::{
 };
 
 /// Curve Point of a Ristretto Curve25519.
-#[derive(Clone, PartialEq, Eq, Debug, Zeroize)]
+#[derive(Clone, PartialEq, Eq, Debug, Zeroize, ZeroizeOnDrop)]
 pub struct R25519Point(pub(crate) RistrettoPoint);
 
 /// Length of a Ristretto curve point in bytes.
