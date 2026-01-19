@@ -1,16 +1,15 @@
 use super::R25519Scalar;
 use crate::{
     bytes_ser_de::Serializable,
-    implement_abelian_group,
+    implement_abelian_group, implement_monoid_arithmetic,
     traits::{AbelianGroup, CBytes, CyclicGroup, FixedSizeCBytes, Group, Monoid, One, Zero},
     CryptoCoreError,
 };
-use core::iter::Sum;
+use core::ops::Mul;
 use curve25519_dalek::{
     constants::{self},
     ristretto::{CompressedRistretto, RistrettoPoint},
 };
-use std::ops::Mul;
 use zeroize::Zeroize;
 
 /// Curve Point of a Ristretto Curve25519.
@@ -40,13 +39,15 @@ impl Monoid for R25519Point {
     }
 }
 
+implement_monoid_arithmetic!(R25519Point);
+
 impl Group for R25519Point {
     fn invert(&self) -> Self {
         Self(-self.0)
     }
 }
 
-implement_abelian_group!(R25519Point, R25519CurvePoint);
+implement_abelian_group!(R25519Point);
 
 impl One for R25519Point {
     fn one() -> Self {
@@ -103,14 +104,6 @@ impl Mul<&R25519Scalar> for &R25519Point {
 
     fn mul(self, rhs: &R25519Scalar) -> Self::Output {
         R25519Point(self.0 * rhs.0)
-    }
-}
-
-impl<'a> Sum<&'a R25519Point> for R25519Point {
-    fn sum<I: Iterator<Item = &'a R25519Point>>(iter: I) -> Self {
-        iter.fold(<Self as Monoid>::id(), |acc, e| {
-            <Self as Monoid>::op(&acc, e)
-        })
     }
 }
 

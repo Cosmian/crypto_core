@@ -282,10 +282,36 @@ pub mod tests {
 }
 
 pub mod macros {
+    #[macro_export]
+    macro_rules! implement_monoid_arithmetic {
+        ($type: ty) => {
+            mod monoid_arithmetic {
+                use super::*;
+                use core::iter::Sum;
+
+                impl Sum for $type {
+                    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+                        iter.fold(<Self as Monoid>::id(), |acc, e| {
+                            <Self as Monoid>::op(&acc, &e)
+                        })
+                    }
+                }
+
+                impl<'a> Sum<&'a $type> for $type {
+                    fn sum<I: Iterator<Item = &'a $type>>(iter: I) -> Self {
+                        iter.fold(<Self as Monoid>::id(), |acc, e| {
+                            <Self as Monoid>::op(&acc, e)
+                        })
+                    }
+                }
+            }
+        };
+    }
+
     /// Given a group, implements an Abelian group.
     #[macro_export]
     macro_rules! implement_abelian_group {
-        ($type: ty, $constuctor: tt) => {
+        ($type: ty) => {
             mod abelian_group_arithmetic {
                 use super::*;
                 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
@@ -384,7 +410,7 @@ pub mod macros {
     /// Given a ring, implements a commutative ring (the ring operation is *).
     #[macro_export]
     macro_rules! implement_commutative_ring {
-        ($type: ty, $constuctor: tt) => {
+        ($type: ty) => {
             mod commutative_ring {
                 use super::*;
                 use std::ops::{Mul, MulAssign};

@@ -82,11 +82,6 @@ pub fn shuffle<X: Clone>(xs: &[X], rng: &mut impl CryptoRngCore) -> Vec<X> {
     res
 }
 
-/// A uniform sampling functionality.
-pub trait Sampling {
-    fn random(rng: &mut impl CryptoRngCore) -> Self;
-}
-
 /// Cryptographic bytes
 ///
 /// The bytes should be thread-safe and comparable.

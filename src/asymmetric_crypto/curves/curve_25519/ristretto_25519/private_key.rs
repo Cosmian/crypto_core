@@ -1,6 +1,6 @@
 use crate::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
-    implement_abelian_group, implement_commutative_ring,
+    implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
     traits::{
         AbelianGroup, CBytes, Field, FixedSizeCBytes, Group, Monoid, One, Ring, Sampling,
         SecretCBytes, Zero,
@@ -52,13 +52,15 @@ impl Monoid for R25519Scalar {
     }
 }
 
+implement_monoid_arithmetic!(R25519Scalar);
+
 impl Group for R25519Scalar {
     fn invert(&self) -> Self {
         Self(-self.0)
     }
 }
 
-implement_abelian_group!(R25519Scalar, R25519PrivateKey);
+implement_abelian_group!(R25519Scalar);
 
 impl Ring for R25519Scalar {
     fn id() -> Self {
@@ -70,7 +72,7 @@ impl Ring for R25519Scalar {
     }
 }
 
-implement_commutative_ring!(R25519Scalar, R25519PrivateKey);
+implement_commutative_ring!(R25519Scalar);
 
 #[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<&R25519Scalar> for &R25519Scalar {
