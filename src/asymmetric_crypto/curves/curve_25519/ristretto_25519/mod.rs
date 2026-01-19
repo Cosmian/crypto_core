@@ -37,10 +37,10 @@ pub use kem::*;
 
 #[cfg(feature = "sha3")]
 mod kem {
-    use crate::{kdf::Kdf, traits::cyclic_group_to_kem::GenericKem, R25519};
+    use crate::{kdf::Kdf256, traits::cyclic_group_to_kem::GenericKem, R25519};
 
     pub const R25519_KEY_LENGTH: usize = 32;
-    pub type R25519Kem = GenericKem<R25519_KEY_LENGTH, R25519, Kdf>;
+    pub type R25519Kem = GenericKem<R25519_KEY_LENGTH, R25519, Kdf256>;
 
     #[cfg(test)]
     mod tests {
