@@ -20,7 +20,7 @@ impl R25519GroupProvider for R25519 {}
 mod tests {
     use crate::R25519;
     use cosmian_crypto_core::{
-        kdf::Kdf,
+        kdf::Kdf256,
         traits::tests::{test_cyclic_group, test_nike},
     };
 
@@ -39,7 +39,7 @@ mod tests {
         use cosmian_crypto_core::traits::{cyclic_group_to_kem::GenericKem, tests::test_kem};
 
         const R25519_KEY_LENGTH: usize = 32;
-        type R25519Kem = GenericKem<R25519_KEY_LENGTH, R25519, Kdf>;
+        type R25519Kem = GenericKem<R25519_KEY_LENGTH, R25519, Kdf256>;
         test_kem::<R25519_KEY_LENGTH, R25519Kem>();
     }
 }
