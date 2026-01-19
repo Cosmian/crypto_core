@@ -30,7 +30,8 @@ macro_rules! _define_byte_type {
             use std::ops::{Deref, DerefMut};
 
             use $crate::{
-                bytes_ser_de::Serializable, reexport::rand_core::RngCore, CryptoCoreError, Sampling,
+                bytes_ser_de::Serializable, reexport::rand_core::RngCore, traits::Sampling,
+                CryptoCoreError,
             };
 
             impl<const LENGTH: usize> Deref for $name<LENGTH> {
@@ -108,8 +109,8 @@ macro_rules! _define_byte_type {
 #[cfg(test)]
 mod tests {
     use crate::{
-        bytes_ser_de::test_serialization, CBytes, CryptoCoreError, CsRng, FixedSizeCBytes,
-        RandomFixedSizeCBytes, Sampling,
+        bytes_ser_de::test_serialization, traits::Sampling, CBytes, CryptoCoreError, CsRng,
+        FixedSizeCBytes, RandomFixedSizeCBytes,
     };
     use rand_core::SeedableRng;
     use std::ops::Deref;
