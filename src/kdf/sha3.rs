@@ -1,9 +1,9 @@
 use crate::{traits::KDF, SymmetricKey};
 pub use tiny_keccak::{Hasher, Shake};
 
-pub struct Kdf;
+pub struct Kdf256;
 
-impl<const KEY_LENGTH: usize> KDF<KEY_LENGTH> for Kdf {
+impl<const KEY_LENGTH: usize> KDF<KEY_LENGTH> for Kdf256 {
     fn derive(seed: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH> {
         let mut bytes = SymmetricKey::default();
         let mut hasher = Shake::v256();
