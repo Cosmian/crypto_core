@@ -3,7 +3,6 @@ members = ["crates/core", "crates/rust_nist_ec", "crates/rust_curve25519"]
 resolver = "2"
 
 [workspace.package]
-version = "10.3.0"
 authors = [
   "Bruno GRIEDER <bruno.grieder@cosmian.com>",
   "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
