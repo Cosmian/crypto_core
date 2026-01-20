@@ -27,6 +27,13 @@ impl<const LENGTH: usize> Secret<LENGTH> {
         secret
     }
 
+    /// XOR two secrets of the same length.
+    pub fn xor(&mut self, rhs: &Self) {
+        for i in 0..LENGTH {
+            self.0[i] ^= rhs.0[i]
+        }
+    }
+
     /// Returns the bytes of the secret.
     ///
     /// # Safety
