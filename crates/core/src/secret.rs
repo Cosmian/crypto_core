@@ -1,14 +1,10 @@
+use crate::{bytes_ser_de::Serializable, CryptoCoreError};
 use rand_core::CryptoRngCore;
 use std::{
     ops::{Deref, DerefMut},
     pin::Pin,
 };
 use zeroize::{Zeroize, ZeroizeOnDrop};
-
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::Serializable;
-#[cfg(any(feature = "sha3", feature = "ser"))]
-use crate::CryptoCoreError;
 
 /// Holds a secret information of `LENGTH` bytes.
 ///
@@ -20,7 +16,6 @@ impl<const LENGTH: usize> Secret<LENGTH> {
     /// Creates a new secret and returns it.
     ///
     /// All bytes are initially set to 0.
-    #[inline(always)]
     pub fn new() -> Self {
         Self(Box::pin([0; LENGTH]))
     }
@@ -38,7 +33,6 @@ impl<const LENGTH: usize> Secret<LENGTH> {
     ///
     /// Once returned the secret bytes are *not* protected. It is the caller's
     /// responsibility to guarantee they are not leaked in the memory.
-    #[inline(always)]
     pub fn to_unprotected_bytes(&self, dest: &mut [u8; LENGTH]) {
         dest.copy_from_slice(&**self);
     }
@@ -91,7 +85,6 @@ impl<const LENGTH: usize> Secret<LENGTH> {
 }
 
 impl<const LENGTH: usize> Default for Secret<LENGTH> {
-    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }
@@ -100,28 +93,24 @@ impl<const LENGTH: usize> Default for Secret<LENGTH> {
 impl<const LENGTH: usize> Deref for Secret<LENGTH> {
     type Target = [u8; LENGTH];
 
-    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<const LENGTH: usize> DerefMut for Secret<LENGTH> {
-    #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 impl<const LENGTH: usize> Zeroize for Secret<LENGTH> {
-    #[inline(always)]
     fn zeroize(&mut self) {
         self.0.deref_mut().zeroize()
     }
 }
 
 impl<const LENGTH: usize> Drop for Secret<LENGTH> {
-    #[inline(always)]
     fn drop(&mut self) {
         self.zeroize()
     }
@@ -132,17 +121,14 @@ impl<const LENGTH: usize> ZeroizeOnDrop for Secret<LENGTH> {}
 impl<const LENGTH: usize> Serializable for Secret<LENGTH> {
     type Error = CryptoCoreError;
 
-    #[inline(always)]
     fn length(&self) -> usize {
         LENGTH
     }
 
-    #[inline(always)]
     fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
         ser.write_array(&**self)
     }
 
-    #[inline(always)]
     fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
         let mut bytes = de.read_array::<LENGTH>()?;
         Ok(Self::from_unprotected_bytes(&mut bytes))
