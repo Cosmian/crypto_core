@@ -129,7 +129,6 @@ impl<const LENGTH: usize> Drop for Secret<LENGTH> {
 
 impl<const LENGTH: usize> ZeroizeOnDrop for Secret<LENGTH> {}
 
-#[cfg(feature = "ser")]
 impl<const LENGTH: usize> Serializable for Secret<LENGTH> {
     type Error = CryptoCoreError;
 

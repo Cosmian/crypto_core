@@ -2,7 +2,8 @@
 use cosmian_crypto_core::{
     blake2b, blake2s, kdf128, kdf256,
     reexport::rand_core::{RngCore, SeedableRng},
-    CsRng, R25519CurvePoint, R25519PrivateKey,
+    traits::Sampling,
+    CsRng, R25519Point, R25519Scalar,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use dem::{
@@ -20,9 +21,9 @@ mod signature;
 fn bench_dh_r25519(c: &mut Criterion) {
     let private_key = {
         let mut rng = CsRng::from_entropy();
-        R25519PrivateKey::new(&mut rng)
+        R25519Scalar::random(&mut rng)
     };
-    let public_key = R25519CurvePoint::from(&private_key);
+    let public_key = R25519Point::from(&private_key);
     c.bench_function(
         "R25519 Group-Scalar multiplication on which is based the Diffie-Hellman key exchange",
         |b| b.iter(|| &public_key * &private_key),

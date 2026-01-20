@@ -1,30 +1,37 @@
-//! This crate implements crypto primitives which are used in many other
-//! Cosmian cryptographic resources.
+//! This crate implements crypto primitives which are used in many other Cosmian
+//! cryptographic crates.
+
+mod error;
+mod key;
+mod secret;
 
 #[cfg(any(feature = "curve25519", feature = "nist_curves", feature = "rsa"))]
 mod asymmetric_crypto;
+
 #[cfg(feature = "blake")]
 pub mod blake2;
-#[cfg(feature = "macro")]
-#[macro_use]
-pub mod bytes;
-#[cfg(feature = "ser")]
-pub mod bytes_ser_de;
+
 #[cfg(feature = "ecies")]
 mod ecies;
-#[cfg(feature = "sha3")]
-pub mod kdf;
-mod key;
+
 #[cfg(any(feature = "rsa", feature = "nist_curves"))]
 mod pkcs8_fix;
-mod secret;
+
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;
 
+pub mod bytes_ser_de;
+
+#[macro_use]
 pub mod traits;
 
-mod error;
-pub use error::CryptoCoreError;
+#[cfg(feature = "macro")]
+#[macro_use]
+pub mod bytes;
+
+#[cfg(feature = "sha3")]
+#[macro_use]
+pub mod kdf;
 
 pub mod reexport {
     #[cfg(any(feature = "aes", feature = "chacha"))]
@@ -41,17 +48,20 @@ pub mod reexport {
     pub use zeroize;
 }
 
+pub use error::CryptoCoreError;
+pub use key::SymmetricKey;
+pub use secret::Secret;
+
 #[cfg(any(feature = "curve25519", feature = "nist_curves", feature = "rsa"))]
 pub use asymmetric_crypto::*;
+
 #[cfg(feature = "ecies")]
 pub use ecies::*;
-#[cfg(feature = "sha3")]
-pub use kdf::*;
-pub use key::SymmetricKey;
-use reexport::rand_core::CryptoRngCore;
-pub use secret::Secret;
+
 #[cfg(any(feature = "aes", feature = "chacha"))]
 pub use symmetric_crypto::*;
+
+use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Use `ChaCha` with 12 rounds as cryptographic RNG.

@@ -10,14 +10,19 @@ use pkcs8::{
     pkcs5::{pbes2, scrypt},
     EncodePrivateKey, EncryptedPrivateKeyInfo, SecretDocument,
 };
+#[cfg(feature = "aes")]
+use rand_core::CryptoRngCore;
 use rand_core::{RngCore, SeedableRng};
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
 use crate::{
-    pkcs8_fix, reexport::rand_core::CryptoRngCore, CBytes, CryptoCoreError, CsRng, FixedSizeCBytes,
-    NistPublicKey, RandomFixedSizeCBytes, SecretCBytes,
+    asymmetric_crypto::curves::nist::public_key::NistPublicKey, pkcs8_fix, CBytes, CryptoCoreError,
+    CsRng,
+};
+#[cfg(feature = "aes")]
+use crate::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
+    FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes,
 };
 
 /// Nist Curve private key
@@ -148,7 +153,7 @@ impl<C: Curve + CurveArithmetic, const LENGTH: usize> crate::PrivateKey
 }
 
 /// Key Serialization framework
-#[cfg(all(feature = "ser", feature = "aes"))]
+#[cfg(feature = "aes")]
 impl<C: Curve + CurveArithmetic, const LENGTH: usize> Serializable for NistPrivateKey<C, LENGTH> {
     type Error = CryptoCoreError;
 

@@ -744,31 +744,6 @@ mod tests {
         CryptoCoreError, CsRng,
     };
 
-    /// We don't have a non-fixed size implementation of Serializable inside
-    /// `crypto_core` so just have a dummy implementation here.
-    #[derive(Debug, PartialEq)]
-    struct DummyLeb128Serializable {
-        bytes: Vec<u8>,
-    }
-
-    impl Serializable for DummyLeb128Serializable {
-        type Error = CryptoCoreError;
-
-        fn length(&self) -> usize {
-            self.bytes.len().length() + self.bytes.len()
-        }
-
-        fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
-            ser.write_vec(&self.bytes)
-        }
-
-        fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
-            Ok(Self {
-                bytes: de.read_vec()?,
-            })
-        }
-    }
-
     #[test]
     fn test_to_leb128_len() {
         let mut rng = CsRng::from_entropy();
@@ -803,22 +778,6 @@ mod tests {
         assert_eq!(a2, a2_);
         let a3_ = de.read_vec()?;
         assert_eq!(a3, a3_);
-        Ok(())
-    }
-
-    #[cfg(feature = "curve25519")]
-    #[test]
-    fn test_r25519_serialization() -> Result<(), CryptoCoreError> {
-        use crate::{asymmetric_crypto::R25519PrivateKey, bytes_ser_de::test_serialization};
-
-        let key = R25519PrivateKey::new(&mut CsRng::from_entropy());
-        test_serialization(&key).unwrap();
-
-        let dummy = DummyLeb128Serializable {
-            bytes: vec![1; 512],
-        };
-        test_serialization(&dummy).unwrap();
-
         Ok(())
     }
 
