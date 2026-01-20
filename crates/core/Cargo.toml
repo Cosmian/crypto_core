@@ -1,17 +1,13 @@
 [package]
 name = "cosmian_crypto_core"
 version = "10.4.0"
-authors = [
-  "Bruno GRIEDER <bruno.grieder@cosmian.com>",
-  "Théophile BRÉZOT <theophile.brezot@cosmian.com>",
-  "Emmanuel COSTE <emmanuel.coste@cosmian.com>",
-]
-categories = ["cryptography"]
-edition = "2021"
-keywords = ["cosmian", "crypto"]
-license = "BUSL-1.1"
-repository = "https://github.com/Cosmian/crypto_core/"
-description = "Cosmian base cryptographic library"
+authors = { workspace = true }
+categories = { workspace = true }
+edition = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = { workspace = true }
 
 [lib]
 crate-type = ["lib", "staticlib"]
