@@ -1,13 +1,13 @@
+use super::private_key::NistPrivateKey;
+use crate::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
+    CBytes, CryptoCoreError, FixedSizeCBytes, NistCurvePoint,
+};
 use elliptic_curve::{
     group::Curve as Curve_,
     sec1::{self, ToEncodedPoint},
     Curve, CurveArithmetic, ProjectivePoint, PublicKey,
 };
-
-use super::private_key::NistPrivateKey;
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
-use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, NistCurvePoint};
 
 /// Nist Curve public key
 ///
@@ -141,7 +141,6 @@ where
 }
 
 /// Key Serialization framework
-#[cfg(feature = "ser")]
 impl<C, const LENGTH: usize> Serializable for NistPublicKey<C, LENGTH>
 where
     C: Curve + CurveArithmetic + pkcs8::AssociatedOid,
@@ -189,7 +188,7 @@ where
     }
 }
 
-#[cfg(all(test, feature = "aes"))]
+#[cfg(all(test, feature = "aes", feature = "nist_curves"))]
 mod tests {
     use elliptic_curve::{sec1, Curve, CurveArithmetic};
     use p192::NistP192;
@@ -198,10 +197,11 @@ mod tests {
     use p384::NistP384;
     use rand_core::SeedableRng;
 
+    use super::*;
     use crate::{
-        CsRng, NistPrivateKey, NistPublicKey, P192_PRIVATE_KEY_LENGTH, P192_PUBLIC_KEY_LENGTH,
-        P224_PRIVATE_KEY_LENGTH, P224_PUBLIC_KEY_LENGTH, P256_PRIVATE_KEY_LENGTH,
-        P256_PUBLIC_KEY_LENGTH, P384_PRIVATE_KEY_LENGTH, P384_PUBLIC_KEY_LENGTH,
+        CsRng, P192_PRIVATE_KEY_LENGTH, P192_PUBLIC_KEY_LENGTH, P224_PRIVATE_KEY_LENGTH,
+        P224_PUBLIC_KEY_LENGTH, P256_PRIVATE_KEY_LENGTH, P256_PUBLIC_KEY_LENGTH,
+        P384_PRIVATE_KEY_LENGTH, P384_PUBLIC_KEY_LENGTH,
     };
 
     fn serialization_deserialization_test<
