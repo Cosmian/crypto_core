@@ -1,6 +1,9 @@
-use crate::{reexport::rand_core::CryptoRngCore, CryptoCoreError, Secret, SymmetricKey};
+use crate::{
+    bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore, CryptoCoreError, Secret,
+    SymmetricKey,
+};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
-use zeroize::ZeroizeOnDrop;
+use zeroize::{ZeroizeOnDrop, Zeroizing};
 
 pub mod cyclic_group_to_kem;
 pub mod kem_to_pke;
@@ -194,91 +197,293 @@ pub trait KDF<const KEY_LENGTH: usize> {
 }
 
 /// Authenticated Encryption scheme.
-pub trait AE<const KEY_LENGTH: usize> {
-    type Plaintext;
-    type Ciphertext;
-
+///
+/// Implementations of this trait shall guarantee the absence of allocation.
+#[allow(non_camel_case_types)]
+pub trait AE_InPlace<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGTH: usize> {
     type Error: std::error::Error;
 
     /// The length of the key.
     const KEY_LENGTH: usize = KEY_LENGTH;
 
-    /// Encrypts the given plaintext using the given key.
-    fn encrypt(
-        key: &SymmetricKey<KEY_LENGTH>,
-        ptx: &[u8],
-        rng: &mut impl CryptoRngCore,
-    ) -> Result<Self::Ciphertext, Self::Error>;
+    /// The length of the nonce.
+    const NONCE_LENGTH: usize = NONCE_LENGTH;
 
-    /// Decrypts the given ciphertext using the given key.
+    /// The length of the authentication tag.
+    const TAG_LENGTH: usize = TAG_LENGTH;
+
+    /// Encrypts the given plaintext using the given nonce and key.
+    fn encrypt_in_place(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ptx: &mut [u8],
+        nonce: &[u8; NONCE_LENGTH],
+    ) -> Result<[u8; TAG_LENGTH], Self::Error>;
+
+    /// Decrypts the given ciphertext using the given nonce and key.
     ///
     /// # Error
     ///
-    /// Returns an error if the integrity of the ciphertext could not be verified.
-    fn decrypt(
+    /// Returns an error if the integrity of the ciphertext could not be
+    /// verified.
+    fn decrypt_in_place(
         key: &SymmetricKey<KEY_LENGTH>,
-        ctx: &Self::Ciphertext,
-    ) -> Result<Self::Plaintext, Self::Error>;
+        ctx: &mut [u8],
+        nonce: &[u8; NONCE_LENGTH],
+        tag: &[u8; TAG_LENGTH],
+    ) -> Result<(), Self::Error>;
+}
+
+/// Authenticated Encryption scheme.
+///
+/// This trait provides a more convenient API than `AE_InPlace` but performs
+/// allocation.
+pub trait AE<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGTH: usize>:
+    AE_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>
+{
+    type Plaintext: AsRef<[u8]>;
+    type Ciphertext: AsRef<[u8]>;
+
+    /// Encrypts the given plaintext using the given nonce and key.
+    fn encrypt(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ptx: &[u8],
+        nonce: &[u8; NONCE_LENGTH],
+    ) -> Result<Self::Ciphertext, Self::Error>;
+
+    /// Decrypts the given ciphertext using the given nonce and key.
+    ///
+    /// # Error
+    ///
+    /// Returns an error if the length of the ciphertext is smaller than
+    /// NONCE_LENGTH + TAG_LENGTH or if the integrity of the ciphertext could
+    /// not be verified.
+    fn decrypt(key: &SymmetricKey<KEY_LENGTH>, ptx: &[u8]) -> Result<Self::Plaintext, Self::Error>;
+}
+
+// An AE in place trivially implements an AEAD.
+impl<
+        const KEY_LENGTH: usize,
+        const NONCE_LENGTH: usize,
+        const TAG_LENGTH: usize,
+        E: AE_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>,
+    > AE<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH> for E
+where
+    E::Error: From<CryptoCoreError>,
+{
+    type Plaintext = Zeroizing<Vec<u8>>;
+
+    // CIPHERTEXT = NONCE || TAG || ENCRYPTED PLAINTEXT
+    type Ciphertext = Vec<u8>;
+
+    fn encrypt(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ptx: &[u8],
+        nonce: &[u8; NONCE_LENGTH],
+    ) -> Result<Self::Ciphertext, Self::Error> {
+        let mut ctx = vec![0; NONCE_LENGTH + TAG_LENGTH + ptx.len()];
+        ctx[..NONCE_LENGTH].copy_from_slice(nonce);
+        ctx[NONCE_LENGTH + TAG_LENGTH..].copy_from_slice(ptx);
+        let tag = Self::encrypt_in_place(key, &mut ctx[NONCE_LENGTH + TAG_LENGTH..], nonce)?;
+        ctx[NONCE_LENGTH..NONCE_LENGTH + TAG_LENGTH].copy_from_slice(&tag);
+        Ok(ctx)
+    }
+
+    fn decrypt(key: &SymmetricKey<KEY_LENGTH>, ctx: &[u8]) -> Result<Self::Plaintext, Self::Error> {
+        if ctx.len() < TAG_LENGTH + NONCE_LENGTH {
+            return Err(CryptoCoreError::DecryptionError.into());
+        }
+        let mut ptx = Zeroizing::new(vec![0; ctx.len() - TAG_LENGTH - NONCE_LENGTH]);
+        ptx.copy_from_slice(&ctx[NONCE_LENGTH + TAG_LENGTH..]);
+        Self::decrypt_in_place(
+            key,
+            &mut ptx,
+            &<[u8; NONCE_LENGTH]>::try_from(&ctx[..NONCE_LENGTH]).unwrap(),
+            &<[u8; TAG_LENGTH]>::try_from(&ctx[NONCE_LENGTH..NONCE_LENGTH + TAG_LENGTH]).unwrap(),
+        )?;
+        Ok(ptx)
+    }
 }
 
 /// Authenticated Encryption scheme with Associated Data.
-pub trait AEAD<const KEY_LENGTH: usize> {
-    type Plaintext;
-    type Ciphertext;
-
+///
+/// Implementations of this trait shall guarantee the absence of allocation.
+#[allow(non_camel_case_types)]
+pub trait AEAD_InPlace<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGTH: usize>
+{
     type Error: std::error::Error;
 
     /// The length of the key.
     const KEY_LENGTH: usize = KEY_LENGTH;
 
+    /// The length of the nonce.
+    const NONCE_LENGTH: usize = NONCE_LENGTH;
+
+    /// The length of the authentication tag.
+    const TAG_LENGTH: usize = TAG_LENGTH;
+
     /// Encrypts the given plaintext using the given key and associated data.
+    fn encrypt_in_place(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ptx: &mut [u8],
+        nonce: &[u8; NONCE_LENGTH],
+        ad: &[u8],
+    ) -> Result<[u8; TAG_LENGTH], Self::Error>;
+
+    /// Decrypts the given ciphertext using the given key and associated data.
+    ///
+    /// # Error
+    ///
+    /// Returns an error if the integrity of the ciphertext could not be
+    /// verified.
+    fn decrypt_in_place(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ctx: &mut [u8],
+        nonce: &[u8; NONCE_LENGTH],
+        tag: &[u8; TAG_LENGTH],
+        ad: &[u8],
+    ) -> Result<(), Self::Error>;
+}
+
+/// Authenticated Encryption scheme with Associated Data.
+///
+/// This trait provides a more convenient API than `AEAD_InPlace` but performs
+/// allocation.
+pub trait AEAD<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGTH: usize>:
+    AEAD_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>
+{
+    type Plaintext;
+
+    type Ciphertext;
+
+    /// Encrypts the given plaintext using the given key, nonce and associated data.
     fn encrypt(
         key: &SymmetricKey<KEY_LENGTH>,
         ptx: &[u8],
+        nonce: &[u8; NONCE_LENGTH],
         ad: &[u8],
-        rng: &mut impl CryptoRngCore,
     ) -> Result<Self::Ciphertext, Self::Error>;
 
     /// Decrypts the given ciphertext using the given key and associated data.
     ///
     /// # Error
     ///
-    /// Returns an error if the integrity of the ciphertext could not be verified.
+    /// Returns an error if the length of the ciphertext is smaller than
+    /// NONCE_LENGTH + TAG_LENGTH or if the integrity of the ciphertext could
+    /// not be verified.
     fn decrypt(
         key: &SymmetricKey<KEY_LENGTH>,
-        ctx: &Self::Ciphertext,
+        ctx: &[u8],
         ad: &[u8],
     ) -> Result<Self::Plaintext, Self::Error>;
 }
 
-// An AEAD trivially implements an AE.
-impl<const KEY_LENGTH: usize, Aead: AEAD<KEY_LENGTH>> AE<KEY_LENGTH> for Aead {
-    type Plaintext = Aead::Plaintext;
+// An AEAD in place trivially implements an AEAD.
+impl<
+        const KEY_LENGTH: usize,
+        const NONCE_LENGTH: usize,
+        const TAG_LENGTH: usize,
+        E: AEAD_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>,
+    > AEAD<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH> for E
+where
+    E::Error: From<CryptoCoreError>,
+{
+    type Plaintext = Zeroizing<Vec<u8>>;
 
-    type Ciphertext = Aead::Ciphertext;
-
-    type Error = Aead::Error;
+    // CIPHERTEXT = NONCE || TAG || ENCRYPTED PLAINTEXT
+    type Ciphertext = Vec<u8>;
 
     fn encrypt(
         key: &SymmetricKey<KEY_LENGTH>,
         ptx: &[u8],
-        rng: &mut impl CryptoRngCore,
+        nonce: &[u8; NONCE_LENGTH],
+        ad: &[u8],
     ) -> Result<Self::Ciphertext, Self::Error> {
-        Aead::encrypt(key, ptx, b"", rng)
+        let mut ctx = vec![0; NONCE_LENGTH + TAG_LENGTH + ptx.len()];
+        ctx[..NONCE_LENGTH].copy_from_slice(nonce);
+        ctx[NONCE_LENGTH + TAG_LENGTH..].copy_from_slice(ptx);
+        let tag = Self::encrypt_in_place(key, &mut ctx[NONCE_LENGTH + TAG_LENGTH..], nonce, ad)?;
+        ctx[NONCE_LENGTH..NONCE_LENGTH + TAG_LENGTH].copy_from_slice(&tag);
+        Ok(ctx)
     }
 
     fn decrypt(
         key: &SymmetricKey<KEY_LENGTH>,
-        ctx: &Self::Ciphertext,
+        ctx: &[u8],
+        ad: &[u8],
     ) -> Result<Self::Plaintext, Self::Error> {
-        Aead::decrypt(key, ctx, b"")
+        if ctx.len() < TAG_LENGTH + NONCE_LENGTH {
+            return Err(CryptoCoreError::DecryptionError.into());
+        }
+        let mut ptx = Zeroizing::new(vec![0; ctx.len() - NONCE_LENGTH - TAG_LENGTH]);
+        ptx.copy_from_slice(&ctx[NONCE_LENGTH + TAG_LENGTH..]);
+        Self::decrypt_in_place(
+            key,
+            &mut ptx,
+            &<[u8; NONCE_LENGTH]>::try_from(&ctx[..NONCE_LENGTH]).unwrap(),
+            &<[u8; TAG_LENGTH]>::try_from(&ctx[NONCE_LENGTH..NONCE_LENGTH + TAG_LENGTH]).unwrap(),
+            ad,
+        )?;
+        Ok(ptx)
     }
+}
+
+// An AEAD trivially implements an AE.
+impl<
+        const KEY_LENGTH: usize,
+        const NONCE_LENGTH: usize,
+        const TAG_LENGTH: usize,
+        Aead: AEAD_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>,
+    > AE_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH> for Aead
+{
+    type Error = Aead::Error;
+
+    fn encrypt_in_place(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ptx: &mut [u8],
+        nonce: &[u8; NONCE_LENGTH],
+    ) -> Result<[u8; TAG_LENGTH], Self::Error> {
+        <Self as AEAD_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>>::encrypt_in_place(
+            key,
+            ptx,
+            nonce,
+            &[],
+        )
+    }
+
+    fn decrypt_in_place(
+        key: &SymmetricKey<KEY_LENGTH>,
+        ctx: &mut [u8],
+        nonce: &[u8; NONCE_LENGTH],
+        tag: &[u8; TAG_LENGTH],
+    ) -> Result<(), Self::Error> {
+        <Self as AEAD_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>>::decrypt_in_place(
+            key,
+            ctx,
+            nonce,
+            tag,
+            &[],
+        )
+    }
+}
+
+/// Extendable Output Function.
+pub trait XOF {
+    type State;
+
+    /// Initialize the hasher.
+    fn initialize() -> Self::State;
+
+    /// Hash the given bytes.
+    fn update(state: &mut Self::State, bytes: &[u8]);
+
+    /// Fills the given buffer with pseudo-random bytes.
+    fn finalize(state: Self::State, buffer: &mut [u8]);
 }
 
 /// Non-Interactive Key Exchange.
 pub trait NIKE {
     type SecretKey: ZeroizeOnDrop;
-    type PublicKey;
+    type PublicKey: Serializable + for<'a> From<&'a Self::SecretKey>;
 
     /// The shared secret is not always a symmetric key, as such it is not
     /// required to be uniformly-random over its domain and is not always
@@ -303,7 +508,7 @@ pub trait NIKE {
 // A cyclic group trivially implements a NIKE.
 impl<T: CyclicGroup> NIKE for T
 where
-    T::Element: ZeroizeOnDrop,
+    T::Element: ZeroizeOnDrop + Serializable,
     T::Multiplicity: Sampling + ZeroizeOnDrop,
     for<'a> &'a T::Element: Neg<Output = T::Element>,
     for<'a, 'b> &'a T::Element: Add<&'b T::Element, Output = T::Element>,
@@ -367,7 +572,7 @@ where
 // A cyclic group trivially implements a key-homomorphic NIKE.
 impl<T: CyclicGroup> KeyHomomorphicNike for T
 where
-    T::Element: ZeroizeOnDrop,
+    T::Element: ZeroizeOnDrop + Serializable,
     T::Multiplicity: Sampling + ZeroizeOnDrop,
     for<'a> &'a T::Element: Neg<Output = T::Element>,
     for<'a, 'b> &'a T::Element: Add<&'b T::Element, Output = T::Element>,
@@ -387,8 +592,8 @@ where
 
 /// Key-Encapsulation Mechanism.
 pub trait KEM<const KEY_LENGTH: usize> {
-    type Encapsulation;
-    type EncapsulationKey;
+    type Encapsulation: Serializable;
+    type EncapsulationKey: Serializable + for<'a> From<&'a Self::DecapsulationKey>;
     type DecapsulationKey: ZeroizeOnDrop;
 
     type Error: std::error::Error;
@@ -420,7 +625,7 @@ pub trait KEM<const KEY_LENGTH: usize> {
 pub trait PKE {
     type Plaintext;
     type Ciphertext;
-    type PublicKey;
+    type PublicKey: Serializable + for<'a> From<&'a Self::SecretKey>;
     type SecretKey: ZeroizeOnDrop;
     type Error;
 

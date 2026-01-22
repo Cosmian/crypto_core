@@ -1,10 +1,10 @@
-use crate::traits::{CyclicGroup, Field, AEAD, KEM};
+use crate::traits::{AEAD_InPlace, CyclicGroup, Field, KEM};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 /// Provider implementing AES256-GCM.
 ///
 /// Note that this AEAD also implements an AE.
-pub trait Aes256GcmProvider: AEAD<32> {}
+pub trait Aes256GcmProvider: AEAD_InPlace<32, 12, 16> {}
 
 /// Provider implementing the Ristretto group of Curve25519.
 ///
