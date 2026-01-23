@@ -191,11 +191,6 @@ where
     type Multiplicity: Field;
 }
 
-/// Key Derivation Function.
-pub trait KDF<const KEY_LENGTH: usize> {
-    fn derive(seed: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH>;
-}
-
 /// Authenticated Encryption scheme.
 ///
 /// Implementations of this trait shall guarantee the absence of allocation.
@@ -466,18 +461,90 @@ impl<
     }
 }
 
+/// Hash algorithm.
+pub trait HASH<const LENGTH: usize> {
+    type State;
+    type Error: std::error::Error;
+
+    const LENGTH: usize = LENGTH;
+
+    /// Initialize the hasher.
+    fn initialize() -> Result<Self::State, Self::Error>;
+
+    /// Hash the given bytes.
+    fn update(state: &mut Self::State, bytes: &[u8]) -> Result<(), Self::Error>;
+
+    /// Fills the given buffer with pseudo-random bytes.
+    fn finalize(state: Self::State, bytes: &mut [u8; LENGTH]) -> Result<(), Self::Error>;
+
+    /// Hash the given bytes into the given buffer.
+    fn hash(bytes: Vec<&[u8]>, buffer: &mut [u8; LENGTH]) -> Result<(), Self::Error> {
+        let mut h = Self::initialize()?;
+        for bytes in bytes {
+            Self::update(&mut h, bytes)?;
+        }
+        Self::finalize(h, buffer)
+    }
+}
+
 /// Extendable Output Function.
 pub trait XOF {
     type State;
+    type Error: std::error::Error;
 
     /// Initialize the hasher.
-    fn initialize() -> Self::State;
+    fn initialize() -> Result<Self::State, Self::Error>;
 
     /// Hash the given bytes.
-    fn update(state: &mut Self::State, bytes: &[u8]);
+    fn update(state: &mut Self::State, bytes: &[u8]) -> Result<(), Self::Error>;
 
     /// Fills the given buffer with pseudo-random bytes.
-    fn finalize(state: Self::State, buffer: &mut [u8]);
+    fn finalize(state: Self::State, buffer: &mut [u8]) -> Result<(), Self::Error>;
+
+    /// Hash the given bytes into the given buffer.
+    fn hash(bytes: Vec<&[u8]>, buffer: &mut [u8]) -> Result<(), Self::Error> {
+        let mut h = Self::initialize()?;
+        for bytes in bytes {
+            Self::update(&mut h, bytes)?;
+        }
+        Self::finalize(h, buffer)
+    }
+}
+
+// A XOF trivially implements a HASH of any length.
+impl<const LENGTH: usize, H: XOF> HASH<LENGTH> for H {
+    type State = H::State;
+
+    type Error = H::Error;
+
+    fn initialize() -> Result<Self::State, Self::Error> {
+        H::initialize()
+    }
+
+    fn update(state: &mut Self::State, bytes: &[u8]) -> Result<(), Self::Error> {
+        H::update(state, bytes)
+    }
+
+    fn finalize(state: Self::State, bytes: &mut [u8; LENGTH]) -> Result<(), Self::Error> {
+        H::finalize(state, bytes)
+    }
+}
+
+/// Key Derivation Function.
+pub trait KDF<const KEY_LENGTH: usize> {
+    type Error: std::error::Error;
+
+    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
+}
+
+impl<const LENGTH: usize, H: HASH<LENGTH>> KDF<LENGTH> for H {
+    type Error = H::Error;
+
+    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<LENGTH>, Self::Error> {
+        let mut key = SymmetricKey::default();
+        H::hash([vec![seed], info].concat(), &mut key)?;
+        Ok(key)
+    }
 }
 
 /// Non-Interactive Key Exchange.
@@ -627,7 +694,11 @@ pub trait PKE {
     type Ciphertext;
     type PublicKey: Serializable + for<'a> From<&'a Self::SecretKey>;
     type SecretKey: ZeroizeOnDrop;
-    type Error;
+    type Error: std::error::Error;
+
+    fn keygen(
+        rng: &mut impl CryptoRngCore,
+    ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error>;
 
     fn encrypt(
         pk: &Self::PublicKey,

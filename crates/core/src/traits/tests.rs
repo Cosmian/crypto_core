@@ -6,9 +6,15 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
+use rand_core::RngCore;
+use zeroize::Zeroizing;
+
 use crate::{
     reexport::rand_core::SeedableRng,
-    traits::{AbelianGroup, CyclicGroup, Field, Group, Monoid, Ring, Sampling, Zero, KEM, NIKE},
+    traits::{
+        AbelianGroup, CyclicGroup, Field, Group, Monoid, Ring, Sampling, Zero, HASH, KEM, NIKE,
+        PKE, XOF,
+    },
     CsRng,
 };
 
@@ -182,4 +188,71 @@ pub fn test_kem<const KEY_LENGTH: usize, Scheme: KEM<KEY_LENGTH>>() {
 
     assert_eq!(ss_1, ss_1_);
     assert_eq!(ss_2, ss_2_);
+}
+
+pub fn test_pke<Scheme: PKE<Plaintext = Zeroizing<Vec<u8>>>>() {
+    let mut rng = CsRng::from_entropy();
+    let mut ptx = Zeroizing::new(vec![0; 13]);
+    rng.fill_bytes(&mut ptx);
+
+    let (sk, pk) = Scheme::keygen(&mut rng).unwrap();
+
+    let ctx = Scheme::encrypt(&pk, &ptx, &mut rng).unwrap();
+    let ptx_ = Scheme::decrypt(&sk, &ctx).unwrap();
+
+    assert_eq!(&ptx, &ptx_);
+}
+
+pub fn test_hash<const LENGTH: usize, H: HASH<LENGTH>>() {
+    let mut rng = CsRng::from_entropy();
+    let mut buffer_1 = [0; LENGTH];
+    let mut buffer_2 = [0; LENGTH];
+
+    // Hashing empty bytes should be idempotent.
+    H::hash(vec![&[]], &mut buffer_1).unwrap();
+    H::hash(vec![&[], &[]], &mut buffer_2).unwrap();
+    assert_eq!(buffer_1, buffer_2);
+
+    let mut bytes = [0; 13];
+    rng.fill_bytes(&mut bytes);
+    H::hash(vec![&bytes, &[]], &mut buffer_1).unwrap();
+    H::hash(vec![&bytes, &[], &[]], &mut buffer_2).unwrap();
+    assert_eq!(buffer_1, buffer_2);
+
+    // Hashing different input bytes should not output the same bytes.
+    let mut bytes_ = [0; 13];
+    rng.fill_bytes(&mut bytes_);
+    H::hash(vec![&bytes], &mut buffer_1).unwrap();
+    H::hash(vec![&bytes_], &mut buffer_2).unwrap();
+    assert_ne!(buffer_1, buffer_2);
+}
+
+pub fn test_xof<H: XOF>() {
+    // A XOF can implement a hash of any output length.
+    test_hash::<32, H>();
+    test_hash::<2, H>();
+    test_hash::<128, H>();
+
+    let mut rng = CsRng::from_entropy();
+    let mut buffer_1 = [0; 13];
+    let mut buffer_2 = [0; 17];
+
+    // Hashing empty bytes should be idempotent.
+    H::hash(vec![&[]], &mut buffer_1).unwrap();
+    H::hash(vec![&[], &[]], &mut buffer_2).unwrap();
+    assert_eq!(buffer_1, buffer_2[..13]);
+
+    // Hashing to two length should output the same prefix.
+    let mut bytes = [0; 13];
+    rng.fill_bytes(&mut bytes);
+    H::hash(vec![&bytes, &[]], &mut buffer_1).unwrap();
+    H::hash(vec![&bytes, &[], &[]], &mut buffer_2).unwrap();
+    assert_eq!(buffer_1, buffer_2[..13]);
+
+    // Hashing different bytes should not output the same prefix.
+    let mut bytes_ = [0; 13];
+    rng.fill_bytes(&mut bytes_);
+    H::hash(vec![&bytes], &mut buffer_1).unwrap();
+    H::hash(vec![&bytes_], &mut buffer_2).unwrap();
+    assert_ne!(buffer_1, buffer_2[..13]);
 }

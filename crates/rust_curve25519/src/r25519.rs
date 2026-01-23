@@ -6,6 +6,7 @@ pub use scalar::R25519Scalar;
 
 use cosmian_crypto_core::traits::{providers::R25519GroupProvider, CyclicGroup};
 
+#[derive(Debug, Clone, Copy)]
 pub struct R25519;
 
 impl CyclicGroup for R25519 {

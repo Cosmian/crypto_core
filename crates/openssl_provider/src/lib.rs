@@ -15,6 +15,7 @@
 //! of the monad state when necessary (using the `GenericKEM` from CryptoCore
 //! would return a monad instead of the proper keys or encapsulation).
 
+pub mod hash;
 pub mod kem;
 pub mod p256;
 
