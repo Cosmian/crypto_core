@@ -21,7 +21,10 @@ impl CyclicGroup for P256 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{hash::Sha256, kem::MonadicKEM};
+    use crate::{
+        hash::{Sha256, Sha3_256, Shake256},
+        kem::MonadicKEM,
+    };
     use cosmian_crypto_core::{
         traits::{
             kem_to_pke::GenericPKE,
@@ -33,8 +36,15 @@ mod tests {
     #[test]
     fn test_p256() {
         test_cyclic_group::<P256>();
+
         test_nike::<P256>();
+
         test_kem::<32, MonadicKEM<32, P256, Sha256>>();
+        test_kem::<32, MonadicKEM<32, P256, Sha3_256>>();
+        test_kem::<32, MonadicKEM<32, P256, Shake256>>();
+
         test_pke::<GenericPKE<32, 12, 16, MonadicKEM<32, P256, Sha256>, Aes256Gcm>>();
+        test_pke::<GenericPKE<32, 12, 16, MonadicKEM<32, P256, Sha3_256>, Aes256Gcm>>();
+        test_pke::<GenericPKE<32, 12, 16, MonadicKEM<32, P256, Shake256>, Aes256Gcm>>();
     }
 }
