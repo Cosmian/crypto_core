@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/core", "crates/rust_nist_ec", "crates/rust_curve25519"]
+members = [
+  "crates/core",
+  "crates/openssl_provider",
+  "crates/rust_nist_ec",
+  "crates/rust_curve25519"
+]
 resolver = "2"
 
 [workspace.package]

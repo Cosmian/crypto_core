@@ -332,6 +332,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmian_openssl_provider"
+version = "1.0.0"
+dependencies = [
+ "cosmian_crypto_core",
+ "openssl",
+ "zeroize",
+]
+
+[[package]]
 name = "cosmian_rust_curve25519_provider"
 version = "1.0.0"
 dependencies = [

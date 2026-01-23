@@ -1,0 +1,24 @@
+[package]
+name = "cosmian_openssl_provider"
+version = "1.0.0"
+description = "OpenSSL cryptographic provider."
+
+authors = { workspace = true }
+categories = { workspace = true }
+edition = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+[lib]
+crate-type = ["lib", "staticlib"]
+name = "cosmian_openssl_provider"
+path = "src/lib.rs"
+
+[dependencies]
+cosmian_crypto_core = { path = "../core", version = "10.4", default-features = false }
+openssl = { version = "0.10", default-features = false }
+zeroize = { workspace = true }
+
+[dev-dependencies]
+cosmian_crypto_core = { path = "../core", version = "10.4", default-features = false, features = ["sha3"] }
