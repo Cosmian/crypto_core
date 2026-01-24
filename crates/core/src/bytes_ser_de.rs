@@ -189,12 +189,12 @@ impl Serializer {
     ///
     /// - `array`   : array of bytes to write
     pub fn write_array(&mut self, array: &[u8]) -> Result<usize, CryptoCoreError> {
-        self.0
-            .write(array)
-            .map_err(|error| CryptoCoreError::SerializationIoError {
+        <Vec<u8> as Write>::write(&mut self.0, array).map_err(|error| {
+            CryptoCoreError::SerializationIoError {
                 bytes_len: array.len(),
                 error,
-            })
+            }
+        })
     }
 
     /// Writes a vector of Boolean values in a packed manner.
@@ -506,6 +506,22 @@ where
             *res_i = de.read::<T>()?;
         }
         Ok(res)
+    }
+}
+
+impl Serializable for Vec<u8> {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.len()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_vec(self)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_vec()
     }
 }
 
