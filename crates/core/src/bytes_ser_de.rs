@@ -10,7 +10,7 @@ use std::{
 };
 
 use leb128;
-use zeroize::{DefaultIsZeroes, Zeroizing};
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::CryptoCoreError;
 
@@ -619,7 +619,7 @@ impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V
     }
 }
 
-impl<T: Serializable + DefaultIsZeroes> Serializable for Zeroizing<T> {
+impl<T: Serializable + Zeroize> Serializable for Zeroizing<T> {
     type Error = CryptoCoreError;
 
     fn length(&self) -> usize {
