@@ -449,15 +449,14 @@ where
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
-        let mut n = self
+        Ok(self
             .0
             .write(ser)
-            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?;
-        n += self
-            .1
-            .write(ser)
-            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?;
-        Ok(n)
+            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .1
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?)
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
@@ -466,6 +465,92 @@ where
                 .map_err(|e: T1::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
             de.read()
                 .map_err(|e: T2::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+        ))
+    }
+}
+
+impl<T1: Serializable, T2: Serializable, T3: Serializable> Serializable for (T1, T2, T3)
+where
+    T1::Error: From<CryptoCoreError>,
+    T2::Error: From<CryptoCoreError>,
+    T3::Error: From<CryptoCoreError>,
+{
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.0.length() + self.1.length() + self.1.length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        Ok(self
+            .0
+            .write(ser)
+            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .1
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .2
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Ok((
+            de.read()
+                .map_err(|e: T1::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T2::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T3::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+        ))
+    }
+}
+
+impl<T1: Serializable, T2: Serializable, T3: Serializable, T4: Serializable> Serializable
+    for (T1, T2, T3, T4)
+where
+    T1::Error: From<CryptoCoreError>,
+    T2::Error: From<CryptoCoreError>,
+    T3::Error: From<CryptoCoreError>,
+    T4::Error: From<CryptoCoreError>,
+{
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.0.length() + self.1.length() + self.1.length() + self.3.length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        Ok(self
+            .0
+            .write(ser)
+            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .1
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .2
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .3
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Ok((
+            de.read()
+                .map_err(|e: T1::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T2::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T3::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T4::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
         ))
     }
 }
