@@ -27,6 +27,7 @@ mod tests {
     };
     use cosmian_crypto_core::{
         traits::{
+            kem_combiner::KemCombiner,
             kem_to_pke::GenericPKE,
             tests::{test_cyclic_group, test_kem, test_nike, test_pke},
         },
@@ -46,5 +47,9 @@ mod tests {
         test_pke::<GenericPKE<32, 12, 16, MonadicKEM<32, P256, Sha256>, Aes256Gcm>>();
         test_pke::<GenericPKE<32, 12, 16, MonadicKEM<32, P256, Sha3_256>, Aes256Gcm>>();
         test_pke::<GenericPKE<32, 12, 16, MonadicKEM<32, P256, Shake256>, Aes256Gcm>>();
+
+        type Kem1 = MonadicKEM<32, P256, Sha256>;
+        type Kem2 = MonadicKEM<32, P256, Sha3_256>;
+        test_kem::<64, KemCombiner<64, 32, 32, Kem1, Kem2, Shake256>>();
     }
 }

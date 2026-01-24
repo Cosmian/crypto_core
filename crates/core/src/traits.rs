@@ -6,6 +6,7 @@ use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use zeroize::{ZeroizeOnDrop, Zeroizing};
 
 pub mod cyclic_group_to_kem;
+pub mod kem_combiner;
 pub mod kem_to_pke;
 pub mod macros;
 pub mod providers;
