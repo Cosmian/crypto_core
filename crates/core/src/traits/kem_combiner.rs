@@ -1,5 +1,5 @@
 use crate::{
-    bytes_ser_de::Serializable,
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
     traits::{KDF, KEM},
     SymmetricKey,
 };
@@ -33,8 +33,8 @@ pub struct KemCombinerDK<
     Kem2: KEM<KEY_LENGTH_2>,
     Kdf: KDF<KEY_LENGTH>,
 >(
-    Kem1::DecapsulationKey,
-    Kem2::DecapsulationKey,
+    // Use an explicit pair as serialization is derived for pairs.
+    (Kem1::DecapsulationKey, Kem2::DecapsulationKey),
     PhantomData<Kdf>,
 );
 
@@ -53,6 +53,38 @@ pub struct KemCombinerEK<
     PhantomData<Kdf>,
 );
 
+// Though not required by the KEM trait, it is nice to be able to serialize the
+// combined decapsulation key when underlying both KEM decapsulation keys are
+// serializable.
+
+impl<
+        const KEY_LENGTH: usize,
+        const KEY_LENGTH_1: usize,
+        const KEY_LENGTH_2: usize,
+        Kem1: Debug + KEM<KEY_LENGTH_1>,
+        Kem2: Debug + KEM<KEY_LENGTH_2>,
+        Kdf: Debug + KDF<KEY_LENGTH>,
+    > Serializable for KemCombinerDK<KEY_LENGTH, KEY_LENGTH_1, KEY_LENGTH_2, Kem1, Kem2, Kdf>
+where
+    Kem1::DecapsulationKey: Serializable,
+    Kem2::DecapsulationKey: Serializable,
+{
+    type Error = KemError<KEY_LENGTH, KEY_LENGTH_1, KEY_LENGTH_2, Kem1, Kem2, Kdf>;
+
+    fn length(&self) -> usize {
+        self.0.length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write(&self.0)
+            .map_err(Self::Error::to_serialization_error)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Ok(Self(de.read()?, PhantomData))
+    }
+}
+
 // NOTE: the above-mentioned `From` implementation.
 
 impl<
@@ -68,13 +100,15 @@ impl<
     fn from(dk: &KemCombinerDK<KEY_LENGTH, KEY_LENGTH_1, KEY_LENGTH_2, Kem1, Kem2, Kdf>) -> Self {
         KemCombinerEK(
             (
-                Kem1::EncapsulationKey::from(&dk.0),
-                Kem2::EncapsulationKey::from(&dk.1),
+                Kem1::EncapsulationKey::from(&dk.0 .0),
+                Kem2::EncapsulationKey::from(&dk.0 .1),
             ),
             PhantomData,
         )
     }
 }
+
+// KEM encapsulation keys are required to be serializable.
 
 impl<
         const KEY_LENGTH: usize,
@@ -101,6 +135,9 @@ impl<
     }
 }
 
+// Derive a KEM implementation of the KEM combiner with best-of-both CCA
+// security.
+
 impl<
         const KEY_LENGTH: usize,
         const KEY_LENGTH_1: usize,
@@ -113,6 +150,8 @@ where
     Kem1::EncapsulationKey: Debug,
     Kem2::EncapsulationKey: Debug,
 {
+    // Since we can use a tuple (`Serializable` is automatically derived for
+    // tuples), let's just do it.
     type Encapsulation = (Kem1::Encapsulation, Kem2::Encapsulation);
 
     type EncapsulationKey = KemCombinerEK<KEY_LENGTH, KEY_LENGTH_1, KEY_LENGTH_2, Kem1, Kem2, Kdf>;
@@ -127,7 +166,7 @@ where
         let (dk_1, ek_1) = Kem1::keygen(rng).map_err(Self::Error::Kem1)?;
         let (dk_2, ek_2) = Kem2::keygen(rng).map_err(Self::Error::Kem2)?;
         Ok((
-            KemCombinerDK(dk_1, dk_2, PhantomData),
+            KemCombinerDK((dk_1, dk_2), PhantomData),
             KemCombinerEK((ek_1, ek_2), PhantomData),
         ))
     }
@@ -159,8 +198,8 @@ where
         dk: &Self::DecapsulationKey,
         enc: &Self::Encapsulation,
     ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
-        let ss_1 = Kem1::dec(&dk.0, &enc.0).map_err(Self::Error::Kem1)?;
-        let ss_2 = Kem2::dec(&dk.1, &enc.1).map_err(Self::Error::Kem2)?;
+        let ss_1 = Kem1::dec(&dk.0 .0, &enc.0).map_err(Self::Error::Kem1)?;
+        let ss_2 = Kem2::dec(&dk.0 .1, &enc.1).map_err(Self::Error::Kem2)?;
         let ek = KemCombinerEK::from(dk);
         let key = Kdf::derive(
             &ek.serialize()?,
