@@ -17,6 +17,10 @@
 
 pub mod hash;
 pub mod kem;
+
+// TODO: since OpenSSL is built such that EC code is generic on the concrete
+// curve parameters, it should be easy to turn this module into a macro and to
+// derive a provider for all OpenSSL curves.
 pub mod p256;
 
 /// An FFI monad is either in an OK or error state.
