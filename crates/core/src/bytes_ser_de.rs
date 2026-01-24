@@ -6,10 +6,11 @@ use std::{
     hash::Hash,
     io::{Read, Write},
     num::NonZeroUsize,
+    ops::Deref,
 };
 
 use leb128;
-use zeroize::Zeroizing;
+use zeroize::{DefaultIsZeroes, Zeroizing};
 
 use crate::CryptoCoreError;
 
@@ -615,6 +616,30 @@ impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V
             );
         }
         Ok(res)
+    }
+}
+
+impl<T: Serializable + DefaultIsZeroes> Serializable for Zeroizing<T> {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.deref().length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.deref().write(ser).map_err(|e| {
+            CryptoCoreError::GenericSerializationError(format!(
+                "error upon writing zeroized vector: {e}"
+            ))
+        })
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read().map(Self::new).map_err(|e| {
+            CryptoCoreError::GenericSerializationError(format!(
+                "error upon reading zeroized vector: {e}"
+            ))
+        })
     }
 }
 
