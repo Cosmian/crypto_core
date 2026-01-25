@@ -6,6 +6,8 @@ use std::{
 
 pub use error::{PkeError, SealBoxError};
 
+/// Generic implementation of a PKE from a KEM and an AE sharing the same key
+/// length.
 #[derive(Clone, Copy, Default)]
 pub struct GenericPKE<
     const KEY_LENGTH: usize,
@@ -57,6 +59,11 @@ impl<
     }
 }
 
+/// Generic implementation of a seal-box from a KEM, a XOF and an AE where the
+/// KEM and the AE share the same key length.
+///
+/// A seal-box is a kind of PKE that derives the nonce used in the AE using a
+/// XOF, the receiver's public key and the session-key encapsulation.
 #[derive(Clone, Copy, Default)]
 pub struct SealBox<
     const KEY_LENGTH: usize,

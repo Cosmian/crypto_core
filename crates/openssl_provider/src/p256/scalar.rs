@@ -3,8 +3,8 @@ use cosmian_crypto_core::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
     reexport::rand_core::CryptoRngCore,
-    traits::{AbelianGroup, Field, Group, Monoid, Ring, Sampling, Zero},
-    CryptoCoreError,
+    traits::{AbelianGroup, Field, Group, Monoid, Ring, Sampling, Seedable, Zero},
+    CryptoCoreError, Secret,
 };
 use openssl::{
     bn::{BigNum, BigNumContext},
@@ -65,6 +65,16 @@ impl PartialEq for P256Scalar {
 }
 
 impl Eq for P256Scalar {}
+
+impl P256Scalar {
+    pub const SCALAR_LENGTH: usize = 32;
+}
+
+impl Seedable<{ Self::SCALAR_LENGTH }> for P256Scalar {
+    fn from_seed(seed: &Secret<{ Self::SCALAR_LENGTH }>) -> Self {
+        Self(BigNum::from_slice(&**seed))
+    }
+}
 
 impl Sampling for P256Scalar {
     fn random(_rng: &mut impl CryptoRngCore) -> Self {
@@ -209,7 +219,7 @@ impl Serializable for P256Scalar {
     type Error = CryptoCoreError;
 
     fn length(&self) -> usize {
-        32
+        Self::SCALAR_LENGTH
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
