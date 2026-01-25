@@ -12,10 +12,13 @@ use openssl::{
     error::ErrorStack,
 };
 use std::ops::Div;
-use zeroize::ZeroizeOnDrop;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 fn clone_big_num(n: &BigNum) -> Result<BigNum, ErrorStack> {
-    BigNum::from_slice(&n.to_vec())
+    let mut bytes = n.to_vec();
+    let clone = BigNum::from_slice(&bytes);
+    bytes.zeroize();
+    clone
 }
 
 fn get_group_order(ctxt: &mut BigNumContext) -> Result<BigNum, ErrorStack> {
@@ -67,12 +70,20 @@ impl PartialEq for P256Scalar {
 impl Eq for P256Scalar {}
 
 impl P256Scalar {
-    pub const SCALAR_LENGTH: usize = 32;
+    pub const LENGTH: usize = 32;
 }
 
-impl Seedable<{ Self::SCALAR_LENGTH }> for P256Scalar {
-    fn from_seed(seed: &Secret<{ Self::SCALAR_LENGTH }>) -> Self {
-        Self(BigNum::from_slice(&**seed))
+impl Seedable<{ Self::LENGTH }> for P256Scalar {
+    fn from_seed(seed: &Secret<{ Self::LENGTH }>) -> Self {
+        let from_seed = |seed: &Secret<{ Self::LENGTH }>| {
+            let n = BigNum::from_slice(&**seed)?;
+            let mut ctxt = BigNumContext::new()?;
+            let mut res = BigNum::new()?;
+            let order = get_group_order(&mut ctxt)?;
+            res.nnmod(&n, &order, &mut ctxt)?;
+            Ok(res)
+        };
+        Self(from_seed(seed))
     }
 }
 
@@ -219,12 +230,25 @@ impl Serializable for P256Scalar {
     type Error = CryptoCoreError;
 
     fn length(&self) -> usize {
-        Self::SCALAR_LENGTH
+        self.0
+            .as_ref()
+            .map(|n| {
+                let mut bytes = n.to_vec();
+                let len = bytes.length();
+                bytes.zeroize();
+                len
+            })
+            .unwrap_or_default()
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         match &self.0 {
-            Ok(n) => ser.write_array(&n.to_vec()),
+            Ok(n) => {
+                let mut bytes = n.to_vec();
+                let n = ser.write_vec(&bytes);
+                bytes.zeroize();
+                n
+            }
             Err(e) => Err(CryptoCoreError::GenericSerializationError(format!(
                 "cannot serialize a scalar in error state: {e}"
             ))),
@@ -232,7 +256,7 @@ impl Serializable for P256Scalar {
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
-        let bytes = de.read_array::<32>()?;
+        let bytes = de.read_vec()?;
         BigNum::from_slice(&bytes).map(Ok).map(Self).map_err(|e| {
             CryptoCoreError::GenericDeserializationError(format!("cannot deserialize scalar: {e}"))
         })
@@ -254,6 +278,12 @@ mod tests {
         // Test serialization.
         let mut rng = CsRng::from_entropy();
         let s = P256Scalar::random(&mut rng);
+        test_serialization(&s).unwrap();
+
+        // Test serialization from seed.
+        let mut rng = CsRng::from_entropy();
+        let seed = Secret::<{ P256Scalar::LENGTH }>::random(&mut rng);
+        let s = P256Scalar::from_seed(&seed);
         test_serialization(&s).unwrap();
     }
 }
