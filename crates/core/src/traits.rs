@@ -551,7 +551,7 @@ impl<const LENGTH: usize, H: HASH<LENGTH>> KDF<LENGTH> for H {
 /// Non-Interactive Key Exchange.
 pub trait NIKE {
     type SecretKey: ZeroizeOnDrop;
-    type PublicKey: Serializable + for<'a> From<&'a Self::SecretKey>;
+    type PublicKey: Serializable;
 
     /// The shared secret is not always a symmetric key, as such it is not
     /// required to be uniformly-random over its domain and is not always
@@ -661,7 +661,7 @@ where
 /// Key-Encapsulation Mechanism.
 pub trait KEM<const KEY_LENGTH: usize> {
     type Encapsulation: Serializable;
-    type EncapsulationKey: Serializable + for<'a> From<&'a Self::DecapsulationKey>;
+    type EncapsulationKey: Serializable;
     type DecapsulationKey: ZeroizeOnDrop;
 
     type Error: std::error::Error;
@@ -693,7 +693,7 @@ pub trait KEM<const KEY_LENGTH: usize> {
 pub trait PKE {
     type Plaintext;
     type Ciphertext;
-    type PublicKey: Serializable + for<'a> From<&'a Self::SecretKey>;
+    type PublicKey: Serializable;
     type SecretKey: ZeroizeOnDrop;
     type Error: std::error::Error;
 

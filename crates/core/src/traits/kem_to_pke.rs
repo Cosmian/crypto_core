@@ -104,7 +104,7 @@ impl<
     > PKE for SealBox<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH, Kem, H, E>
 where
     Kem::Encapsulation: Debug,
-    Kem::EncapsulationKey: Debug,
+    Kem::EncapsulationKey: Debug + for<'a> From<&'a Kem::DecapsulationKey>,
 {
     type Plaintext = Zeroizing<Vec<u8>>;
     // CIPHERTEXT = ENCAPSULATION + TAG || ENCRYPTED PLAINTEXT
