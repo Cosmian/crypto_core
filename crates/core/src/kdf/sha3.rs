@@ -1,16 +1,21 @@
-use crate::{traits::KDF, SymmetricKey};
+use crate::{traits::KDF, CryptoCoreError, SymmetricKey};
 pub use tiny_keccak::{Hasher, Shake};
 
+#[derive(Debug, Clone, Copy)]
 pub struct Kdf256;
 
 impl<const KEY_LENGTH: usize> KDF<KEY_LENGTH> for Kdf256 {
-    fn derive(seed: &[u8], info: &[u8]) -> SymmetricKey<KEY_LENGTH> {
-        let mut bytes = SymmetricKey::default();
+    type Error = CryptoCoreError;
+
+    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
+        let mut key = SymmetricKey::default();
         let mut hasher = Shake::v256();
         hasher.update(seed);
-        hasher.update(info);
-        hasher.finalize(&mut *bytes);
-        bytes
+        for bytes in info {
+            hasher.update(bytes);
+        }
+        hasher.finalize(&mut *key);
+        Ok(key)
     }
 }
 

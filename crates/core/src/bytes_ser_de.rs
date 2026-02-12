@@ -6,10 +6,11 @@ use std::{
     hash::Hash,
     io::{Read, Write},
     num::NonZeroUsize,
+    ops::Deref,
 };
 
 use leb128;
-use zeroize::Zeroizing;
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::CryptoCoreError;
 
@@ -188,12 +189,12 @@ impl Serializer {
     ///
     /// - `array`   : array of bytes to write
     pub fn write_array(&mut self, array: &[u8]) -> Result<usize, CryptoCoreError> {
-        self.0
-            .write(array)
-            .map_err(|error| CryptoCoreError::SerializationIoError {
+        <Vec<u8> as Write>::write(&mut self.0, array).map_err(|error| {
+            CryptoCoreError::SerializationIoError {
                 bytes_len: array.len(),
                 error,
-            })
+            }
+        })
     }
 
     /// Writes a vector of Boolean values in a packed manner.
@@ -448,15 +449,14 @@ where
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
-        let mut n = self
+        Ok(self
             .0
             .write(ser)
-            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?;
-        n += self
-            .1
-            .write(ser)
-            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?;
-        Ok(n)
+            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .1
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?)
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
@@ -465,6 +465,92 @@ where
                 .map_err(|e: T1::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
             de.read()
                 .map_err(|e: T2::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+        ))
+    }
+}
+
+impl<T1: Serializable, T2: Serializable, T3: Serializable> Serializable for (T1, T2, T3)
+where
+    T1::Error: From<CryptoCoreError>,
+    T2::Error: From<CryptoCoreError>,
+    T3::Error: From<CryptoCoreError>,
+{
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.0.length() + self.1.length() + self.1.length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        Ok(self
+            .0
+            .write(ser)
+            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .1
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .2
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Ok((
+            de.read()
+                .map_err(|e: T1::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T2::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T3::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+        ))
+    }
+}
+
+impl<T1: Serializable, T2: Serializable, T3: Serializable, T4: Serializable> Serializable
+    for (T1, T2, T3, T4)
+where
+    T1::Error: From<CryptoCoreError>,
+    T2::Error: From<CryptoCoreError>,
+    T3::Error: From<CryptoCoreError>,
+    T4::Error: From<CryptoCoreError>,
+{
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.0.length() + self.1.length() + self.1.length() + self.3.length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        Ok(self
+            .0
+            .write(ser)
+            .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .1
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .2
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?
+            + self
+                .3
+                .write(ser)
+                .map_err(|e| Self::Error::GenericSerializationError(e.to_string()))?)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Ok((
+            de.read()
+                .map_err(|e: T1::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T2::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T3::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T4::Error| Self::Error::GenericDeserializationError(e.to_string()))?,
         ))
     }
 }
@@ -505,6 +591,22 @@ where
             *res_i = de.read::<T>()?;
         }
         Ok(res)
+    }
+}
+
+impl Serializable for Vec<u8> {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.len().length() + self.len()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        ser.write_vec(self)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read_vec()
     }
 }
 
@@ -615,6 +717,30 @@ impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V
             );
         }
         Ok(res)
+    }
+}
+
+impl<T: Serializable + Zeroize> Serializable for Zeroizing<T> {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        self.deref().length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        self.deref().write(ser).map_err(|e| {
+            CryptoCoreError::GenericSerializationError(format!(
+                "error upon writing zeroized vector: {e}"
+            ))
+        })
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        de.read().map(Self::new).map_err(|e| {
+            CryptoCoreError::GenericSerializationError(format!(
+                "error upon reading zeroized vector: {e}"
+            ))
+        })
     }
 }
 

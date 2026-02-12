@@ -25,6 +25,9 @@ pub mod bytes_ser_de;
 #[macro_use]
 pub mod traits;
 
+// Re-export this trait to avoid a breaking change.
+pub use traits::Sampling;
+
 #[cfg(feature = "macro")]
 #[macro_use]
 pub mod bytes;

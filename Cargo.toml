@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/core", "crates/rust_nist_ec", "crates/rust_curve25519"]
+members = [
+  "crates/core",
+  "crates/openssl_provider",
+  "crates/rust_nist_ec",
+  "crates/rust_curve25519"
+]
 resolver = "2"
 
 [workspace.package]
@@ -48,7 +53,6 @@ zeroize = "1.8"
 criterion = "0.6"
 libc = "0.2"
 libsodium-sys-stable = "1.23.1"
-openssl = "0.10"
 tempfile = "3.24"
 
 [profile.bench]

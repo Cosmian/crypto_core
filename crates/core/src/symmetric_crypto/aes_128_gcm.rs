@@ -2,21 +2,18 @@
 //! algorithm.
 //!
 //! It will use the AES native interface on the CPU if available.
-use std::{fmt::Debug, ops::Deref};
-
-use aead::{generic_array::GenericArray, KeyInit};
-use aes_gcm::Aes128Gcm as Aes128GcmLib;
-use rand_core::CryptoRngCore;
-use zeroize::Zeroizing;
 
 use super::{
     dem::{DemInPlace, DemStream, Instantiable},
     nonce::Nonce,
 };
 use crate::{
-    symmetric_crypto::Dem, traits::AE, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes,
+    symmetric_crypto::Dem, traits::AEAD_InPlace, CryptoCoreError, RandomFixedSizeCBytes,
     SymmetricKey,
 };
+use aead::{generic_array::GenericArray, AeadMutInPlace, KeyInit};
+use aes_gcm::Aes128Gcm as Aes128GcmLib;
+use std::{fmt::Debug, ops::Deref};
 
 /// Structure implementing `SymmetricCrypto` and the `DEM` interfaces based on
 /// AES 128 GCM.
@@ -82,32 +79,40 @@ impl DemStream<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH 
     }
 }
 
-impl AE<{ Self::KEY_LENGTH }> for Aes128Gcm {
-    type Plaintext = Zeroizing<Vec<u8>>;
-    type Ciphertext = Vec<u8>;
+impl AEAD_InPlace<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENGTH }>
+    for Aes128Gcm
+{
     type Error = CryptoCoreError;
 
-    fn encrypt(
+    fn encrypt_in_place(
         key: &SymmetricKey<{ Self::KEY_LENGTH }>,
-        ptx: &[u8],
-        rng: &mut impl CryptoRngCore,
-    ) -> Result<Self::Ciphertext, Self::Error> {
-        let nonce = Nonce::<{ Self::NONCE_LENGTH }>::new(&mut *rng);
-        let ciphertext = Self::new(key).encrypt(&nonce, ptx, None)?;
-        Ok([nonce.as_bytes(), &ciphertext].concat())
+        ptx: &mut [u8],
+        nonce: &[u8; Self::NONCE_LENGTH],
+        ad: &[u8],
+    ) -> Result<[u8; Self::MAC_LENGTH], Self::Error> {
+        let tag = Aes128GcmLib::new(GenericArray::from_slice(&**key)).encrypt_in_place_detached(
+            GenericArray::from_slice(nonce),
+            ad,
+            ptx,
+        )?;
+        Ok(GenericArray::into(tag))
     }
 
-    fn decrypt(
+    fn decrypt_in_place(
         key: &SymmetricKey<{ Self::KEY_LENGTH }>,
-        ctx: &Self::Ciphertext,
-    ) -> Result<Self::Plaintext, Self::Error> {
-        if ctx.len() < Self::NONCE_LENGTH {
-            return Err(CryptoCoreError::DecryptionError);
-        }
-        let nonce = Nonce::try_from_slice(&ctx[..Self::NONCE_LENGTH])?;
-        Self::new(key)
-            .decrypt(&nonce, &ctx[Self::NONCE_LENGTH..], None)
-            .map(Zeroizing::new)
+        ctx: &mut [u8],
+        nonce: &[u8; Self::NONCE_LENGTH],
+        tag: &[u8; Self::MAC_LENGTH],
+        ad: &[u8],
+    ) -> Result<(), Self::Error> {
+        Aes128GcmLib::new(GenericArray::from_slice(&**key))
+            .decrypt_in_place_detached(
+                GenericArray::from_slice(nonce),
+                ad,
+                ctx,
+                GenericArray::from_slice(tag),
+            )
+            .map_err(Self::Error::from)
     }
 }
 
