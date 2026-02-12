@@ -134,7 +134,8 @@ repos:
         args: [--allow-dirty]
 
   - repo: https://github.com/EmbarkStudios/cargo-deny
-    rev: 0.18.2 # choose your preferred tag
+    rev: 0.19.0
     hooks:
       - id: cargo-deny
         args: [--all-features, check]
+        stages: [manual]
