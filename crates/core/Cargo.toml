@@ -94,7 +94,7 @@ zeroize = { workspace = true, features = ["zeroize_derive"] }
 criterion = { workspace = true }
 libc = { workspace = true }
 libsodium-sys-stable = { workspace = true }
-openssl = { workspace = true, features = ["vendored"] }
+openssl = "0.10"
 tempfile = { workspace = true }
 
 [[bench]]
