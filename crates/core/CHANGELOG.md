@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-## UNRELEASED
+## [11.0.0] - 2026-02-13
+
+### 🚀 Features
+
+- Introduce the new algebraic and cryptographic provider traits under `traits` (group/field abstractions, NIKE/KEM interfaces, and generic adapters).
+- Add provider marker traits for common primitives (AES256-GCM, Curve25519 Ristretto25519, NIST P-256/P-384, ML-KEM) in `traits/providers.rs`.
+- Add SHA3-based KDF implementation module under `kdf`.
+
+### 🧪 Testing
+
+- Add generic conformance tests for cyclic groups, NIKE and KEM in `traits/tests.rs`.
+
+### ⚙️ Miscellaneous Tasks
+
+- Convert the repository into a workspace and move `cosmian_crypto_core` to `crates/core`.
+- Bump crate version to 11.0.0.
 
 ## [10.3.0] - 2025-10-30
 

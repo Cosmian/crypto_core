@@ -293,7 +293,7 @@ dependencies = [
 
 [[package]]
 name = "cosmian_crypto_core"
-version = "10.4.0"
+version = "11.0.0"
 dependencies = [
  "aead",
  "aes-gcm",

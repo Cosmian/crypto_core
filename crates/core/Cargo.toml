@@ -1,6 +1,6 @@
 [package]
 name = "cosmian_crypto_core"
-version = "10.4.0"
+version = "11.0.0"
 authors = { workspace = true }
 categories = { workspace = true }
 edition = { workspace = true }
