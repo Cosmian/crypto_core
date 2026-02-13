@@ -16,7 +16,7 @@ name = "cosmian_rust_nist_ec_provider"
 path = "src/lib.rs"
 
 [dependencies]
-cosmian_crypto_core = { path = "../core", version = "10.4", default-features = false, features = ["curve25519"] }
+cosmian_crypto_core = { path = "../core", version = "11.0", default-features = false, features = ["curve25519"] }
 elliptic-curve = { workspace = true }
 p256 = { workspace = true }
 p384 = { workspace = true }

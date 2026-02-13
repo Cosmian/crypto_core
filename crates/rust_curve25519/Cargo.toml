@@ -16,9 +16,9 @@ name = "cosmian_rust_curve25519_provider"
 path = "src/lib.rs"
 
 [dependencies]
-cosmian_crypto_core = { path = "../core", version = "10.4", default-features = false, features = ["curve25519"] }
+cosmian_crypto_core = { path = "../core", version = "11.0", default-features = false, features = ["curve25519"] }
 curve25519-dalek = { workspace = true, features = ["rand_core"] }
 zeroize = { workspace = true }
 
 [dev-dependencies]
-cosmian_crypto_core = { path = "../core", version = "10.4", default-features = false, features = ["curve25519", "sha3"] }
+cosmian_crypto_core = { path = "../core", version = "11.0", default-features = false, features = ["curve25519", "sha3"] }
