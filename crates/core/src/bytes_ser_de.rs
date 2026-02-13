@@ -118,6 +118,12 @@ impl<'a> Deserializer<'a> {
                 "size of vector is too big for architecture: {len_u64} bytes",
             ))
         })?;
+        if self.readable.len() < len {
+            return Err(CryptoCoreError::DeserializationIoError {
+                bytes_len: len,
+                error: format!("readable buffer too small: {} bytes", self.readable.len()),
+            });
+        }
         let mut buf = vec![0_u8; len];
         self.readable.read_exact(&mut buf).map_err(|_| {
             CryptoCoreError::DeserializationSizeError {
