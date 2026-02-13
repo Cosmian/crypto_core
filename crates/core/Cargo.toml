@@ -1,0 +1,106 @@
+[package]
+name = "cosmian_crypto_core"
+version = "11.0.0"
+authors = { workspace = true }
+categories = { workspace = true }
+edition = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = { workspace = true }
+
+[lib]
+crate-type = ["lib", "staticlib"]
+name = "cosmian_crypto_core"
+path = "src/lib.rs"
+
+[features]
+aes = ["aead", "aes-gcm"]
+blake = ["blake2"]
+certificate = ["curve25519", "x509-cert", "uuid", "pkcs8"]
+chacha = ["aead", "chacha20poly1305", "chacha20"]
+curve25519 = ["curve25519-dalek", "ed25519-dalek", "signature", "sha2"]
+default = [
+  "aes",
+  "chacha",
+  "certificate",
+  "ecies",
+  "curve25519",
+  "nist_curves",
+  "rsa",
+  "blake",
+  "sha3",
+  "rfc5649",
+]
+ecies = ["aead", "crypto_box"]
+rsa = ["digest", "dep:rsa", "sha1", "sha2", "dep:sha3", "pkcs8", "rfc5649"]
+macro = ["gensym"]
+nist_curves = ["p384", "p256", "p224", "p192", "elliptic-curve", "pkcs8"]
+rfc5649 = ["aes", "chacha"]
+ser = []
+sha3 = ["tiny-keccak"]
+
+[dependencies]
+aead = { workspace = true, features = ["stream"], optional = true }
+aes-gcm = { workspace = true, optional = true, features = ["zeroize"] }
+blake2 = { workspace = true, optional = true }
+chacha20 = { workspace = true, optional = true }
+chacha20poly1305 = { workspace = true, optional = true }
+crypto_box = { workspace = true, features = ["seal"], optional = true }
+curve25519-dalek = { workspace = true, optional = true, features = ["rand_core"] }
+digest = { workspace = true, optional = true }
+ed25519-dalek = { workspace = true, optional = true, features = [
+  "default",
+  "hazmat",
+] }
+elliptic-curve = { workspace = true, default-features = false, features = [
+  "hazmat",
+  "sec1",
+  "pkcs8",
+  "ecdh",
+], optional = true }
+gensym = { workspace = true, optional = true }
+getrandom = { workspace = true, features = ["js"] } # needed to compile into WASM
+leb128 = { workspace = true }
+p192 = { workspace = true, optional = true }
+p224 = { workspace = true, optional = true }
+p256 = { workspace = true, optional = true }
+p384 = { workspace = true, optional = true }
+pkcs8 = { workspace = true, features = [
+  "encryption",
+  "std",
+  "alloc",
+  "pem",
+], optional = true }
+rand_chacha = { workspace = true }
+rand_core = { workspace = true, features = ["getrandom"] }
+rsa = { workspace = true, optional = true }
+sha1 = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+sha3 = { workspace = true, optional = true }
+signature = { workspace = true, optional = true }
+tiny-keccak = { workspace = true, features = ["kmac", "sha3", "shake"], optional = true }
+uuid = { workspace = true, features = ["v4"], optional = true }
+x509-cert = { workspace = true, features = [
+  "pem",
+  "std",
+  "builder",
+  "arbitrary",
+  "hazmat",
+], optional = true }
+zeroize = { workspace = true, features = ["zeroize_derive"] }
+
+[dev-dependencies]
+criterion = { workspace = true }
+libc = { workspace = true }
+libsodium-sys-stable = { workspace = true }
+openssl = "0.10"
+tempfile = { workspace = true }
+
+[[bench]]
+harness = false
+name = "benches"
+required-features = ["default"]
+
+[package.metadata.cargo-machete]
+ignored = ["getrandom"]

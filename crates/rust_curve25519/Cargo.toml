@@ -1,0 +1,24 @@
+[package]
+name = "cosmian_rust_curve25519_provider"
+version = "1.0.0"
+description = "Pure-Rust Curve25519 provider."
+
+authors = { workspace = true }
+categories = { workspace = true }
+edition = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+[lib]
+crate-type = ["lib", "staticlib"]
+name = "cosmian_rust_curve25519_provider"
+path = "src/lib.rs"
+
+[dependencies]
+cosmian_crypto_core = { path = "../core", version = "11.0", default-features = false, features = ["curve25519"] }
+curve25519-dalek = { workspace = true, features = ["rand_core"] }
+zeroize = { workspace = true }
+
+[dev-dependencies]
+cosmian_crypto_core = { path = "../core", version = "11.0", default-features = false, features = ["curve25519", "sha3"] }
