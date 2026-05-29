@@ -168,3 +168,16 @@ make_mlkem!(
     (MlKem1024EncapsulationKey, MlKem1024PublicKey, 1568),
     (MlKem1024DecapsulationKey, MlKem1024PrivateKey, 3168)
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmian_crypto_core::traits::tests::test_kem;
+
+    #[test]
+    fn test_mlkem() {
+        test_kem::<32, mlkem512::MlKem512>();
+        test_kem::<32, mlkem768::MlKem768>();
+        test_kem::<32, mlkem1024::MlKem1024>();
+    }
+}
