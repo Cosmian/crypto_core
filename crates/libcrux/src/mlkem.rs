@@ -25,6 +25,14 @@ macro_rules! make_mlkem {
                 }
             }
 
+            impl PartialEq for $enc {
+                fn eq(&self, other: &Self) -> bool {
+                    self.0.as_slice() == other.0.as_slice()
+                }
+            }
+
+            impl Eq for $enc {}
+
             impl $enc {
                 pub const LENGTH: usize = $enc_size;
             }
@@ -57,6 +65,14 @@ macro_rules! make_mlkem {
                     write!(f, $ek_name)
                 }
             }
+
+            impl PartialEq for $ek {
+                fn eq(&self, other: &Self) -> bool {
+                    self.0.as_slice() == other.0.as_slice()
+                }
+            }
+
+            impl Eq for $ek {}
 
             impl $ek {
                 pub const LENGTH: usize = $ek_size;
