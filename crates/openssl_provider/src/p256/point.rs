@@ -100,8 +100,8 @@ impl Monoid for P256Point {
         let id = || {
             let group = EcGroup::from_curve_name(NID)?;
             let mut res = EcPoint::new(&group)?;
-            let ctxt = BigNumContext::new()?;
-            res.mul_generator(&group, &BigNum::from_u32(0).unwrap(), &ctxt)?;
+            let mut ctxt = BigNumContext::new()?;
+            res.mul_generator2(&group, &BigNum::from_u32(0).unwrap(), &mut ctxt)?;
             Ok(res)
         };
         Self(id())
@@ -135,9 +135,9 @@ impl Group for P256Point {
     fn invert(&self) -> Self {
         let invert = |p| {
             let mut res = clone_point(p)?;
-            let ctxt = BigNumContext::new()?;
+            let mut ctxt = BigNumContext::new()?;
             let group = EcGroup::from_curve_name(NID)?;
-            res.invert(&group, &ctxt)?;
+            res.invert2(&group, &mut ctxt)?;
             Ok(res)
         };
         match &self.0 {
@@ -154,8 +154,8 @@ impl One for P256Point {
         let one = || {
             let group = EcGroup::from_curve_name(NID)?;
             let mut res = EcPoint::new(&group)?;
-            let ctxt = BigNumContext::new()?;
-            res.mul_generator(&group, &*BigNum::from_u32(1)?, &ctxt)?;
+            let mut ctxt = BigNumContext::new()?;
+            res.mul_generator2(&group, &*BigNum::from_u32(1)?, &mut ctxt)?;
             Ok(res)
         };
         Self(one())
@@ -173,8 +173,8 @@ impl Mul<&P256Scalar> for &P256Point {
         let mul = |lhs: &EcPoint, rhs: &BigNum| {
             let group = EcGroup::from_curve_name(NID)?;
             let mut res = EcPoint::new(&group)?;
-            let ctxt = BigNumContext::new()?;
-            res.mul(&group, lhs, rhs, &ctxt)?;
+            let mut ctxt = BigNumContext::new()?;
+            res.mul2(&group, lhs, rhs, &mut ctxt)?;
             Ok(res)
         };
         match (&self.0, &rhs.0) {
