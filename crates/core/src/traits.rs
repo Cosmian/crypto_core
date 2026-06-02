@@ -660,8 +660,8 @@ where
 
 /// Key-Encapsulation Mechanism.
 pub trait KEM<const KEY_LENGTH: usize> {
-    type Encapsulation: Serializable;
-    type EncapsulationKey: Serializable;
+    type Encapsulation: PartialEq + Eq + Serializable;
+    type EncapsulationKey: PartialEq + Eq + Serializable;
     type DecapsulationKey: ZeroizeOnDrop;
 
     type Error: std::error::Error;
