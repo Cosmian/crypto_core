@@ -140,6 +140,7 @@ macro_rules! make_mlkem {
                 }
             }
 
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct $mlkem;
 
             impl KEM<32> for $mlkem {
