@@ -11,7 +11,7 @@ jobs:
   cargo-semver:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-semver.yml@develop
     with:
-      toolchain: 1.96.0
+      toolchain: 1.90.0
   wasm:
     runs-on: ubuntu-latest
     steps:
