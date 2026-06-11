@@ -12,4 +12,4 @@ jobs:
     uses: Cosmian/reusable_workflows/.github/workflows/cargo-audit.yml@develop
     name: Security Audit
     with:
-      toolchain: 1.95.0
+      toolchain: 1.96.0
