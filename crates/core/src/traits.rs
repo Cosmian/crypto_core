@@ -237,7 +237,7 @@ pub trait AE<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGT
     AE_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>
 {
     type Plaintext: AsRef<[u8]>;
-    type Ciphertext: AsRef<[u8]>;
+    type Ciphertext: AsRef<[u8]> + PartialEq + Eq + Serializable;
 
     /// Encrypts the given plaintext using the given nonce and key.
     fn encrypt(
@@ -692,7 +692,7 @@ pub trait KEM<const KEY_LENGTH: usize> {
 /// Public-Key Encryption.
 pub trait PKE {
     type Plaintext;
-    type Ciphertext;
+    type Ciphertext: PartialEq + Eq + Serializable;
     type PublicKey: Serializable;
     type SecretKey: ZeroizeOnDrop;
     type Error: std::error::Error;
