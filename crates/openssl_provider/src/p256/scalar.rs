@@ -1,10 +1,13 @@
 use crate::{p256::NID, FFIMonad};
-use cosmian_crypto_core::{
+use cosmian_crypto_base::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
-    reexport::rand_core::CryptoRngCore,
-    traits::{AbelianGroup, Field, Group, Monoid, Ring, Sampling, Seedable, Zero},
-    CryptoCoreError, Secret,
+    reexport::{
+        rand_core::CryptoRngCore,
+        zeroize::{Zeroize, ZeroizeOnDrop},
+    },
+    traits::{AbelianGroup, Field, FixedSizeCBytes, Group, Monoid, Ring, Sampling, Seedable, Zero},
+    Error, Secret,
 };
 use openssl::{
     bn::{BigNum, BigNumContext},
@@ -12,7 +15,6 @@ use openssl::{
     error::ErrorStack,
 };
 use std::ops::Div;
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 fn clone_big_num(n: &BigNum) -> Result<BigNum, ErrorStack> {
     let mut bytes = n.to_vec();
@@ -172,7 +174,7 @@ impl Ring for P256Scalar {
 implement_commutative_ring!(P256Scalar);
 
 impl Field for P256Scalar {
-    type InvError = CryptoCoreError;
+    type InvError = Error;
 
     fn invert(&self) -> Result<Self, Self::InvError> {
         let invert = |n: &BigNum| {
@@ -185,17 +187,15 @@ impl Field for P256Scalar {
         match &self.0 {
             Ok(n) => {
                 if self.is_zero() {
-                    return Err(CryptoCoreError::EllipticCurveError(
+                    return Err(Error::InversionError(
                         "monoid identity scalar has no inverse".to_string(),
                     ));
                 }
                 invert(n).map(|n| Self(Ok(n))).map_err(|e: ErrorStack| {
-                    CryptoCoreError::EllipticCurveError(format!(
-                        "error occurred upon inverting the scalar: {e}"
-                    ))
+                    Error::InversionError(format!("error occurred upon inverting the scalar: {e}"))
                 })
             }
-            Err(e) => Err(CryptoCoreError::EllipticCurveError(format!(
+            Err(e) => Err(Error::InversionError(format!(
                 "cannot invert a scalar in error state: {e}"
             ))),
         }
@@ -203,7 +203,7 @@ impl Field for P256Scalar {
 }
 
 impl Div for P256Scalar {
-    type Output = Result<Self, CryptoCoreError>;
+    type Output = Result<Self, Error>;
 
     fn div(self, rhs: Self) -> Self::Output {
         <P256Scalar as Field>::invert(&rhs).map(|rhs| self * rhs)
@@ -211,7 +211,7 @@ impl Div for P256Scalar {
 }
 
 impl Div<&P256Scalar> for P256Scalar {
-    type Output = Result<Self, CryptoCoreError>;
+    type Output = Result<Self, Error>;
 
     fn div(self, rhs: &Self) -> Self::Output {
         <P256Scalar as Field>::invert(rhs).map(|rhs| self * rhs)
@@ -219,54 +219,76 @@ impl Div<&P256Scalar> for P256Scalar {
 }
 
 impl Div<&P256Scalar> for &P256Scalar {
-    type Output = Result<P256Scalar, CryptoCoreError>;
+    type Output = Result<P256Scalar, Error>;
 
     fn div(self, rhs: &P256Scalar) -> Self::Output {
         <P256Scalar as Field>::invert(rhs).map(|rhs| self * &rhs)
     }
 }
 
+impl FixedSizeCBytes<{ P256Scalar::LENGTH }> for P256Scalar {
+    const LENGTH: usize = Self::LENGTH;
+
+    type Error = Error;
+
+    fn write(&self, buf: &mut [u8; P256Scalar::LENGTH]) -> Result<(), Self::Error> {
+        match &self.0 {
+            Ok(n) => {
+                let mut bytes = n
+                    .to_vec_padded(Self::LENGTH as i32)
+                    .map_err(|e| Error::GenericSerializationError(e.to_string()))?;
+                buf.copy_from_slice(&bytes);
+                bytes.zeroize();
+                Ok(())
+            }
+            Err(e) => Err(Error::GenericSerializationError(e.to_string())),
+        }
+    }
+
+    fn read(buf: &[u8; P256Scalar::LENGTH]) -> Result<Self, Self::Error> {
+        BigNum::from_slice(buf).map(Ok).map(Self).map_err(|e| {
+            Error::GenericDeserializationError(format!("cannot deserialize scalar: {e}"))
+        })
+    }
+}
+
 impl Serializable for P256Scalar {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
-        self.0
-            .as_ref()
-            .map(|n| {
-                let mut bytes = n.to_vec();
-                let len = bytes.length();
-                bytes.zeroize();
-                len
-            })
-            .unwrap_or_default()
+        Self::LENGTH
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         match &self.0 {
             Ok(n) => {
-                let mut bytes = n.to_vec();
-                let n = ser.write_vec(&bytes);
+                let mut bytes = n.to_vec_padded(Self::LENGTH as i32).map_err(|e| {
+                    Error::GenericSerializationError(format!(
+                        "failed to serialize P256 scalar with {e}"
+                    ))
+                })?;
+                let n = ser.write_array(&bytes);
                 bytes.zeroize();
                 n
             }
-            Err(e) => Err(CryptoCoreError::GenericSerializationError(format!(
+            Err(e) => Err(Error::GenericSerializationError(format!(
                 "cannot serialize a scalar in error state: {e}"
             ))),
         }
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
-        let bytes = de.read_vec()?;
-        BigNum::from_slice(&bytes).map(Ok).map(Self).map_err(|e| {
-            CryptoCoreError::GenericDeserializationError(format!("cannot deserialize scalar: {e}"))
-        })
+        let mut bytes = de.read_array::<{ Self::LENGTH }>()?;
+        let res = <Self as FixedSizeCBytes<{ Self::LENGTH }>>::read(&bytes);
+        bytes.zeroize();
+        res
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmian_crypto_core::{
+    use cosmian_crypto_base::{
         bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng,
         traits::tests::test_field, CsRng,
     };

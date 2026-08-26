@@ -1,4 +1,4 @@
-use crate::{bytes_ser_de::Serializable, CryptoCoreError};
+use crate::{bytes_ser_de::Serializable, Error};
 use rand_core::CryptoRngCore;
 use std::{
     ops::{Deref, DerefMut},
@@ -47,41 +47,6 @@ impl<const LENGTH: usize> Secret<LENGTH> {
         bytes.zeroize();
         secret
     }
-
-    /// Deterministically derive a new secret from the given secret and
-    /// additional information.
-    ///
-    /// # Error
-    ///
-    /// Fails to generate the new secret in case the source evidently does not
-    /// contain enough entropy. The check performed is based on the respective
-    /// new- and source-secret lengths. The source secret needs to be have a
-    /// length greater than the desired new-secret length for this check to
-    /// pass.
-    #[cfg(feature = "sha3")]
-    pub fn derive<const SECRET_LENGTH: usize>(
-        source: &Secret<SECRET_LENGTH>,
-        info: &[u8],
-    ) -> Result<Self, CryptoCoreError> {
-        use crate::kdf256;
-
-        if info.is_empty() {
-            return Err(CryptoCoreError::InvalidBytesLength(
-                "info is a required field as it is used as domain separation".to_string(),
-                0,
-                None,
-            ));
-        }
-        if SECRET_LENGTH < LENGTH {
-            return Err(CryptoCoreError::ConversionError(format!(
-                "insufficient entropy to derive {}-byte secret from a {}-byte secret",
-                LENGTH, SECRET_LENGTH,
-            )));
-        }
-        let mut target = Self::default();
-        kdf256!(&mut *target, &**source, info);
-        Ok(target)
-    }
 }
 
 impl<const LENGTH: usize> Default for Secret<LENGTH> {
@@ -119,7 +84,7 @@ impl<const LENGTH: usize> Drop for Secret<LENGTH> {
 impl<const LENGTH: usize> ZeroizeOnDrop for Secret<LENGTH> {}
 
 impl<const LENGTH: usize> Serializable for Secret<LENGTH> {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         LENGTH

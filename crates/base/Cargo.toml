@@ -1,0 +1,27 @@
+[package]
+name = "cosmian_crypto_base"
+version = "1.0.0"
+authors = { workspace = true }
+categories = { workspace = true }
+edition = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = { workspace = true }
+
+[lib]
+crate-type = ["lib", "staticlib"]
+name = "cosmian_crypto_base"
+path = "src/lib.rs"
+
+[features]
+default = ["macro"]
+macro = ["gensym"]
+
+[dependencies]
+gensym = { workspace = true, optional = true }
+getrandom = { workspace = true, features = ["js"] } # needed to compile into WASM
+leb128 = { workspace = true }
+rand_chacha = { workspace = true }
+rand_core = { workspace = true, features = ["getrandom"] }
+zeroize = { workspace = true, features = ["zeroize_derive"] }

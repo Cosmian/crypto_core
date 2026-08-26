@@ -1,6 +1,5 @@
 use crate::{
-    bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore, CryptoCoreError, Secret,
-    SymmetricKey,
+    bytes_ser_de::Serializable, reexport::rand_core::CryptoRngCore, Error, Secret, SymmetricKey,
 };
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use zeroize::{ZeroizeOnDrop, Zeroizing};
@@ -16,13 +15,14 @@ pub mod tests;
 // those used in the end. In order to prevent a breaking change, their new
 // version lives here for now.
 
-/// Cryptographic bytes.
-pub trait CBytes: Eq + PartialEq + Send + Sync {}
-
 /// Fixed-size cryptographic bytes.
-pub trait FixedSizeCBytes<const LENGTH: usize>: CBytes + Sized {
-    /// Key length.
+pub trait FixedSizeCBytes<const LENGTH: usize>: Sized {
     const LENGTH: usize = LENGTH;
+
+    type Error: std::error::Error;
+
+    fn write(&self, buf: &mut [u8; LENGTH]) -> Result<(), Self::Error>;
+    fn read(buf: &[u8; LENGTH]) -> Result<Self, Self::Error>;
 }
 
 /// Fixed-size cryptographic secret bytes.
@@ -119,6 +119,7 @@ where
 /// form an Abelian group for the multiplication.
 pub trait Field:
     Ring
+    + Neg<Output = Self>
     + Mul<Output = Self>
     + MulAssign
     + Div<Output = Result<Self, Self::InvError>>
@@ -264,7 +265,7 @@ impl<
         E: AE_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>,
     > AE<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH> for E
 where
-    E::Error: From<CryptoCoreError>,
+    E::Error: From<Error>,
 {
     type Plaintext = Zeroizing<Vec<u8>>;
 
@@ -286,7 +287,7 @@ where
 
     fn decrypt(key: &SymmetricKey<KEY_LENGTH>, ctx: &[u8]) -> Result<Self::Plaintext, Self::Error> {
         if ctx.len() < TAG_LENGTH + NONCE_LENGTH {
-            return Err(CryptoCoreError::DecryptionError.into());
+            return Err(Error::DecryptionError.into());
         }
         let mut ptx = Zeroizing::new(vec![0; ctx.len() - TAG_LENGTH - NONCE_LENGTH]);
         ptx.copy_from_slice(&ctx[NONCE_LENGTH + TAG_LENGTH..]);
@@ -381,7 +382,7 @@ impl<
         E: AEAD_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>,
     > AEAD<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH> for E
 where
-    E::Error: From<CryptoCoreError>,
+    E::Error: From<Error>,
 {
     type Plaintext = Zeroizing<Vec<u8>>;
 
@@ -408,7 +409,7 @@ where
         ad: &[u8],
     ) -> Result<Self::Plaintext, Self::Error> {
         if ctx.len() < TAG_LENGTH + NONCE_LENGTH {
-            return Err(CryptoCoreError::DecryptionError.into());
+            return Err(Error::DecryptionError.into());
         }
         let mut ptx = Zeroizing::new(vec![0; ctx.len() - NONCE_LENGTH - TAG_LENGTH]);
         ptx.copy_from_slice(&ctx[NONCE_LENGTH + TAG_LENGTH..]);
@@ -598,7 +599,7 @@ where
 
     type SharedSecret = T::Element;
 
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn keygen(
         rng: &mut impl CryptoRngCore,

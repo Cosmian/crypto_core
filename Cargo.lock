@@ -311,14 +311,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmian_crypto_base"
+version = "1.0.0"
+dependencies = [
+ "gensym",
+ "getrandom 0.2.17",
+ "leb128",
+ "rand_chacha",
+ "rand_core 0.6.4",
+ "zeroize",
+]
+
+[[package]]
 name = "cosmian_crypto_core"
-version = "11.0.0"
+version = "12.0.0"
 dependencies = [
  "aead",
  "aes-gcm",
  "blake2",
  "chacha20 0.9.1",
  "chacha20poly1305",
+ "cosmian_crypto_base",
+ "cosmian_openssl_provider",
+ "cosmian_rust_curve25519_provider",
  "criterion",
  "crypto_box",
  "curve25519-dalek",
@@ -354,38 +369,36 @@ dependencies = [
 name = "cosmian_libcrux_provider"
 version = "1.0.0"
 dependencies = [
- "cosmian_crypto_core",
+ "cosmian_crypto_base",
  "libcrux-ml-kem",
- "zeroize",
 ]
 
 [[package]]
 name = "cosmian_openssl_provider"
 version = "1.0.0"
 dependencies = [
+ "cosmian_crypto_base",
  "cosmian_crypto_core",
  "openssl",
- "zeroize",
 ]
 
 [[package]]
 name = "cosmian_rust_curve25519_provider"
 version = "1.0.0"
 dependencies = [
+ "cosmian_crypto_base",
  "cosmian_crypto_core",
  "curve25519-dalek",
- "zeroize",
 ]
 
 [[package]]
 name = "cosmian_rust_nist_ec_provider"
 version = "1.0.0"
 dependencies = [
- "cosmian_crypto_core",
+ "cosmian_crypto_base",
  "elliptic-curve",
  "p256",
  "p384",
- "zeroize",
 ]
 
 [[package]]
