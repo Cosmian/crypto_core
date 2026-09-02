@@ -1,5 +1,6 @@
 use crate::CryptoCoreError;
 use cosmian_crypto_base::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
     reexport::{rand_core::CryptoRngCore, zeroize::ZeroizeOnDrop},
     traits::{Field, FixedSizeCBytes, One, Sampling, Zero},
     Secret,
@@ -30,6 +31,26 @@ impl<const SIZE: usize> ShamirShare<SIZE> {
 
     pub fn threshold(&self) -> NonZeroUsize {
         self.thres
+    }
+}
+
+impl<const SIZE: usize> Serializable for ShamirShare<SIZE> {
+    type Error = CryptoCoreError;
+
+    fn length(&self) -> usize {
+        SIZE
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        Ok(ser.write(&self.index)? + ser.write(&self.thres)? + ser.write(&*self.point)?)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Ok(Self {
+            index: de.read()?,
+            thres: de.read()?,
+            point: de.read()?,
+        })
     }
 }
 
