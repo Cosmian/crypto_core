@@ -49,6 +49,7 @@ impl Serializable for Curve25519Secret {
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         ser.write_array(self.as_bytes())
+            .map_err(CryptoCoreError::Base)
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {

@@ -2,8 +2,6 @@
 //! cryptographic crates.
 
 mod error;
-mod key;
-mod secret;
 
 #[cfg(any(feature = "curve25519", feature = "nist_curves", feature = "rsa"))]
 mod asymmetric_crypto;
@@ -20,40 +18,30 @@ mod pkcs8_fix;
 #[cfg(any(feature = "aes", feature = "chacha", feature = "rfc5649"))]
 mod symmetric_crypto;
 
-pub mod bytes_ser_de;
-
-#[macro_use]
-pub mod traits;
-
 // Re-export this trait to avoid a breaking change.
-pub use traits::Sampling;
-
-#[cfg(feature = "macro")]
-#[macro_use]
-pub mod bytes;
+pub use cosmian_crypto_base::{bytes_ser_de, traits, traits::Sampling, Secret, SymmetricKey};
 
 #[cfg(feature = "sha3")]
 #[macro_use]
 pub mod kdf;
 
+pub mod shamir;
+
 pub mod reexport {
     #[cfg(any(feature = "aes", feature = "chacha"))]
     pub use aead;
+    pub use cosmian_crypto_base::reexport::{rand_core, zeroize};
     #[cfg(feature = "certificate")]
     pub use pkcs8;
-    pub use rand_core;
     #[cfg(feature = "curve25519")]
     pub use signature;
     #[cfg(feature = "sha3")]
     pub use tiny_keccak;
     #[cfg(feature = "certificate")]
     pub use x509_cert;
-    pub use zeroize;
 }
 
 pub use error::CryptoCoreError;
-pub use key::SymmetricKey;
-pub use secret::Secret;
 
 #[cfg(any(feature = "curve25519", feature = "nist_curves", feature = "rsa"))]
 pub use asymmetric_crypto::*;

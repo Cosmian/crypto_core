@@ -13,6 +13,12 @@ macro_rules! _define_byte_type {
         pub use $module::$name;
 
         mod $module {
+            use std::ops::{Deref, DerefMut};
+
+            use $crate::{
+                bytes_ser_de::Serializable, reexport::rand_core::RngCore, traits::Sampling,
+            };
+
             #[derive(Debug, Clone, Hash, PartialEq, Eq)]
             pub struct $name<const LENGTH: usize>([u8; LENGTH]);
 
@@ -26,13 +32,6 @@ macro_rules! _define_byte_type {
             }
 
             impl std::error::Error for Error {}
-
-            use std::ops::{Deref, DerefMut};
-
-            use $crate::{
-                bytes_ser_de::Serializable, reexport::rand_core::RngCore, traits::Sampling,
-                CryptoCoreError,
-            };
 
             impl<const LENGTH: usize> Deref for $name<LENGTH> {
                 type Target = [u8; LENGTH];
@@ -85,7 +84,7 @@ macro_rules! _define_byte_type {
             }
 
             impl<const LENGTH: usize> Serializable for $name<LENGTH> {
-                type Error = CryptoCoreError;
+                type Error = $crate::Error;
 
                 fn length(&self) -> usize {
                     LENGTH
@@ -108,12 +107,8 @@ macro_rules! _define_byte_type {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        bytes_ser_de::test_serialization, traits::Sampling, CBytes, CryptoCoreError, CsRng,
-        FixedSizeCBytes, RandomFixedSizeCBytes,
-    };
+    use crate::{bytes_ser_de::test_serialization, traits::Sampling, CsRng};
     use rand_core::SeedableRng;
-    use std::ops::Deref;
 
     /// Defines two new byte types (thus asserting definitions are hygienic),
     /// test their serializations and implement some more stuff for one of them
@@ -124,33 +119,9 @@ mod tests {
         define_byte_type!(B1);
         define_byte_type!(B2);
 
-        impl CBytes for B2<32> {}
-
-        impl FixedSizeCBytes<32> for B2<32> {
-            const LENGTH: usize = 32;
-
-            fn to_bytes(&self) -> [u8; 32] {
-                *self.deref()
-            }
-
-            fn try_from_bytes(bytes: [u8; 32]) -> Result<Self, CryptoCoreError> {
-                Ok(Self::from(bytes))
-            }
-        }
-
-        impl RandomFixedSizeCBytes<32> for B2<32> {
-            fn new<R: rand_core::CryptoRngCore>(rng: &mut R) -> Self {
-                Self::random(rng)
-            }
-
-            fn as_bytes(&self) -> &[u8] {
-                &**self
-            }
-        }
-
         let mut rng = CsRng::from_entropy();
         let b1 = B1::<32>::random(&mut rng);
-        let b2 = B2::<32>::new(&mut rng);
+        let b2 = B2::<32>::random(&mut rng);
 
         test_serialization(&b1).unwrap();
         test_serialization(&b2).unwrap();

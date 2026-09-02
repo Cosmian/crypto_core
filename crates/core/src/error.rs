@@ -3,6 +3,7 @@ use core::fmt::Display;
 /// Error type for this crate.
 #[derive(Debug)]
 pub enum CryptoCoreError {
+    Base(cosmian_crypto_base::Error),
     CiphertextTooSmallError {
         ciphertext_len: usize,
         min: u64,
@@ -52,14 +53,16 @@ pub enum CryptoCoreError {
         value: u64,
         error: std::io::Error,
     },
+    Shamir(String),
 }
 
 impl Display for CryptoCoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Base(e) => write!(f, "crypto base error: {e}"),
             #[cfg(any(feature = "certificate", feature = "nist_curves"))]
-            CryptoCoreError::Certificate(err) => write!(f, "when building certificate, {err}"),
-            CryptoCoreError::CiphertextTooSmallError {
+            Self::Certificate(err) => write!(f, "when building certificate, {err}"),
+            Self::CiphertextTooSmallError {
                 ciphertext_len,
                 min,
             } => write!(
@@ -67,7 +70,7 @@ impl Display for CryptoCoreError {
                 "when decrypting, ciphertext of {ciphertext_len} bytes is too small, min is {min} \
                  bytes"
             ),
-            CryptoCoreError::CiphertextTooBigError {
+            Self::CiphertextTooBigError {
                 ciphertext_len,
                 max,
             } => write!(
@@ -75,24 +78,24 @@ impl Display for CryptoCoreError {
                 "when decrypting, ciphertext of {ciphertext_len} bytes is too big, max is {max} \
                  bytes"
             ),
-            CryptoCoreError::ConversionError(err) => write!(f, "failed to convert: {err}"),
-            CryptoCoreError::DecryptionError => write!(f, "error during decryption"),
-            CryptoCoreError::DeserializationEmptyError => {
+            Self::ConversionError(err) => write!(f, "failed to convert: {err}"),
+            Self::DecryptionError => write!(f, "error during decryption"),
+            Self::DeserializationEmptyError => {
                 write!(f, "empty input when parsing bytes")
             }
-            CryptoCoreError::DeserializationSizeError { given, expected } => write!(
+            Self::DeserializationSizeError { given, expected } => write!(
                 f,
                 "wrong size when parsing bytes: {given} given should be {expected}"
             ),
-            CryptoCoreError::EllipticCurveError(e) => write!(f, "NIST elliptic curve error: {e}"),
-            CryptoCoreError::EncryptionError => write!(f, "error during encryption"),
-            CryptoCoreError::GenericDeserializationError(err) => {
+            Self::EllipticCurveError(e) => write!(f, "NIST elliptic curve error: {e}"),
+            Self::EncryptionError => write!(f, "error during encryption"),
+            Self::GenericDeserializationError(err) => {
                 write!(f, "deserialization error: {err}")
             }
-            CryptoCoreError::GenericSerializationError(err) => {
+            Self::GenericSerializationError(err) => {
                 write!(f, "serialization error: {err}")
             }
-            CryptoCoreError::InvalidBytesLength(message, given, expected) => match expected {
+            Self::InvalidBytesLength(message, given, expected) => match expected {
                 Some(expected_length) => write!(
                     f,
                     "{message}: invalid key length: got {given}, expected: {expected_length}",
@@ -101,38 +104,45 @@ impl Display for CryptoCoreError {
                     write!(f, "{message}: invalid key length: got {given}")
                 }
             },
-            CryptoCoreError::PlaintextTooBigError { plaintext_len, max } => write!(
+            Self::PlaintextTooBigError { plaintext_len, max } => write!(
                 f,
                 "when encrypting, plaintext of {plaintext_len} bytes is too big, max is {max} \
                  bytes"
             ),
             #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
-            CryptoCoreError::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
-            CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
+            Self::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
+            Self::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
             #[cfg(feature = "rsa")]
-            CryptoCoreError::RsaError(e) => write!(f, "RSA error: {e}"),
-            CryptoCoreError::DeserializationIoError { bytes_len, error } => {
+            Self::RsaError(e) => write!(f, "RSA error: {e}"),
+            Self::DeserializationIoError { bytes_len, error } => {
                 write!(f, "when reading {bytes_len} bytes, {error}")
             }
-            CryptoCoreError::SerializationIoError { bytes_len, error } => {
+            Self::SerializationIoError { bytes_len, error } => {
                 write!(f, "when writing {bytes_len} bytes, {error}")
             }
-            CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
-            CryptoCoreError::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
-            CryptoCoreError::TryFromSliceError { expected, given } => {
+            Self::SignatureError(e) => write!(f, "error during signature: {e}"),
+            Self::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
+            Self::TryFromSliceError { expected, given } => {
                 write!(
                     f,
                     "try from slice error: {given} was given when {expected} was expected"
                 )
             }
-            CryptoCoreError::WriteLeb128Error { value, error } => {
+            Self::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
+            Self::Shamir(str) => write!(f, "Shami secret sharing error: {str}"),
         }
     }
 }
 
 impl std::error::Error for CryptoCoreError {}
+
+impl From<cosmian_crypto_base::Error> for CryptoCoreError {
+    fn from(e: cosmian_crypto_base::Error) -> Self {
+        Self::Base(e)
+    }
+}
 
 #[cfg(feature = "aead")]
 impl From<aead::Error> for CryptoCoreError {

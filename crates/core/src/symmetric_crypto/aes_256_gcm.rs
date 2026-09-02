@@ -7,7 +7,7 @@ use super::dem::{DemInPlace, DemStream, Instantiable};
 use crate::{
     symmetric_crypto::{nonce::Nonce, Dem},
     traits::AEAD_InPlace,
-    CryptoCoreError, RandomFixedSizeCBytes, SymmetricKey,
+    CryptoCoreError, SymmetricKey,
 };
 use aead::{generic_array::GenericArray, AeadMutInPlace, KeyInit};
 use aes_gcm::Aes256Gcm as Aes256GcmLib;
@@ -49,11 +49,9 @@ impl Debug for Aes256Gcm {
 }
 
 impl Instantiable<{ Self::KEY_LENGTH }> for Aes256Gcm {
-    type Secret = SymmetricKey<{ Self::KEY_LENGTH }>;
-
-    fn new(symmetric_key: &Self::Secret) -> Self {
+    fn new(symmetric_key: &SymmetricKey<{ Self::KEY_LENGTH }>) -> Self {
         Self(Aes256GcmLib::new(GenericArray::from_slice(
-            symmetric_key.as_bytes(),
+            &**symmetric_key,
         )))
     }
 }
@@ -121,6 +119,7 @@ impl AEAD_InPlace<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENG
 mod tests {
 
     use aead::Payload;
+    use cosmian_crypto_base::bytes_ser_de::Serializable;
 
     use crate::{
         reexport::rand_core::SeedableRng,
@@ -232,7 +231,7 @@ mod tests {
 
         // decrypt using salsa_sealbox
         let secret_key =
-            SymmetricKey::<{ Aes256Gcm::KEY_LENGTH }>::try_from_bytes(secret_key_bytes).unwrap();
+            SymmetricKey::<{ Aes256Gcm::KEY_LENGTH }>::deserialize(&secret_key_bytes).unwrap();
         let plaintext_ = Aes256Gcm::new(&secret_key)
             .decrypt(
                 &Nonce::try_from_bytes(nonce_bytes).unwrap(),

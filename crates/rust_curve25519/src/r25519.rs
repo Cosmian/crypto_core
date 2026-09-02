@@ -4,7 +4,7 @@ mod scalar;
 pub use point::R25519Point;
 pub use scalar::R25519Scalar;
 
-use cosmian_crypto_core::traits::{providers::R25519GroupProvider, CyclicGroup};
+use cosmian_crypto_base::traits::{providers::R25519GroupProvider, CyclicGroup};
 
 #[derive(Debug, Clone, Copy)]
 pub struct R25519;
@@ -20,10 +20,8 @@ impl R25519GroupProvider for R25519 {}
 #[cfg(test)]
 mod tests {
     use crate::R25519;
-    use cosmian_crypto_core::{
-        kdf::Kdf256,
-        traits::tests::{test_cyclic_group, test_nike},
-    };
+    use cosmian_crypto_base::traits::tests::{test_cyclic_group, test_nike};
+    use cosmian_crypto_core::kdf::Kdf256;
 
     #[test]
     fn test_r25519_arithmetic() {
@@ -37,7 +35,7 @@ mod tests {
 
     #[test]
     fn test_r25519_kem() {
-        use cosmian_crypto_core::traits::{cyclic_group_to_kem::GenericKem, tests::test_kem};
+        use cosmian_crypto_base::traits::{cyclic_group_to_kem::GenericKem, tests::test_kem};
 
         const R25519_KEY_LENGTH: usize = 32;
         type R25519Kem = GenericKem<R25519_KEY_LENGTH, R25519, Kdf256>;
