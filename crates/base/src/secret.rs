@@ -1,5 +1,5 @@
 use crate::{bytes_ser_de::Serializable, Error};
-use rand_core::CryptoRngCore;
+use rand_core::{CryptoRngCore, SeedableRng};
 use std::{
     ops::{Deref, DerefMut},
     pin::Pin,
@@ -46,6 +46,11 @@ impl<const LENGTH: usize> Secret<LENGTH> {
         secret.copy_from_slice(bytes.as_slice());
         bytes.zeroize();
         secret
+    }
+
+    /// Derives an RNG from this secret.
+    pub fn to_rng<Rng: SeedableRng<Seed = [u8; LENGTH]>>(&self) -> Rng {
+        Rng::from_seed(*self.0)
     }
 }
 
