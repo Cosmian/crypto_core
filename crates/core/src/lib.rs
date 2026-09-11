@@ -42,6 +42,7 @@ pub mod reexport {
 }
 
 pub use error::CryptoCoreError;
+pub use cosmian_crypto_base::Error as CryptoBaseError;
 
 #[cfg(any(feature = "curve25519", feature = "nist_curves", feature = "rsa"))]
 pub use asymmetric_crypto::*;
