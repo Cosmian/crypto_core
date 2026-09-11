@@ -123,8 +123,8 @@ where
 
 /// Key-Encapsulation Mechanism.
 pub trait KEM<const KEY_LENGTH: usize> {
-    type Encapsulation: PartialEq + Eq + Serializable;
-    type EncapsulationKey: PartialEq + Eq + Serializable;
+    type Encapsulation: PartialEq + Serializable;
+    type EncapsulationKey: PartialEq + Serializable;
     type DecapsulationKey: ZeroizeOnDrop;
 
     type Error: std::error::Error;
@@ -155,7 +155,7 @@ pub trait KEM<const KEY_LENGTH: usize> {
 /// Public-Key Encryption.
 pub trait PKE {
     type Plaintext;
-    type Ciphertext: PartialEq + Eq + Serializable;
+    type Ciphertext: PartialEq + Serializable;
     type PublicKey: Serializable;
     type SecretKey: ZeroizeOnDrop;
     type Error: std::error::Error;
@@ -177,7 +177,7 @@ pub trait PKE {
 }
 
 pub trait Signature {
-    type Signature: PartialEq + Eq + Serializable;
+    type Signature: PartialEq + Serializable;
     type VerificationKey: Serializable;
     type SigningKey: ZeroizeOnDrop;
     type Error: std::error::Error;
