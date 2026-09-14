@@ -86,8 +86,8 @@ where
         (0..i).fold(<Scalar as Zero>::zero(), |s, _| s + <Scalar as One>::one())
     }
 
-    /// Evaluates the polynomial with coefficients `coeffs` (constant term
-    /// first) at `x`, using Horner's method.
+    /// Evaluates the polynomial defined by the given coefficients (constant
+    /// term first) at the given scalar using the Horner's method.
     fn poly_eval(coeffs: &[Scalar], x: &Scalar) -> Scalar {
         coeffs
             .iter()
@@ -95,11 +95,8 @@ where
             .fold(<Scalar as Zero>::zero(), |acc, c| acc * x + c)
     }
 
-    /// Splits a freshly generated `SKSeed` into `share_count` shares such that any
-    /// `threshold` of them suffice to reconstruct it, using a random polynomial of
-    /// degree `threshold - 1` over the P-256 scalar field. `threshold` is the
-    /// caller-facing knob; the polynomial's degree is an implementation detail
-    /// derived from it.
+    /// Splits a freshly generated `Secret` into `count` shares, such that any
+    /// combination of `thres` such shares can reconstruct it.
     pub fn split(
         rng: &mut impl CryptoRngCore,
         thres: NonZeroUsize,
@@ -107,7 +104,7 @@ where
     ) -> Result<(Secret<SIZE>, Vec<ShamirShare<SIZE>>), CryptoCoreError> {
         // A threshold equal to one makes no sense since it enables any party to
         // reconstruct the shared secret, while a threshold greater than the
-        // number of party makes no sense since it prevents any coalition of
+        // number of parties makes no sense since it prevents any coalition of
         // parties from reconstructing the shared secret.
         if !(NonZeroUsize::MIN < thres && thres < count) {
             return Err(CryptoCoreError::Shamir(format!(
@@ -151,8 +148,8 @@ where
     ///
     /// The computation ignores all shares which index is equal to the given one
     /// in order to guarantee a successful computation, which implies that
-    /// incorrect or malicious inputs (e.g. which index has been forged)
-    /// silenciously get an incorrect result.
+    /// incorrect or malicious inputs (e.g. which index has been forged) quietly
+    /// get an incorrect result.
     fn lagrange_eval(index: &NonZeroUsize, shares: &[&ShamirShare<SIZE>]) -> Scalar {
         let (num, den) = {
             let xi = Self::ith_scalar(index.get());
@@ -160,7 +157,7 @@ where
                 (<Scalar as One>::one(), <Scalar as One>::one()),
                 |(num, den), share_j| {
                     // Ignore all shares with the same index as they lead to a
-                    // null denominator which cannot be inversed.
+                    // null denominator which cannot be inverted.
                     if &share_j.index == index {
                         (num, den)
                     } else {
@@ -181,7 +178,7 @@ where
     /// case more shares were given, the first `threshold` ones are used and the
     /// rest is ignored.
     ///
-    /// Malicious inputs are not guared against, but return a random value.
+    /// Malicious inputs are not guarded against, but return a random value.
     pub fn merge(
         shares: &BTreeMap<NonZeroUsize, ShamirShare<SIZE>>,
     ) -> Result<Secret<SIZE>, CryptoCoreError> {
@@ -194,7 +191,7 @@ where
         if shares.len() < first.thres.get() {
             return Err(CryptoCoreError::Shamir(format!(
                 "at least {} shares are required to reconstruct the secret, \
-                     but {} were given",
+                 but {} were given",
                 first.thres.get(),
                 shares.len()
             )));
