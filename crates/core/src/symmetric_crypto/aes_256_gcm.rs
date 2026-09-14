@@ -11,6 +11,7 @@ use crate::{
 };
 use aead::{generic_array::GenericArray, AeadMutInPlace, KeyInit};
 use aes_gcm::Aes256Gcm as Aes256GcmLib;
+use cosmian_crypto_base::traits::providers::Aes256GcmProvider;
 use std::{
     fmt::{self, Debug, Formatter},
     ops::Deref,
@@ -114,6 +115,8 @@ impl AEAD_InPlace<{ Self::KEY_LENGTH }, { Self::NONCE_LENGTH }, { Self::MAC_LENG
             .map_err(Self::Error::from)
     }
 }
+
+impl Aes256GcmProvider for Aes256Gcm {}
 
 #[cfg(test)]
 mod tests {
