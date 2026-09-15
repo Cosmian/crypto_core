@@ -2,12 +2,12 @@ use crate::{
     p256::{scalar::P256Scalar, NID},
     FFIMonad,
 };
-use cosmian_crypto_core::{
+use cosmian_crypto_base::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_monoid_arithmetic,
-    reexport::rand_core::CryptoRngCore,
-    traits::{AbelianGroup, Group, Monoid, One},
-    CryptoCoreError, Sampling,
+    reexport::{rand_core::CryptoRngCore, zeroize::ZeroizeOnDrop},
+    traits::{AbelianGroup, Group, Monoid, One, Sampling},
+    Error,
 };
 use openssl::{
     bn::{BigNum, BigNumContext},
@@ -15,7 +15,6 @@ use openssl::{
     error::ErrorStack,
 };
 use std::{fmt::Debug, ops::Mul};
-use zeroize::ZeroizeOnDrop;
 
 fn clone_point(p: &EcPoint) -> Result<EcPoint, ErrorStack> {
     let mut ctxt = BigNumContext::new()?;
@@ -228,7 +227,7 @@ impl From<&P256Scalar> for P256Point {
 }
 
 impl Serializable for P256Point {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         SERIALIZED_POINT_LENGTH
@@ -236,7 +235,7 @@ impl Serializable for P256Point {
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         let p = self.0.as_ref().map_err(|e| {
-            CryptoCoreError::GenericSerializationError(format!(
+            Error::GenericSerializationError(format!(
                 "cannot serialize a P256 point in error state: {e}"
             ))
         })?;
@@ -247,9 +246,7 @@ impl Serializable for P256Point {
                 })
             })
             .map_err(|e| {
-                CryptoCoreError::GenericSerializationError(format!(
-                    "failed extracting P356 point bytes: {e}"
-                ))
+                Error::GenericSerializationError(format!("failed extracting P356 point bytes: {e}"))
             })?;
 
         ser.write_array(&bytes)
@@ -262,7 +259,7 @@ impl Serializable for P256Point {
                 BigNumContext::new()
                     .and_then(|mut ctxt| EcPoint::from_bytes(&group, &bytes, &mut ctxt))
             })
-            .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?;
+            .map_err(|e| Error::GenericDeserializationError(e.to_string()))?;
         Ok(Self(Ok(point)))
     }
 }
@@ -270,7 +267,7 @@ impl Serializable for P256Point {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmian_crypto_core::{
+    use cosmian_crypto_base::{
         bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng,
         traits::tests::test_group, CsRng,
     };

@@ -1,9 +1,11 @@
-use cosmian_crypto_core::traits::{HASH, XOF};
+use cosmian_crypto_base::{
+    reexport::zeroize::Zeroize,
+    traits::{HASH, XOF},
+};
 use openssl::{
     error::ErrorStack,
     hash::{Hasher, MessageDigest},
 };
-use zeroize::Zeroize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Sha256;
@@ -79,7 +81,7 @@ impl XOF for Shake256 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmian_crypto_core::traits::tests::{test_hash, test_xof};
+    use cosmian_crypto_base::traits::tests::{test_hash, test_xof};
 
     #[test]
     fn test_hash_algorithms() {

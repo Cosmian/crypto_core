@@ -8,13 +8,16 @@ macro_rules! make_mlkem {
             use core::ops::IndexMut;
             use std::pin::Pin;
 
-            use cosmian_crypto_core::{
+            use cosmian_crypto_base::{
                 bytes_ser_de::{Deserializer, Serializable, Serializer},
+                reexport::{
+                    rand_core::CryptoRngCore,
+                    zeroize::{Zeroize, ZeroizeOnDrop},
+                },
                 traits::KEM,
-                CryptoCoreError, Secret, SymmetricKey,
+                Error, Secret, SymmetricKey,
             };
             use libcrux_ml_kem::$module;
-            use zeroize::{Zeroize, ZeroizeOnDrop};
 
             #[derive(Clone)]
             pub struct $enc($module::$ctx);
@@ -38,7 +41,7 @@ macro_rules! make_mlkem {
             }
 
             impl Serializable for $enc {
-                type Error = CryptoCoreError;
+                type Error = Error;
 
                 fn length(&self) -> usize {
                     Self::LENGTH
@@ -50,9 +53,8 @@ macro_rules! make_mlkem {
 
                 fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
                     Ok(Self(
-                        $module::$ctx::try_from(de.read_array::<{ Self::LENGTH }>()?).map_err(
-                            |e| CryptoCoreError::GenericDeserializationError(e.to_string()),
-                        )?,
+                        $module::$ctx::try_from(de.read_array::<{ Self::LENGTH }>()?)
+                            .map_err(|e| Error::GenericDeserializationError(e.to_string()))?,
                     ))
                 }
             }
@@ -79,7 +81,7 @@ macro_rules! make_mlkem {
             }
 
             impl Serializable for $ek {
-                type Error = CryptoCoreError;
+                type Error = Error;
 
                 fn length(&self) -> usize {
                     Self::LENGTH
@@ -91,9 +93,8 @@ macro_rules! make_mlkem {
 
                 fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
                     Ok(Self(
-                        $module::$pk::try_from(de.read_array::<{ Self::LENGTH }>()?).map_err(
-                            |e| CryptoCoreError::GenericDeserializationError(e.to_string()),
-                        )?,
+                        $module::$pk::try_from(de.read_array::<{ Self::LENGTH }>()?)
+                            .map_err(|e| Error::GenericDeserializationError(e.to_string()))?,
                     ))
                 }
             }
@@ -120,7 +121,7 @@ macro_rules! make_mlkem {
             impl ZeroizeOnDrop for $dk {}
 
             impl Serializable for $dk {
-                type Error = CryptoCoreError;
+                type Error = Error;
 
                 fn length(&self) -> usize {
                     Self::LENGTH
@@ -132,9 +133,10 @@ macro_rules! make_mlkem {
 
                 fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
                     let mut bytes = de.read_array::<{ Self::LENGTH }>()?;
-                    let dk = Self(Box::pin($module::$sk::try_from(&bytes).map_err(|e| {
-                        CryptoCoreError::GenericDeserializationError(e.to_string())
-                    })?));
+                    let dk =
+                        Self(Box::pin($module::$sk::try_from(&bytes).map_err(|e| {
+                            Error::GenericDeserializationError(e.to_string())
+                        })?));
                     bytes.zeroize();
                     Ok(dk)
                 }
@@ -150,10 +152,10 @@ macro_rules! make_mlkem {
 
                 type DecapsulationKey = $dk;
 
-                type Error = CryptoCoreError;
+                type Error = Error;
 
                 fn keygen(
-                    rng: &mut impl cosmian_crypto_core::reexport::rand_core::CryptoRngCore,
+                    rng: &mut impl CryptoRngCore,
                 ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error> {
                     let mut randomness = [0; libcrux_ml_kem::KEY_GENERATION_SEED_SIZE];
                     rng.fill_bytes(&mut randomness);
@@ -163,7 +165,7 @@ macro_rules! make_mlkem {
 
                 fn enc(
                     ek: &Self::EncapsulationKey,
-                    rng: &mut impl cosmian_crypto_core::reexport::rand_core::CryptoRngCore,
+                    rng: &mut impl CryptoRngCore,
                 ) -> Result<(SymmetricKey<32>, Self::Encapsulation), Self::Error> {
                     let mut randomness = [0; libcrux_ml_kem::SHARED_SECRET_SIZE];
                     rng.fill_bytes(&mut randomness);
@@ -174,7 +176,7 @@ macro_rules! make_mlkem {
                 fn dec(
                     dk: &Self::DecapsulationKey,
                     enc: &Self::Encapsulation,
-                ) -> Result<cosmian_crypto_core::SymmetricKey<32>, Self::Error> {
+                ) -> Result<SymmetricKey<32>, Self::Error> {
                     let mut ss = $module::decapsulate(&dk.0, &enc.0);
                     Ok(Secret::from_unprotected_bytes(&mut ss).into())
                 }
@@ -255,7 +257,7 @@ make_mlkem!(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmian_crypto_core::traits::tests::test_kem;
+    use cosmian_crypto_base::traits::tests::test_kem;
 
     #[test]
     fn test_mlkem() {

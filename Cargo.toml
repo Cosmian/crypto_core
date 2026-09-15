@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "crates/base",
   "crates/core",
   "crates/libcrux",
   "crates/openssl_provider",

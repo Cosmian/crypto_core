@@ -12,13 +12,13 @@ use std::{
 use leb128;
 use zeroize::{Zeroize, Zeroizing};
 
-use crate::CryptoCoreError;
+use crate::Error;
 
 /// A `Serializable` object can easily be serialized and deserialized into an
 /// array of bytes.
 pub trait Serializable: Sized {
     /// Error type returned by the serialization.
-    type Error: std::error::Error + From<CryptoCoreError>;
+    type Error: std::error::Error + From<Error>;
 
     /// Retrieves the length of the serialized object if it can be known.
     ///
@@ -42,7 +42,7 @@ pub trait Serializable: Sized {
     /// Deserializes the object.
     fn deserialize(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.is_empty() {
-            return Err(CryptoCoreError::DeserializationEmptyError.into());
+            return Err(Error::DeserializationEmptyError.into());
         }
 
         let mut de = Deserializer::new(bytes);
@@ -51,14 +51,14 @@ pub trait Serializable: Sized {
                 if de.finalize().is_empty() {
                     Ok(result)
                 } else {
-                    Err(CryptoCoreError::DeserializationSizeError {
+                    Err(Error::DeserializationSizeError {
                         given: bytes.len(),
                         expected: result.length(),
                     }
                     .into())
                 }
             }
-            Err(err) => Err(CryptoCoreError::GenericDeserializationError(format!(
+            Err(err) => Err(Error::GenericDeserializationError(format!(
                 "failed deserializing with error '{err}' on bytes '{bytes:?}'",
             ))
             .into()),
@@ -80,24 +80,24 @@ impl<'a> Deserializer<'a> {
     }
 
     /// Reads a `u64` from the `Deserializer`.
-    pub fn read_leb128_u64(&mut self) -> Result<u64, CryptoCoreError> {
-        leb128::read::unsigned(&mut self.readable).map_err(CryptoCoreError::ReadLeb128Error)
+    pub fn read_leb128_u64(&mut self) -> Result<u64, Error> {
+        leb128::read::unsigned(&mut self.readable).map_err(Error::ReadLeb128Error)
     }
 
     /// Reads an array of bytes of length `LENGTH` from the `Deserializer`.
-    pub fn read_array<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], CryptoCoreError> {
+    pub fn read_array<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], Error> {
         let mut buf = [0; LENGTH];
-        self.readable.read_exact(&mut buf).map_err(|e| {
-            CryptoCoreError::DeserializationIoError {
+        self.readable
+            .read_exact(&mut buf)
+            .map_err(|e| Error::DeserializationIoError {
                 bytes_len: LENGTH,
                 error: e.to_string(),
-            }
-        })?;
+            })?;
         Ok(buf)
     }
 
     /// Reads a packed vector of Boolean values.
-    pub fn read_packed_booleans(&'a mut self) -> Result<Vec<bool>, CryptoCoreError> {
+    pub fn read_packed_booleans(&'a mut self) -> Result<Vec<bool>, Error> {
         let byte_iter = ByteIterator::<'a>::new(self);
         unpack(byte_iter)
     }
@@ -106,7 +106,7 @@ impl<'a> Deserializer<'a> {
     ///
     /// Vectors serialization overhead is `size_of(LEB128(vector_size))`, where
     /// `LEB128()` is the LEB128 serialization function.
-    pub fn read_vec(&mut self) -> Result<Vec<u8>, CryptoCoreError> {
+    pub fn read_vec(&mut self) -> Result<Vec<u8>, Error> {
         // The size of the vector is prefixed to the serialization.
         let original_length = self.readable.len();
         let len_u64 = self.read_leb128_u64()?;
@@ -114,33 +114,33 @@ impl<'a> Deserializer<'a> {
             return Ok(vec![]);
         };
         let len = usize::try_from(len_u64).map_err(|_| {
-            CryptoCoreError::GenericDeserializationError(format!(
+            Error::GenericDeserializationError(format!(
                 "size of vector is too big for architecture: {len_u64} bytes",
             ))
         })?;
         if self.readable.len() < len {
-            return Err(CryptoCoreError::DeserializationIoError {
+            return Err(Error::DeserializationIoError {
                 bytes_len: len,
                 error: format!("readable buffer too small: {} bytes", self.readable.len()),
             });
         }
         let mut buf = vec![0_u8; len];
-        self.readable.read_exact(&mut buf).map_err(|_| {
-            CryptoCoreError::DeserializationSizeError {
+        self.readable
+            .read_exact(&mut buf)
+            .map_err(|_| Error::DeserializationSizeError {
                 expected: len + to_leb128_len(len),
                 given: original_length,
-            }
-        })?;
+            })?;
         Ok(buf)
     }
 
     /// Reads a slice of bytes from the `Deserializer`.
     ///
     /// Returns a reference to the read subslice
-    pub fn read_vec_as_ref(&mut self) -> Result<&'a [u8], CryptoCoreError> {
+    pub fn read_vec_as_ref(&mut self) -> Result<&'a [u8], Error> {
         let len_u64 = self.read_leb128_u64()?;
         let len = usize::try_from(len_u64).map_err(|_| {
-            CryptoCoreError::GenericDeserializationError(format!(
+            Error::GenericDeserializationError(format!(
                 "size of vector is too big for architecture: {len_u64} bytes",
             ))
         })?;
@@ -186,20 +186,18 @@ impl Serializer {
     /// Writes a `u64` to the `Serializer`.
     ///
     /// - `n`   : `u64` to write
-    pub fn write_leb128_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
+    pub fn write_leb128_u64(&mut self, n: u64) -> Result<usize, Error> {
         leb128::write::unsigned(&mut *self.0, n)
-            .map_err(|error| CryptoCoreError::WriteLeb128Error { value: n, error })
+            .map_err(|error| Error::WriteLeb128Error { value: n, error })
     }
 
     /// Writes an array of bytes to the `Serializer`.
     ///
     /// - `array`   : array of bytes to write
-    pub fn write_array(&mut self, array: &[u8]) -> Result<usize, CryptoCoreError> {
-        <Vec<u8> as Write>::write(&mut self.0, array).map_err(|error| {
-            CryptoCoreError::SerializationIoError {
-                bytes_len: array.len(),
-                error,
-            }
+    pub fn write_array(&mut self, array: &[u8]) -> Result<usize, Error> {
+        <Vec<u8> as Write>::write(&mut self.0, array).map_err(|error| Error::SerializationIoError {
+            bytes_len: array.len(),
+            error,
         })
     }
 
@@ -213,7 +211,7 @@ impl Serializer {
     /// each non-terminating byte is 0 while the leading bits of the terminating
     /// bytes are a sequence of ones followed by a single 0. Only the remaining
     /// bits are interpreted as boolean values.
-    pub fn write_packed_booleans(&mut self, booleans: &[bool]) -> Result<usize, CryptoCoreError> {
+    pub fn write_packed_booleans(&mut self, booleans: &[bool]) -> Result<usize, Error> {
         self.write_array(&pack(booleans))
     }
 
@@ -223,7 +221,7 @@ impl Serializer {
     /// `LEB128()` is the LEB128 serialization function.
     ///
     /// - `vector`  : vector of bytes to write
-    pub fn write_vec(&mut self, vector: &[u8]) -> Result<usize, CryptoCoreError> {
+    pub fn write_vec(&mut self, vector: &[u8]) -> Result<usize, Error> {
         // Use the size as prefix. This allows initializing the vector with the
         // correct capacity on deserialization.
         let mut len = self.write_leb128_u64(vector.len() as u64)?;
@@ -280,7 +278,7 @@ pub fn to_leb128_len(n: usize) -> usize {
 }
 
 impl Serializable for bool {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         1
@@ -295,7 +293,7 @@ impl Serializable for bool {
         match b {
             0 => Ok(false),
             1 => Ok(true),
-            _ => Err(CryptoCoreError::GenericDeserializationError(format!(
+            _ => Err(Error::GenericDeserializationError(format!(
                 "not a valid boolean value serialization {b}"
             ))),
         }
@@ -303,7 +301,7 @@ impl Serializable for bool {
 }
 
 impl Serializable for f32 {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         4
@@ -319,7 +317,7 @@ impl Serializable for f32 {
 }
 
 impl Serializable for f64 {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         8
@@ -335,7 +333,7 @@ impl Serializable for f64 {
 }
 
 impl Serializable for u64 {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         if *self == 0 {
@@ -355,7 +353,7 @@ impl Serializable for u64 {
 }
 
 impl Serializable for usize {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         to_leb128_len(*self)
@@ -367,15 +365,14 @@ impl Serializable for usize {
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         de.read_leb128_u64().and_then(|n| {
-            usize::try_from(n).map_err(|_| {
-                CryptoCoreError::GenericDeserializationError("not an usize number".to_string())
-            })
+            usize::try_from(n)
+                .map_err(|_| Error::GenericDeserializationError("not an usize number".to_string()))
         })
     }
 }
 
 impl Serializable for NonZeroUsize {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         self.get().length()
@@ -395,7 +392,7 @@ impl Serializable for NonZeroUsize {
 }
 
 impl Serializable for String {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         self.len().length() + self.len()
@@ -407,15 +404,14 @@ impl Serializable for String {
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         de.read_vec().and_then(|bytes| {
-            String::from_utf8(bytes)
-                .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))
+            String::from_utf8(bytes).map_err(|e| Error::GenericDeserializationError(e.to_string()))
         })
     }
 }
 
 impl<T: Serializable> Serializable for Option<T>
 where
-    T::Error: From<CryptoCoreError>,
+    T::Error: From<Error>,
 {
     type Error = T::Error;
 
@@ -445,10 +441,10 @@ where
 
 impl<T1: Serializable, T2: Serializable> Serializable for (T1, T2)
 where
-    T1::Error: From<CryptoCoreError>,
-    T2::Error: From<CryptoCoreError>,
+    T1::Error: From<Error>,
+    T2::Error: From<Error>,
 {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         self.0.length() + self.1.length()
@@ -477,11 +473,11 @@ where
 
 impl<T1: Serializable, T2: Serializable, T3: Serializable> Serializable for (T1, T2, T3)
 where
-    T1::Error: From<CryptoCoreError>,
-    T2::Error: From<CryptoCoreError>,
-    T3::Error: From<CryptoCoreError>,
+    T1::Error: From<Error>,
+    T2::Error: From<Error>,
+    T3::Error: From<Error>,
 {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         self.0.length() + self.1.length() + self.1.length()
@@ -517,12 +513,12 @@ where
 impl<T1: Serializable, T2: Serializable, T3: Serializable, T4: Serializable> Serializable
     for (T1, T2, T3, T4)
 where
-    T1::Error: From<CryptoCoreError>,
-    T2::Error: From<CryptoCoreError>,
-    T3::Error: From<CryptoCoreError>,
-    T4::Error: From<CryptoCoreError>,
+    T1::Error: From<Error>,
+    T2::Error: From<Error>,
+    T3::Error: From<Error>,
+    T4::Error: From<Error>,
 {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         self.0.length() + self.1.length() + self.1.length() + self.3.length()
@@ -562,7 +558,7 @@ where
 }
 
 impl<const LENGTH: usize> Serializable for [u8; LENGTH] {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         LENGTH
@@ -579,7 +575,7 @@ impl<const LENGTH: usize> Serializable for [u8; LENGTH] {
 
 impl<const LENGTH: usize, T: Default + Serializable> Serializable for [T; LENGTH]
 where
-    T::Error: From<CryptoCoreError>,
+    T::Error: From<Error>,
 {
     type Error = T::Error;
 
@@ -601,7 +597,7 @@ where
 }
 
 impl Serializable for Vec<u8> {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         self.len().length() + self.len()
@@ -618,7 +614,7 @@ impl Serializable for Vec<u8> {
 
 impl<T: Serializable> Serializable for Vec<T>
 where
-    T::Error: From<CryptoCoreError>,
+    T::Error: From<Error>,
 {
     type Error = T::Error;
 
@@ -643,7 +639,7 @@ where
 
 impl<T: Serializable> Serializable for LinkedList<T>
 where
-    T::Error: From<CryptoCoreError>,
+    T::Error: From<Error>,
 {
     type Error = T::Error;
 
@@ -664,7 +660,7 @@ where
 
 impl<T: Hash + Eq + Serializable> Serializable for HashSet<T>
 where
-    T::Error: From<CryptoCoreError>,
+    T::Error: From<Error>,
 {
     type Error = T::Error;
 
@@ -688,7 +684,7 @@ where
 }
 
 impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V> {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         self.len().length()
@@ -703,10 +699,10 @@ impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V
             .try_fold(ser.write(&self.len())?, |mut n, (k, v)| {
                 n += ser
                     .write(k)
-                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?;
+                    .map_err(|e| Error::GenericDeserializationError(e.to_string()))?;
                 n += ser
                     .write(v)
-                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?;
+                    .map_err(|e| Error::GenericDeserializationError(e.to_string()))?;
                 Ok(n)
             })
     }
@@ -717,9 +713,9 @@ impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V
         for _ in 0..length {
             res.insert(
                 de.read::<K>()
-                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
+                    .map_err(|e| Error::GenericDeserializationError(e.to_string()))?,
                 de.read::<V>()
-                    .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?,
+                    .map_err(|e| Error::GenericDeserializationError(e.to_string()))?,
             );
         }
         Ok(res)
@@ -727,7 +723,7 @@ impl<K: Hash + Eq + Serializable, V: Serializable> Serializable for HashMap<K, V
 }
 
 impl<T: Serializable + Zeroize> Serializable for Zeroizing<T> {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         self.deref().length()
@@ -735,17 +731,13 @@ impl<T: Serializable + Zeroize> Serializable for Zeroizing<T> {
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         self.deref().write(ser).map_err(|e| {
-            CryptoCoreError::GenericSerializationError(format!(
-                "error upon writing zeroized vector: {e}"
-            ))
+            Error::GenericSerializationError(format!("error upon writing zeroized vector: {e}"))
         })
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         de.read().map(Self::new).map_err(|e| {
-            CryptoCoreError::GenericSerializationError(format!(
-                "error upon reading zeroized vector: {e}"
-            ))
+            Error::GenericSerializationError(format!("error upon reading zeroized vector: {e}"))
         })
     }
 }
@@ -796,12 +788,10 @@ fn pack(choices: &[bool]) -> Vec<u8> {
     res
 }
 
-fn unpack(mut bytes: impl Iterator<Item = u8>) -> Result<Vec<bool>, CryptoCoreError> {
+fn unpack(mut bytes: impl Iterator<Item = u8>) -> Result<Vec<bool>, Error> {
     let mut res = Vec::new();
     loop {
-        let mut byte = bytes
-            .next()
-            .ok_or(CryptoCoreError::DeserializationEmptyError)?;
+        let mut byte = bytes.next().ok_or(Error::DeserializationEmptyError)?;
 
         if byte < (1 << 7) {
             for _ in 0..7 {
@@ -824,7 +814,7 @@ fn unpack(mut bytes: impl Iterator<Item = u8>) -> Result<Vec<bool>, CryptoCoreEr
                     };
                 }
             }
-            return Err(CryptoCoreError::GenericDeserializationError(
+            return Err(Error::GenericDeserializationError(
                 "invalid packed boolean byte: marker bit 0 is missing".to_string(),
             ));
         }
@@ -873,7 +863,7 @@ mod tests {
     use crate::{
         bytes_ser_de::{pack, unpack},
         reexport::rand_core::{RngCore, SeedableRng},
-        CryptoCoreError, CsRng,
+        CsRng, Error,
     };
 
     #[test]
@@ -892,7 +882,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ser_de() -> Result<(), CryptoCoreError> {
+    fn test_ser_de() -> Result<(), Error> {
         let a1 = b"azerty".to_vec();
         let a2 = b"".to_vec();
         let a3 = "nbvcxwmlkjhgfdsqpoiuytreza)àç_è-('é&".as_bytes().to_vec();

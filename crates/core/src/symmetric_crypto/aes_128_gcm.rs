@@ -7,10 +7,7 @@ use super::{
     dem::{DemInPlace, DemStream, Instantiable},
     nonce::Nonce,
 };
-use crate::{
-    symmetric_crypto::Dem, traits::AEAD_InPlace, CryptoCoreError, RandomFixedSizeCBytes,
-    SymmetricKey,
-};
+use crate::{symmetric_crypto::Dem, traits::AEAD_InPlace, CryptoCoreError, SymmetricKey};
 use aead::{generic_array::GenericArray, AeadMutInPlace, KeyInit};
 use aes_gcm::Aes128Gcm as Aes128GcmLib;
 use std::{fmt::Debug, ops::Deref};
@@ -40,11 +37,9 @@ impl Aes128Gcm {
 }
 
 impl Instantiable<{ Self::KEY_LENGTH }> for Aes128Gcm {
-    type Secret = SymmetricKey<{ Self::KEY_LENGTH }>;
-
-    fn new(symmetric_key: &Self::Secret) -> Self {
+    fn new(symmetric_key: &SymmetricKey<{ Self::KEY_LENGTH }>) -> Self {
         Self(Aes128GcmLib::new(GenericArray::from_slice(
-            symmetric_key.as_bytes(),
+            &**symmetric_key,
         )))
     }
 }

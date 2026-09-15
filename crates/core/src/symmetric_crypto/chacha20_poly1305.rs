@@ -10,7 +10,7 @@ use super::{
     nonce::Nonce,
     Dem, DemInPlace,
 };
-use crate::{RandomFixedSizeCBytes, SymmetricKey};
+use crate::SymmetricKey;
 
 pub struct ChaCha20Poly1305(ChaCha20Poly1305Lib);
 
@@ -30,11 +30,9 @@ impl Debug for ChaCha20Poly1305 {
 }
 
 impl Instantiable<{ Self::KEY_LENGTH }> for ChaCha20Poly1305 {
-    type Secret = SymmetricKey<{ Self::KEY_LENGTH }>;
-
-    fn new(symmetric_key: &Self::Secret) -> Self {
+    fn new(symmetric_key: &SymmetricKey<{ Self::KEY_LENGTH }>) -> Self {
         Self(ChaCha20Poly1305Lib::new(GenericArray::from_slice(
-            symmetric_key.as_bytes(),
+            &**symmetric_key,
         )))
     }
 }
@@ -83,6 +81,7 @@ impl
 mod tests {
 
     use aead::Payload;
+    use cosmian_crypto_base::bytes_ser_de::Serializable;
 
     use crate::{
         reexport::rand_core::SeedableRng,
@@ -205,7 +204,7 @@ mod tests {
 
         // decrypt using salsa_sealbox
         let secret_key =
-            SymmetricKey::<{ ChaCha20Poly1305::KEY_LENGTH }>::try_from_bytes(secret_key_bytes)
+            SymmetricKey::<{ ChaCha20Poly1305::KEY_LENGTH }>::deserialize(&secret_key_bytes)
                 .unwrap();
         let plaintext_ = ChaCha20Poly1305::new(&secret_key)
             .decrypt(

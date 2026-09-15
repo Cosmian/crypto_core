@@ -162,7 +162,7 @@ impl<C: Curve + CurveArithmetic, const LENGTH: usize> Serializable for NistPriva
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
-        ser.write_array(self.as_bytes())
+        ser.write_array(self.as_bytes()).map_err(Self::Error::from)
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
