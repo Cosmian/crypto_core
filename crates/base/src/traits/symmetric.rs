@@ -351,7 +351,14 @@ impl<const LENGTH: usize, H: HASH<LENGTH>> KDF<LENGTH> for H {
 
     fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<LENGTH>, Self::Error> {
         let mut key = SymmetricKey::default();
-        H::hash([vec![seed], info].concat(), &mut key)?;
+        let mut state = <H as HASH<LENGTH>>::initialize()?;
+        H::update(&mut state, seed)?;
+        H::update(&mut state, &info.concat())?;
+        H::finalize(state, &mut key)?;
+        // TODO: we would like to be able to enforce having a zeroizable state, but
+        // sadly not enough dependency provide it.
+        //
+        // state.zeroize();
         Ok(key)
     }
 }
