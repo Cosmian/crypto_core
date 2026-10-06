@@ -7,7 +7,7 @@ pub struct Kdf256;
 impl<const KEY_LENGTH: usize> KDF<KEY_LENGTH> for Kdf256 {
     type Error = CryptoCoreError;
 
-    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
+    fn derive(seed: &[u8], info: &[&[u8]]) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
         let mut key = SymmetricKey::default();
         let mut hasher = Shake::v256();
         hasher.update(seed);
