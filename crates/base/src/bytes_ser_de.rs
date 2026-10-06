@@ -927,7 +927,7 @@ pub fn test_serialization<T: PartialEq + Debug + Serializable>(v: &T) -> Result<
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
     use super::{test_serialization, to_leb128_len, Deserializer, Serializable, Serializer};
     use crate::{
@@ -1051,6 +1051,14 @@ mod tests {
         let m = (0..1000)
             .map(|_| (rng.next_u64(), rng.next_u64()))
             .collect::<HashMap<_, _>>();
+        test_serialization(&m).unwrap();
+
+        let s = (0..1000).map(|_| rng.next_u64()).collect::<BTreeSet<_>>();
+        test_serialization(&s).unwrap();
+
+        let m = (0..1000)
+            .map(|_| (rng.next_u64(), rng.next_u64()))
+            .collect::<BTreeMap<_, _>>();
         test_serialization(&m).unwrap();
     }
 }
