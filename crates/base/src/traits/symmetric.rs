@@ -343,17 +343,19 @@ impl<const LENGTH: usize, H: XOF> HASH<LENGTH> for H {
 pub trait KDF<const KEY_LENGTH: usize> {
     type Error: std::error::Error;
 
-    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
+    fn derive(seed: &[u8], info: &[&[u8]]) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
 }
 
 impl<const LENGTH: usize, H: HASH<LENGTH>> KDF<LENGTH> for H {
     type Error = H::Error;
 
-    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<LENGTH>, Self::Error> {
+    fn derive(seed: &[u8], info: &[&[u8]]) -> Result<SymmetricKey<LENGTH>, Self::Error> {
         let mut key = SymmetricKey::default();
         let mut state = <H as HASH<LENGTH>>::initialize()?;
         H::update(&mut state, seed)?;
-        H::update(&mut state, &info.concat())?;
+        for bytes in info {
+            H::update(&mut state, bytes)?;
+        }
         H::finalize(state, &mut key)?;
         // TODO: we would like to be able to enforce having a zeroizable state, but
         // sadly not enough dependency provide it.
