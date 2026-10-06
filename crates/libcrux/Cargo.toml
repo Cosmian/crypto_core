@@ -1,7 +1,7 @@
 [package]
-name = "cosmian_rust_curve25519_provider"
+name = "cosmian_libcrux_provider"
 version = "1.0.0"
-description = "Pure-Rust Curve25519 provider."
+description = "Verified, pure-Rust provider."
 
 authors = { workspace = true }
 categories = { workspace = true }
@@ -12,12 +12,9 @@ repository = { workspace = true }
 
 [lib]
 crate-type = ["lib", "staticlib"]
-name = "cosmian_rust_curve25519_provider"
+name = "cosmian_libcrux_provider"
 path = "src/lib.rs"
 
 [dependencies]
 cosmian_crypto_base = { path = "../base", version = "3.0" }
-curve25519-dalek = { workspace = true, features = ["rand_core"] }
-
-[dev-dependencies]
-cosmian_crypto_core = { path = "../core", default-features = false, features = ["sha3"] }
+libcrux-ml-kem = { version = "0.0.9" }

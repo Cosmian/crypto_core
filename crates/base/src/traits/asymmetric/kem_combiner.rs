@@ -104,7 +104,7 @@ where
 
 mod error {
     use super::*;
-    use crate::CryptoCoreError;
+    use crate::Error;
     use std::fmt::Display;
 
     #[derive(Debug)]
@@ -159,10 +159,9 @@ mod error {
             Kem1: KEM<KEY_LENGTH_1>,
             Kem2: KEM<KEY_LENGTH_2>,
             Kdf: KDF<KEY_LENGTH>,
-        > From<CryptoCoreError>
-        for KemError<KEY_LENGTH, KEY_LENGTH_1, KEY_LENGTH_2, Kem1, Kem2, Kdf>
+        > From<Error> for KemError<KEY_LENGTH, KEY_LENGTH_1, KEY_LENGTH_2, Kem1, Kem2, Kdf>
     {
-        fn from(e: CryptoCoreError) -> Self {
+        fn from(e: Error) -> Self {
             Self::to_serialization_error(e)
         }
     }

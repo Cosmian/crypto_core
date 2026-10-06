@@ -2,12 +2,12 @@ use crate::{
     p256::{scalar::P256Scalar, NID},
     FFIMonad,
 };
-use cosmian_crypto_core::{
+use cosmian_crypto_base::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_monoid_arithmetic,
-    reexport::rand_core::CryptoRngCore,
-    traits::{AbelianGroup, Group, Monoid, One},
-    CryptoCoreError, Sampling,
+    reexport::{rand_core::CryptoRngCore, zeroize::ZeroizeOnDrop},
+    traits::{AbelianGroup, Group, Monoid, One, Sampling},
+    Error,
 };
 use openssl::{
     bn::{BigNum, BigNumContext},
@@ -15,7 +15,6 @@ use openssl::{
     error::ErrorStack,
 };
 use std::{fmt::Debug, ops::Mul};
-use zeroize::ZeroizeOnDrop;
 
 fn clone_point(p: &EcPoint) -> Result<EcPoint, ErrorStack> {
     let mut ctxt = BigNumContext::new()?;
@@ -100,8 +99,8 @@ impl Monoid for P256Point {
         let id = || {
             let group = EcGroup::from_curve_name(NID)?;
             let mut res = EcPoint::new(&group)?;
-            let ctxt = BigNumContext::new()?;
-            res.mul_generator(&group, &BigNum::from_u32(0).unwrap(), &ctxt)?;
+            let mut ctxt = BigNumContext::new()?;
+            res.mul_generator2(&group, &BigNum::from_u32(0).unwrap(), &mut ctxt)?;
             Ok(res)
         };
         Self(id())
@@ -135,9 +134,9 @@ impl Group for P256Point {
     fn invert(&self) -> Self {
         let invert = |p| {
             let mut res = clone_point(p)?;
-            let ctxt = BigNumContext::new()?;
+            let mut ctxt = BigNumContext::new()?;
             let group = EcGroup::from_curve_name(NID)?;
-            res.invert(&group, &ctxt)?;
+            res.invert2(&group, &mut ctxt)?;
             Ok(res)
         };
         match &self.0 {
@@ -154,8 +153,8 @@ impl One for P256Point {
         let one = || {
             let group = EcGroup::from_curve_name(NID)?;
             let mut res = EcPoint::new(&group)?;
-            let ctxt = BigNumContext::new()?;
-            res.mul_generator(&group, &*BigNum::from_u32(1)?, &ctxt)?;
+            let mut ctxt = BigNumContext::new()?;
+            res.mul_generator2(&group, &*BigNum::from_u32(1)?, &mut ctxt)?;
             Ok(res)
         };
         Self(one())
@@ -173,8 +172,8 @@ impl Mul<&P256Scalar> for &P256Point {
         let mul = |lhs: &EcPoint, rhs: &BigNum| {
             let group = EcGroup::from_curve_name(NID)?;
             let mut res = EcPoint::new(&group)?;
-            let ctxt = BigNumContext::new()?;
-            res.mul(&group, lhs, rhs, &ctxt)?;
+            let mut ctxt = BigNumContext::new()?;
+            res.mul2(&group, lhs, rhs, &mut ctxt)?;
             Ok(res)
         };
         match (&self.0, &rhs.0) {
@@ -228,7 +227,7 @@ impl From<&P256Scalar> for P256Point {
 }
 
 impl Serializable for P256Point {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         SERIALIZED_POINT_LENGTH
@@ -236,7 +235,7 @@ impl Serializable for P256Point {
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         let p = self.0.as_ref().map_err(|e| {
-            CryptoCoreError::GenericSerializationError(format!(
+            Error::GenericSerializationError(format!(
                 "cannot serialize a P256 point in error state: {e}"
             ))
         })?;
@@ -247,9 +246,7 @@ impl Serializable for P256Point {
                 })
             })
             .map_err(|e| {
-                CryptoCoreError::GenericSerializationError(format!(
-                    "failed extracting P356 point bytes: {e}"
-                ))
+                Error::GenericSerializationError(format!("failed extracting P356 point bytes: {e}"))
             })?;
 
         ser.write_array(&bytes)
@@ -262,7 +259,7 @@ impl Serializable for P256Point {
                 BigNumContext::new()
                     .and_then(|mut ctxt| EcPoint::from_bytes(&group, &bytes, &mut ctxt))
             })
-            .map_err(|e| CryptoCoreError::GenericDeserializationError(e.to_string()))?;
+            .map_err(|e| Error::GenericDeserializationError(e.to_string()))?;
         Ok(Self(Ok(point)))
     }
 }
@@ -270,7 +267,7 @@ impl Serializable for P256Point {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmian_crypto_core::{
+    use cosmian_crypto_base::{
         bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng,
         traits::tests::test_group, CsRng,
     };

@@ -1,14 +1,14 @@
 use super::R25519Scalar;
 use core::ops::Mul;
-use cosmian_crypto_core::{
+use cosmian_crypto_base::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_monoid_arithmetic,
     reexport::{
         rand_core::CryptoRngCore,
         zeroize::{Zeroize, ZeroizeOnDrop},
     },
-    traits::{AbelianGroup, CBytes, FixedSizeCBytes, Group, Monoid, One, Sampling},
-    CryptoCoreError,
+    traits::{AbelianGroup, Group, Monoid, One, Sampling},
+    Error,
 };
 use curve25519_dalek::{
     constants::{self},
@@ -17,17 +17,27 @@ use curve25519_dalek::{
 };
 
 /// Curve Point of a Ristretto Curve25519.
-#[derive(Clone, PartialEq, Eq, Debug, Zeroize, ZeroizeOnDrop)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct R25519Point(pub(crate) RistrettoPoint);
+
+impl Zeroize for R25519Point {
+    fn zeroize(&mut self) {
+        self.0.zeroize()
+    }
+}
+
+impl Drop for R25519Point {
+    fn drop(&mut self) {
+        self.zeroize()
+    }
+}
+
+impl ZeroizeOnDrop for R25519Point {}
 
 /// Length of a Ristretto curve point in bytes.
 pub const R25519_POINT_LENGTH: usize = 32;
 
-impl CBytes for R25519Point {}
-
-impl FixedSizeCBytes<R25519_POINT_LENGTH> for R25519Point {}
-
-impl From<&R25519Point> for [u8; R25519Point::LENGTH] {
+impl From<&R25519Point> for [u8; R25519_POINT_LENGTH] {
     fn from(value: &R25519Point) -> Self {
         value.0.compress().to_bytes()
     }
@@ -114,10 +124,10 @@ impl From<&R25519Scalar> for R25519Point {
 }
 
 impl Serializable for R25519Point {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
-        Self::LENGTH
+        R25519_POINT_LENGTH
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
@@ -126,10 +136,10 @@ impl Serializable for R25519Point {
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         Ok(Self(
-            CompressedRistretto(de.read_array::<{ Self::LENGTH }>()?)
+            CompressedRistretto(de.read_array::<{ R25519_POINT_LENGTH }>()?)
                 .decompress()
                 .ok_or_else(|| {
-                    CryptoCoreError::ConversionError(
+                    Error::GenericDeserializationError(
                         "Cannot decompress given bytes into a valid curve point!".to_string(),
                     )
                 })?,
@@ -140,7 +150,7 @@ impl Serializable for R25519Point {
 #[cfg(test)]
 mod test {
     use super::{R25519Point, R25519Scalar};
-    use cosmian_crypto_core::{
+    use cosmian_crypto_base::{
         bytes_ser_de::test_serialization,
         reexport::rand_core::SeedableRng,
         traits::{tests::test_abelian_group, One, Sampling},
