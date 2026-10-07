@@ -59,7 +59,7 @@ where
         let (ss_2, enc_2) = Kem2::enc(&ek.1, rng).map_err(Self::Error::Kem2)?;
         let key = Kdf::derive(
             &ek.serialize()?,
-            &[
+            vec![
                 &*ss_1,
                 &*ss_2,
                 &enc_1
@@ -86,7 +86,7 @@ where
         );
         let key = Kdf::derive(
             &ek.serialize()?,
-            &[
+            vec![
                 &*ss_1,
                 &*ss_2,
                 &enc.0

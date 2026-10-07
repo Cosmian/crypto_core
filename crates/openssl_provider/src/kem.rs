@@ -77,7 +77,7 @@ where
         let (sk, pk) = <Group as NIKE>::keygen(rng).map_err(Self::Error::Nike)?;
         let ss = (ek * sk).manage_error(Self::Error::Ffi)?;
         let pk = pk.manage_error(Self::Error::Ffi)?;
-        let key = Kdf::derive(&ss.serialize().map_err(Self::Error::Serialization)?, &[])
+        let key = Kdf::derive(&ss.serialize().map_err(Self::Error::Serialization)?, vec![])
             .map_err(Self::Error::Kdf)?;
         Ok((key, pk))
     }
@@ -89,7 +89,7 @@ where
         let ss = <Group as NIKE>::shared_secret(dk, enc)
             .map_err(Self::Error::Nike)?
             .manage_error(Self::Error::Ffi)?;
-        let key = Kdf::derive(&ss.serialize().map_err(Self::Error::Serialization)?, &[])
+        let key = Kdf::derive(&ss.serialize().map_err(Self::Error::Serialization)?, vec![])
             .map_err(Self::Error::Kdf)?;
         Ok(key)
     }
