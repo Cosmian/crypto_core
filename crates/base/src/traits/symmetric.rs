@@ -152,9 +152,18 @@ pub trait AEAD_InPlace<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const
 ///
 /// This trait provides a more convenient API than `AEAD_InPlace` but performs
 /// allocation.
-pub trait AEAD<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGTH: usize>:
-    AEAD_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>
-{
+pub trait AEAD<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGTH: usize> {
+    /// The length of the key.
+    const KEY_LENGTH: usize = KEY_LENGTH;
+
+    /// The length of the nonce.
+    const NONCE_LENGTH: usize = NONCE_LENGTH;
+
+    /// The length of the authentication tag.
+    const TAG_LENGTH: usize = TAG_LENGTH;
+
+    type Error: std::error::Error;
+
     type Plaintext;
 
     type Ciphertext;
@@ -191,6 +200,8 @@ impl<
 where
     E::Error: From<Error>,
 {
+    type Error = E::Error;
+
     type Plaintext = Zeroizing<Vec<u8>>;
 
     // CIPHERTEXT = NONCE || TAG || ENCRYPTED PLAINTEXT
