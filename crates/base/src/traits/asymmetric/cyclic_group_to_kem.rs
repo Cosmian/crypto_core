@@ -74,7 +74,7 @@ where
     ) -> Result<(SymmetricKey<KEY_LENGTH>, Self::Encapsulation), Self::Error> {
         let (sk, pk) = Self::keygen(rng)?;
         let ss = <Group as NIKE>::shared_secret(&sk, ek).map_err(Self::Error::Nike)?;
-        let key = Kdf::derive(&ss.serialize().map_err(Self::Error::Serialization)?, &[])
+        let key = Kdf::derive(&ss.serialize().map_err(Self::Error::Serialization)?, vec![])
             .map_err(Self::Error::Kdf)?;
         Ok((key, pk))
     }
@@ -84,7 +84,7 @@ where
         enc: &Self::Encapsulation,
     ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
         let ss = <Group as NIKE>::shared_secret(dk, enc).map_err(Self::Error::Nike)?;
-        let key = Kdf::derive(&ss.serialize().map_err(Self::Error::Serialization)?, &[])
+        let key = Kdf::derive(&ss.serialize().map_err(Self::Error::Serialization)?, vec![])
             .map_err(Self::Error::Kdf)?;
         Ok(key)
     }
