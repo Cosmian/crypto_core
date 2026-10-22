@@ -106,10 +106,10 @@ where
         // reconstruct the shared secret, while a threshold greater than the
         // number of parties makes no sense since it prevents any coalition of
         // parties from reconstructing the shared secret.
-        if !(NonZeroUsize::MIN < thres && thres < count) {
+        if !(NonZeroUsize::MIN < thres && thres <= count) {
             return Err(CryptoCoreError::Shamir(format!(
                 "The threshold {thres} must be greater than one, \
-                 but less that the total number or parties {count}."
+                 but less than or equal to the total number of parties {count}."
             )));
         }
 
@@ -329,6 +329,55 @@ mod tests {
             let reconstructed_secret = ShamirSecretSharing::<SIZE, Scalar>::merge(&shares).unwrap();
 
             assert_ne!(secret, reconstructed_secret);
+        }
+
+        {
+            // A threshold equal to the number of shares is valid.
+            let (new_secret, new_shares) = ShamirSecretSharing::<SIZE, Scalar>::split(
+                &mut rng,
+                NonZeroUsize::try_from(COUNT).unwrap(),
+                NonZeroUsize::try_from(COUNT).unwrap(),
+            )
+            .unwrap();
+
+            assert_eq!(COUNT, new_shares.len());
+
+            {
+                // Reconstruction from all the shares is possible.
+                let shares = new_shares
+                    .iter()
+                    .cloned()
+                    .map(|share| (share.index, share))
+                    .collect::<BTreeMap<NonZeroUsize, ShamirShare<SIZE>>>();
+
+                let reconstructed_secret =
+                    ShamirSecretSharing::<SIZE, Scalar>::merge(&shares).unwrap();
+
+                assert_eq!(new_secret, reconstructed_secret);
+            }
+
+            {
+                // Reconstruction from `count - 1` shares is impossible.
+                let shares = new_shares
+                    .iter()
+                    .take(COUNT - 1)
+                    .cloned()
+                    .map(|share| (share.index, share))
+                    .collect::<BTreeMap<NonZeroUsize, ShamirShare<SIZE>>>();
+
+                assert!(ShamirSecretSharing::<SIZE, Scalar>::merge(&shares).is_err());
+            }
+        }
+
+        {
+            // A threshold greater than the number of shares is invalid.
+            let res = ShamirSecretSharing::<SIZE, Scalar>::split(
+                &mut rng,
+                NonZeroUsize::try_from(COUNT + 1).unwrap(),
+                NonZeroUsize::try_from(COUNT).unwrap(),
+            );
+
+            assert!(res.is_err());
         }
     }
 }

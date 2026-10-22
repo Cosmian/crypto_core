@@ -131,7 +131,7 @@ impl Display for CryptoCoreError {
             Self::WriteLeb128Error { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
-            Self::Shamir(str) => write!(f, "Shami secret sharing error: {str}"),
+            Self::Shamir(str) => write!(f, "Shamir secret sharing error: {str}"),
         }
     }
 }
