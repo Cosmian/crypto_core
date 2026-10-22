@@ -1,13 +1,14 @@
 use aead::{consts::U10, generic_array::GenericArray};
 use chacha20::hchacha;
 use chacha20poly1305::XChaCha20Poly1305 as XChaCha20Poly1305Lib;
+use cosmian_crypto_base::bytes_ser_de::Serializable;
 
 use crate::{
     blake2b,
     reexport::rand_core::CryptoRngCore,
     symmetric_crypto::{Dem, DemStream, Instantiable, Nonce, XChaCha20Poly1305},
-    CryptoCoreError, Ecies, EciesStream, FixedSizeCBytes, SymmetricKey, X25519PrivateKey,
-    X25519PublicKey, CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
+    CryptoCoreError, Ecies, EciesStream, SymmetricKey, X25519PrivateKey, X25519PublicKey,
+    CURVE_25519_SECRET_LENGTH, X25519_PUBLIC_KEY_LENGTH,
 };
 
 /// A thread safe Elliptic Curve Integrated Encryption Scheme (ECIES) using
@@ -33,9 +34,7 @@ fn get_ephemeral_key<const KEY_LENGTH: usize>(
         &GenericArray::default(),
     );
 
-    SymmetricKey::try_from_bytes(key.as_slice().try_into().map_err(|_| {
-        CryptoCoreError::InvalidBytesLength("get ephemeral key".to_string(), KEY_LENGTH, None)
-    })?)
+    SymmetricKey::deserialize(key.as_slice()).map_err(CryptoCoreError::from)
 }
 
 impl EciesX25519XChaCha20 {

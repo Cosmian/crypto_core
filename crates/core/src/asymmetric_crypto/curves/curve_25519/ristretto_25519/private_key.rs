@@ -7,9 +7,10 @@ use curve25519_dalek::Scalar;
 use rand_core::CryptoRngCore;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::{Deserializer, Serializable, Serializer};
-use crate::{CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes};
+use crate::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
+    CBytes, CryptoCoreError, FixedSizeCBytes, RandomFixedSizeCBytes, SecretCBytes,
+};
 
 pub const R25519_PRIVATE_KEY_LENGTH: usize = 32;
 
@@ -49,7 +50,6 @@ impl RandomFixedSizeCBytes<{ R25519_PRIVATE_KEY_LENGTH }> for R25519PrivateKey {
 impl SecretCBytes<{ R25519_PRIVATE_KEY_LENGTH }> for R25519PrivateKey {}
 
 /// Key Serialization framework
-#[cfg(feature = "ser")]
 impl Serializable for R25519PrivateKey {
     type Error = CryptoCoreError;
 
@@ -59,6 +59,7 @@ impl Serializable for R25519PrivateKey {
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         ser.write_array(self.as_bytes())
+            .map_err(CryptoCoreError::Base)
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {

@@ -1,4 +1,4 @@
-use cosmian_crypto_core::{
+use cosmian_crypto_base::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
     reexport::{
@@ -6,22 +6,47 @@ use cosmian_crypto_core::{
         zeroize::{Zeroize, ZeroizeOnDrop},
     },
     traits::{
-        AbelianGroup, CBytes, Field, FixedSizeCBytes, Group, Monoid, Ring, Sampling, SecretCBytes,
+        AbelianGroup, Field, FixedSizeCBytes, Group, Monoid, Ring, Sampling, SecretCBytes,
         Seedable, Zero,
     },
-    CryptoCoreError, Secret,
+    Error, Secret,
 };
 use curve25519_dalek::Scalar;
 use std::ops::Div;
 
 pub const R25519_SCALAR_LENGTH: usize = 32;
 
-#[derive(Hash, Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
 pub struct R25519Scalar(pub(crate) Scalar);
 
-impl CBytes for R25519Scalar {}
+impl Zeroize for R25519Scalar {
+    fn zeroize(&mut self) {
+        self.0.zeroize()
+    }
+}
 
-impl FixedSizeCBytes<{ R25519_SCALAR_LENGTH }> for R25519Scalar {}
+impl Drop for R25519Scalar {
+    fn drop(&mut self) {
+        self.zeroize()
+    }
+}
+
+impl ZeroizeOnDrop for R25519Scalar {}
+
+impl FixedSizeCBytes<{ R25519_SCALAR_LENGTH }> for R25519Scalar {
+    const LENGTH: usize = R25519_SCALAR_LENGTH;
+
+    type Error = Error;
+
+    fn write(&self, buf: &mut [u8; R25519_SCALAR_LENGTH]) -> Result<(), Self::Error> {
+        buf.copy_from_slice(self.0.as_bytes());
+        Ok(())
+    }
+
+    fn read(buf: &[u8; R25519_SCALAR_LENGTH]) -> Result<Self, Self::Error> {
+        Ok(Self(Scalar::from_bytes_mod_order(*buf)))
+    }
+}
 
 impl SecretCBytes<{ R25519_SCALAR_LENGTH }> for R25519Scalar {}
 
@@ -73,13 +98,11 @@ implement_commutative_ring!(R25519Scalar);
 
 #[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<&R25519Scalar> for &R25519Scalar {
-    type Output = Result<R25519Scalar, CryptoCoreError>;
+    type Output = Result<R25519Scalar, Error>;
 
     fn div(self, rhs: &R25519Scalar) -> Self::Output {
         if rhs.is_zero() {
-            Err(CryptoCoreError::EllipticCurveError(
-                "scalar division by zero".to_string(),
-            ))
+            Err(Error::InversionError("scalar division by zero".to_string()))
         } else {
             Ok(R25519Scalar(self.0 * rhs.0.invert()))
         }
@@ -87,7 +110,7 @@ impl Div<&R25519Scalar> for &R25519Scalar {
 }
 
 impl Div<&R25519Scalar> for R25519Scalar {
-    type Output = Result<Self, CryptoCoreError>;
+    type Output = Result<Self, Error>;
 
     fn div(self, rhs: &R25519Scalar) -> Self::Output {
         &self / rhs
@@ -96,7 +119,7 @@ impl Div<&R25519Scalar> for R25519Scalar {
 
 #[allow(clippy::suspicious_arithmetic_impl)]
 impl Div for R25519Scalar {
-    type Output = Result<Self, CryptoCoreError>;
+    type Output = Result<Self, Error>;
 
     fn div(self, rhs: Self) -> Self::Output {
         &self / &rhs
@@ -104,13 +127,11 @@ impl Div for R25519Scalar {
 }
 
 impl Field for R25519Scalar {
-    type InvError = CryptoCoreError;
+    type InvError = Error;
 
     fn invert(&self) -> Result<Self, Self::InvError> {
         if self.is_zero() {
-            Err(CryptoCoreError::EllipticCurveError(
-                "scalar division by zero".to_string(),
-            ))
+            Err(Error::InversionError("scalar division by zero".to_string()))
         } else {
             Ok(Self(self.0.invert()))
         }
@@ -119,7 +140,7 @@ impl Field for R25519Scalar {
 
 /// Key Serialization framework
 impl Serializable for R25519Scalar {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         Self::LENGTH
@@ -134,7 +155,7 @@ impl Serializable for R25519Scalar {
         <Option<_>>::from(Scalar::from_canonical_bytes(bytes))
             .map(Self)
             .ok_or_else(|| {
-                CryptoCoreError::ConversionError(
+                Error::GenericDeserializationError(
                     "given bytes do not represent a canonical scalar".to_string(),
                 )
             })
@@ -144,7 +165,7 @@ impl Serializable for R25519Scalar {
 #[cfg(test)]
 mod tests {
     use super::R25519Scalar;
-    use cosmian_crypto_core::{
+    use cosmian_crypto_base::{
         bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng, traits::Sampling, CsRng,
     };
 

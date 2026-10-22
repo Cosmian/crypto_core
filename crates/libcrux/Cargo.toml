@@ -1,0 +1,20 @@
+[package]
+name = "cosmian_libcrux_provider"
+version = "1.0.0"
+description = "Verified, pure-Rust provider."
+
+authors = { workspace = true }
+categories = { workspace = true }
+edition = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+[lib]
+crate-type = ["lib", "staticlib"]
+name = "cosmian_libcrux_provider"
+path = "src/lib.rs"
+
+[dependencies]
+cosmian_crypto_base = { path = "../base", version = "3.0" }
+libcrux-ml-kem = { version = "0.0.9" }

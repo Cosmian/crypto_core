@@ -1,3 +1,8 @@
+use crate::{
+    reexport::zeroize::Zeroizing,
+    traits::{AE_InPlace, AE, XOF},
+};
+
 use super::*;
 use std::{
     fmt::{Debug, Display},

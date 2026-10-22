@@ -156,6 +156,7 @@ where
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         ser.write_array(self.to_bytes().as_ref())
+            .map_err(Self::Error::from)
     }
 
     fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {

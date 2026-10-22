@@ -1,8 +1,7 @@
-use cosmian_crypto_core::traits::CyclicGroup;
-
 mod point;
 mod scalar;
 
+use cosmian_crypto_base::traits::CyclicGroup;
 pub use point::P256Point;
 pub use scalar::P256Scalar;
 
@@ -21,7 +20,7 @@ mod tests {
 
     #[test]
     fn test_p256() {
-        use cosmian_crypto_core::traits::tests::{test_cyclic_group, test_nike};
+        use cosmian_crypto_base::traits::tests::{test_cyclic_group, test_nike};
 
         test_cyclic_group::<P256>();
         test_nike::<P256>();

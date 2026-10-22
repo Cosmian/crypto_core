@@ -6,12 +6,13 @@ use curve25519_dalek::{
     ristretto::{CompressedRistretto, RistrettoPoint},
     traits::Identity,
 };
-use zeroize::Zeroize;
 
 use super::R25519PrivateKey;
-#[cfg(feature = "ser")]
-use crate::bytes_ser_de::Serializable;
-use crate::{CBytes, CryptoCoreError, FixedSizeCBytes};
+use crate::{
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
+    reexport::zeroize::Zeroize,
+    CBytes, CryptoCoreError, FixedSizeCBytes,
+};
 
 /// Curve Point of a Ristretto Curve25519.
 ///
@@ -49,7 +50,6 @@ impl From<&R25519PrivateKey> for R25519CurvePoint {
     }
 }
 
-#[cfg(feature = "ser")]
 impl Serializable for R25519CurvePoint {
     type Error = CryptoCoreError;
 
@@ -57,11 +57,12 @@ impl Serializable for R25519CurvePoint {
         Self::LENGTH
     }
 
-    fn write(&self, ser: &mut crate::bytes_ser_de::Serializer) -> Result<usize, Self::Error> {
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
         ser.write_array(&self.0.compress().to_bytes())
+            .map_err(CryptoCoreError::Base)
     }
 
-    fn read(de: &mut crate::bytes_ser_de::Deserializer) -> Result<Self, Self::Error> {
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
         Self::try_from_bytes(de.read_array::<{ Self::LENGTH }>()?)
     }
 }
