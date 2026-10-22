@@ -152,9 +152,18 @@ pub trait AEAD_InPlace<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const
 ///
 /// This trait provides a more convenient API than `AEAD_InPlace` but performs
 /// allocation.
-pub trait AEAD<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGTH: usize>:
-    AEAD_InPlace<KEY_LENGTH, NONCE_LENGTH, TAG_LENGTH>
-{
+pub trait AEAD<const KEY_LENGTH: usize, const NONCE_LENGTH: usize, const TAG_LENGTH: usize> {
+    /// The length of the key.
+    const KEY_LENGTH: usize = KEY_LENGTH;
+
+    /// The length of the nonce.
+    const NONCE_LENGTH: usize = NONCE_LENGTH;
+
+    /// The length of the authentication tag.
+    const TAG_LENGTH: usize = TAG_LENGTH;
+
+    type Error: std::error::Error;
+
     type Plaintext;
 
     type Ciphertext;
@@ -191,6 +200,8 @@ impl<
 where
     E::Error: From<Error>,
 {
+    type Error = E::Error;
+
     type Plaintext = Zeroizing<Vec<u8>>;
 
     // CIPHERTEXT = NONCE || TAG || ENCRYPTED PLAINTEXT
@@ -351,7 +362,14 @@ impl<const LENGTH: usize, H: HASH<LENGTH>> KDF<LENGTH> for H {
 
     fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<LENGTH>, Self::Error> {
         let mut key = SymmetricKey::default();
-        H::hash([vec![seed], info].concat(), &mut key)?;
+        let mut state = <H as HASH<LENGTH>>::initialize()?;
+        H::update(&mut state, seed)?;
+        H::update(&mut state, &info.concat())?;
+        H::finalize(state, &mut key)?;
+        // TODO: we would like to be able to enforce having a zeroizable state, but
+        // sadly not enough dependency provide it.
+        //
+        // state.zeroize();
         Ok(key)
     }
 }

@@ -17,4 +17,7 @@ path = "src/lib.rs"
 
 [dependencies]
 cosmian_crypto_base = { path = "../base", version = "3.0" }
-libcrux-ml-kem = { version = "0.0.9" }
+libcrux-ml-kem = "0.0.10"
+libcrux-sha2 = "0.0.8"
+libcrux-sha3 = "0.0.10"
+libcrux-traits = "0.0.8"
