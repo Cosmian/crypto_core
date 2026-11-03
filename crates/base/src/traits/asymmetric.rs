@@ -171,6 +171,27 @@ pub trait KEM<const KEY_LENGTH: usize> {
     ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
 }
 
+pub trait SeedableKEM<const SEED_LENGTH: usize, const KEY_LENGTH: usize>: KEM<KEY_LENGTH> {
+    fn keygen_from_seed(
+        seed: &Secret<SEED_LENGTH>,
+    ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error>;
+}
+
+impl<const SEED_LENGTH: usize, const KEY_LENGTH: usize, T: KEM<KEY_LENGTH>>
+    SeedableKEM<SEED_LENGTH, KEY_LENGTH> for T
+where
+    T::DecapsulationKey: Seedable<SEED_LENGTH>,
+    T::EncapsulationKey: for<'z> From<&'z Self::DecapsulationKey>,
+{
+    fn keygen_from_seed(
+        seed: &Secret<SEED_LENGTH>,
+    ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error> {
+        let dk = Self::DecapsulationKey::from_seed(seed);
+        let ek = Self::EncapsulationKey::from(&dk);
+        Ok((dk, ek))
+    }
+}
+
 /// Public-Key Encryption.
 pub trait PKE {
     type Plaintext;
