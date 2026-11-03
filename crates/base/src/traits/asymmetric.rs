@@ -3,8 +3,8 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 use crate::{
     bytes_ser_de::Serializable,
     reexport::{rand_core::CryptoRngCore, zeroize::ZeroizeOnDrop},
-    traits::{CyclicGroup, Field, One, Sampling},
-    Error, SymmetricKey,
+    traits::{CyclicGroup, Field, One, Sampling, Seedable},
+    Error, Secret, SymmetricKey,
 };
 
 pub mod cyclic_group_to_kem;
@@ -14,7 +14,7 @@ pub mod kem_to_pke;
 /// Non-Interactive Key Exchange.
 pub trait NIKE {
     type SecretKey: ZeroizeOnDrop;
-    type PublicKey: Serializable;
+    type PublicKey: Serializable + for<'z> From<&'z Self::SecretKey>;
 
     /// The shared secret is not always a symmetric key, as such it is not
     /// required to be uniformly-random over its domain and is not always
@@ -76,6 +76,25 @@ where
         pk: &Self::PublicKey,
     ) -> Result<Self::SharedSecret, Self::Error> {
         Ok(pk * sk)
+    }
+}
+
+pub trait SeedableNIKE<const SEED_LENGTH: usize>: NIKE {
+    fn keygen_from_seed(
+        seed: &Secret<SEED_LENGTH>,
+    ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error>;
+}
+
+impl<const SEED_LENGTH: usize, T: NIKE> SeedableNIKE<SEED_LENGTH> for T
+where
+    T::SecretKey: Seedable<SEED_LENGTH>,
+{
+    fn keygen_from_seed(
+        seed: &Secret<SEED_LENGTH>,
+    ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error> {
+        let sk = T::SecretKey::from_seed(seed);
+        let pk = T::PublicKey::from(&sk);
+        Ok((sk, pk))
     }
 }
 
