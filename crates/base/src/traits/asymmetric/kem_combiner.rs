@@ -1,10 +1,50 @@
 use crate::{
-    bytes_ser_de::Serializable,
+    bytes_ser_de::{Deserializer, Serializable, Serializer},
     traits::{KDF, KEM},
-    SymmetricKey,
+    Error, SymmetricKey,
 };
 use error::KemError;
 use std::{fmt::Debug, marker::PhantomData};
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+pub struct Pair<T1, T2>(T1, T2);
+
+impl<Dk1, Dk2, Ek1: for<'z> From<&'z Dk1>, Ek2: for<'z> From<&'z Dk2>> From<&Pair<Dk1, Dk2>>
+    for Pair<Ek1, Ek2>
+{
+    fn from(value: &Pair<Dk1, Dk2>) -> Self {
+        Pair(Ek1::from(&value.0), Ek2::from(&value.1))
+    }
+}
+
+impl<T1: ZeroizeOnDrop, T2: ZeroizeOnDrop> ZeroizeOnDrop for Pair<T1, T2> {}
+
+impl<T1: Serializable, T2: Serializable> Serializable for Pair<T1, T2> {
+    type Error = Error;
+
+    fn length(&self) -> usize {
+        self.0.length() + self.1.length()
+    }
+
+    fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
+        Ok(ser
+            .write(&self.0)
+            .map_err(|e| Error::GenericSerializationError(e.to_string()))?
+            + ser
+                .write(&self.1)
+                .map_err(|e| Error::GenericSerializationError(e.to_string()))?)
+    }
+
+    fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
+        Ok(Self(
+            de.read()
+                .map_err(|e: T1::Error| Error::GenericDeserializationError(e.to_string()))?,
+            de.read()
+                .map_err(|e: T2::Error| Error::GenericDeserializationError(e.to_string()))?,
+        ))
+    }
+}
 
 /// A KEM combining two other KEM schemes and providing best-of-both CCA
 /// security.
@@ -20,7 +60,6 @@ pub struct KemCombiner<
 
 // Derive a KEM implementation of the KEM combiner with best-of-both CCA
 // security.
-
 impl<
         const KEY_LENGTH: usize,
         const KEY_LENGTH_1: usize,
@@ -35,11 +74,11 @@ where
 {
     // Since we can use a tuple (`Serializable` is automatically derived for
     // tuples), let's just do it.
-    type Encapsulation = (Kem1::Encapsulation, Kem2::Encapsulation);
+    type Encapsulation = Pair<Kem1::Encapsulation, Kem2::Encapsulation>;
 
-    type EncapsulationKey = (Kem1::EncapsulationKey, Kem2::EncapsulationKey);
+    type EncapsulationKey = Pair<Kem1::EncapsulationKey, Kem2::EncapsulationKey>;
 
-    type DecapsulationKey = (Kem1::DecapsulationKey, Kem2::DecapsulationKey);
+    type DecapsulationKey = Pair<Kem1::DecapsulationKey, Kem2::DecapsulationKey>;
 
     type Error = KemError<KEY_LENGTH, KEY_LENGTH_1, KEY_LENGTH_2, Kem1, Kem2, Kdf>;
 
@@ -48,7 +87,7 @@ where
     ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error> {
         let (dk_1, ek_1) = Kem1::keygen(rng).map_err(Self::Error::Kem1)?;
         let (dk_2, ek_2) = Kem2::keygen(rng).map_err(Self::Error::Kem2)?;
-        Ok(((dk_1, dk_2), (ek_1, ek_2)))
+        Ok((Pair(dk_1, dk_2), Pair(ek_1, ek_2)))
     }
 
     fn enc(
@@ -71,7 +110,7 @@ where
             ],
         )
         .map_err(Self::Error::Kdf)?;
-        Ok((key, (enc_1, enc_2)))
+        Ok((key, Pair(enc_1, enc_2)))
     }
 
     fn dec(
