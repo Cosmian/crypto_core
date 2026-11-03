@@ -49,3 +49,25 @@ impl HASH<32> for Sha3_256 {
         Ok(())
     }
 }
+
+pub struct Sha3_512;
+
+impl HASH<64> for Sha3_512 {
+    type State = libcrux_sha3::Sha3_512;
+
+    type Error = Error;
+
+    fn initialize() -> Result<Self::State, Self::Error> {
+        Ok(libcrux_sha3::Sha3_512::new())
+    }
+
+    fn update(state: &mut Self::State, bytes: &[u8]) -> Result<(), Self::Error> {
+        <libcrux_sha3::Sha3_512 as DigestIncrementalBase>::update(state, bytes)?;
+        Ok(())
+    }
+
+    fn finalize(state: Self::State, bytes: &mut [u8; 64]) -> Result<(), Self::Error> {
+        <libcrux_sha3::Sha3_512 as DigestIncremental<{ Self::LENGTH }>>::finish(state, bytes);
+        Ok(())
+    }
+}
