@@ -28,6 +28,28 @@ impl HASH<32> for Sha256 {
     }
 }
 
+pub struct Sha512;
+
+impl HASH<64> for Sha512 {
+    type State = libcrux_sha2::Sha512;
+
+    type Error = Error;
+
+    fn initialize() -> Result<Self::State, Self::Error> {
+        Ok(libcrux_sha2::Sha512::new())
+    }
+
+    fn update(state: &mut Self::State, bytes: &[u8]) -> Result<(), Self::Error> {
+        state.update(bytes);
+        Ok(())
+    }
+
+    fn finalize(state: Self::State, bytes: &mut [u8; 64]) -> Result<(), Self::Error> {
+        state.finish(bytes);
+        Ok(())
+    }
+}
+
 pub struct Sha3_256;
 
 impl HASH<32> for Sha3_256 {
