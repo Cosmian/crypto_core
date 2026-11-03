@@ -80,6 +80,8 @@ where
 }
 
 pub trait SeedableNIKE<const SEED_LENGTH: usize>: NIKE {
+    const SEED_LENGTH: usize = SEED_LENGTH;
+
     fn keygen_from_seed(
         seed: &Secret<SEED_LENGTH>,
     ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error>;
@@ -172,6 +174,8 @@ pub trait KEM<const KEY_LENGTH: usize> {
 }
 
 pub trait SeedableKEM<const SEED_LENGTH: usize, const KEY_LENGTH: usize>: KEM<KEY_LENGTH> {
+    const SEED_LENGTH: usize = SEED_LENGTH;
+
     fn keygen_from_seed(
         seed: &Secret<SEED_LENGTH>,
     ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error>;
