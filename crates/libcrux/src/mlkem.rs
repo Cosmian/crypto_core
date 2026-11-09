@@ -5,7 +5,7 @@ macro_rules! make_mlkem {
      ($dk:ident, $sk:ident, $dk_size:tt, $dk_name:tt)) => {
         pub mod $module {
 
-            use core::ops::IndexMut;
+            use core::ops::{Deref, IndexMut};
             use std::pin::Pin;
 
             use cosmian_crypto_base::{
@@ -14,7 +14,7 @@ macro_rules! make_mlkem {
                     rand_core::CryptoRngCore,
                     zeroize::{Zeroize, ZeroizeOnDrop},
                 },
-                traits::KEM,
+                traits::{SeedableKEM, KEM},
                 Error, Secret, SymmetricKey,
             };
             use libcrux_ml_kem::$module;
@@ -60,7 +60,7 @@ macro_rules! make_mlkem {
             }
 
             #[derive(Clone)]
-            pub struct $ek($module::$pk);
+            pub struct $ek(Pin<Box<$module::$pk>>);
 
             impl std::fmt::Debug for $ek {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -92,10 +92,10 @@ macro_rules! make_mlkem {
                 }
 
                 fn read(de: &mut Deserializer) -> Result<Self, Self::Error> {
-                    Ok(Self(
+                    Ok(Self(Box::pin(
                         $module::$pk::try_from(de.read_array::<{ Self::LENGTH }>()?)
                             .map_err(|e| Error::GenericDeserializationError(e.to_string()))?,
-                    ))
+                    )))
                 }
             }
 
@@ -160,7 +160,7 @@ macro_rules! make_mlkem {
                     let mut randomness = [0; libcrux_ml_kem::KEY_GENERATION_SEED_SIZE];
                     rng.fill_bytes(&mut randomness);
                     let (dk, ek) = $module::generate_key_pair(randomness).into_parts();
-                    Ok(($dk(Box::pin(dk)), $ek(ek)))
+                    Ok(($dk(Box::pin(dk)), $ek(Box::pin(ek))))
                 }
 
                 fn enc(
@@ -179,6 +179,15 @@ macro_rules! make_mlkem {
                 ) -> Result<SymmetricKey<32>, Self::Error> {
                     let mut ss = $module::decapsulate(&dk.0, &enc.0);
                     Ok(Secret::from_unprotected_bytes(&mut ss).into())
+                }
+            }
+
+            impl SeedableKEM<{ libcrux_ml_kem::KEY_GENERATION_SEED_SIZE }, 32> for $mlkem {
+                fn keygen_from_seed(
+                    seed: &Secret<{ libcrux_ml_kem::KEY_GENERATION_SEED_SIZE }>,
+                ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error> {
+                    let (dk, ek) = $module::generate_key_pair(*seed.deref()).into_parts();
+                    Ok(($dk(Box::pin(dk)), $ek(Box::pin(ek))))
                 }
             }
         }

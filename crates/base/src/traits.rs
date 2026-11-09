@@ -31,6 +31,8 @@ pub trait Sampling {
 }
 
 pub trait Seedable<const LENGTH: usize> {
+    const SEED_LENGTH: usize = LENGTH;
+
     /// Returns a fresh element deterministically computed from the given seed.
     fn from_seed(seed: &Secret<LENGTH>) -> Self;
 }

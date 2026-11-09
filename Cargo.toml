@@ -51,11 +51,11 @@ signature = "2.2"
 tiny-keccak = "2.0.2"
 uuid = "=1.11"
 x509-cert = "0.2.5"
-zeroize = "1.8"
+zeroize = "1.9"
 criterion = "0.6"
 libc = "0.2"
-libsodium-sys-stable = "1.23.1"
-tempfile = "3.24"
+libsodium-sys-stable = "1.24.3"
+tempfile = "3.27"
 
 [profile.bench]
 debug = true

@@ -350,6 +350,30 @@ impl<const LENGTH: usize, H: XOF> HASH<LENGTH> for H {
     }
 }
 
+#[allow(non_camel_case_types)]
+pub trait KDF_InPlace<const KEY_LENGTH: usize> {
+    type Error: std::error::Error;
+
+    fn derive(key: &mut [u8; KEY_LENGTH], seed: &[u8], info: Vec<&[u8]>)
+        -> Result<(), Self::Error>;
+}
+
+impl<const LENGTH: usize, H: HASH<LENGTH>> KDF_InPlace<LENGTH> for H {
+    type Error = H::Error;
+
+    fn derive(key: &mut [u8; LENGTH], seed: &[u8], info: Vec<&[u8]>) -> Result<(), Self::Error> {
+        let mut state = <H as HASH<LENGTH>>::initialize()?;
+        H::update(&mut state, seed)?;
+        H::update(&mut state, &info.concat())?;
+        H::finalize(state, key)?;
+        // TODO: we would like to be able to enforce having a zeroizable state, but
+        // sadly not enough dependency provide it.
+        //
+        // state.zeroize();
+        Ok(())
+    }
+}
+
 /// Key Derivation Function.
 pub trait KDF<const KEY_LENGTH: usize> {
     type Error: std::error::Error;
@@ -357,19 +381,62 @@ pub trait KDF<const KEY_LENGTH: usize> {
     fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
 }
 
-impl<const LENGTH: usize, H: HASH<LENGTH>> KDF<LENGTH> for H {
-    type Error = H::Error;
+impl<const KEY_LENGTH: usize, T: KDF_InPlace<KEY_LENGTH>> KDF<KEY_LENGTH> for T {
+    type Error = T::Error;
 
-    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<LENGTH>, Self::Error> {
+    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
         let mut key = SymmetricKey::default();
-        let mut state = <H as HASH<LENGTH>>::initialize()?;
-        H::update(&mut state, seed)?;
-        H::update(&mut state, &info.concat())?;
-        H::finalize(state, &mut key)?;
-        // TODO: we would like to be able to enforce having a zeroizable state, but
-        // sadly not enough dependency provide it.
-        //
-        // state.zeroize();
+        T::derive(&mut key, seed, info)?;
         Ok(key)
+    }
+}
+
+pub trait SHA256: HASH<32> {}
+pub trait SHA512: HASH<64> {}
+
+pub trait SHA3_256: HASH<32> {}
+pub trait SHA3_512: HASH<64> {}
+
+pub trait Shake128: XOF {}
+pub trait Shake256: XOF {}
+
+pub fn test_sha256<Sha256: SHA256>() {
+    // Source: https://www.dlitz.net/crypto/shad256-test-vectors/SHAd256_Test_Vectors.txt
+
+    // test vector NIST.1
+    {
+        let mut res = [0; 32];
+        Sha256::hash(vec![&[0x61, 0x62, 0x63]], &mut res).unwrap();
+        assert_eq!(
+            res,
+            [
+                0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae,
+                0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61,
+                0xf2, 0x00, 0x15, 0xad
+            ]
+        )
+    }
+
+    // test vector NIST.2
+    {
+        let mut res = [0; 32];
+        Sha256::hash(
+            vec![&[
+                0x61, 0x62, 0x63, 0x64, 0x62, 0x63, 0x64, 0x65, 0x63, 0x64, 0x65, 0x66, 0x64, 0x65,
+                0x66, 0x67, 0x65, 0x66, 0x67, 0x68, 0x66, 0x67, 0x68, 0x69, 0x67, 0x68, 0x69, 0x6a,
+                0x68, 0x69, 0x6a, 0x6b, 0x69, 0x6a, 0x6b, 0x6c, 0x6a, 0x6b, 0x6c, 0x6d, 0x6b, 0x6c,
+                0x6d, 0x6e, 0x6c, 0x6d, 0x6e, 0x6f, 0x6d, 0x6e, 0x6f, 0x70, 0x6e, 0x6f, 0x70, 0x71,
+            ]],
+            &mut res,
+        )
+        .unwrap();
+        assert_eq!(
+            res,
+            [
+                0x24, 0x8d, 0x6a, 0x61, 0xd2, 0x06, 0x38, 0xb8, 0xe5, 0xc0, 0x26, 0x93, 0x0c, 0x3e,
+                0x60, 0x39, 0xa3, 0x3c, 0xe4, 0x59, 0x64, 0xff, 0x21, 0x67, 0xf6, 0xec, 0xed, 0xd4,
+                0x19, 0xdb, 0x06, 0xc1,
+            ]
+        )
     }
 }
