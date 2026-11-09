@@ -4,7 +4,7 @@ mod scalar;
 pub use point::P256Point;
 pub use scalar::P256Scalar;
 
-use cosmian_crypto_core::traits::CyclicGroup;
+use cosmian_crypto_base::traits::CyclicGroup;
 use openssl::nid::Nid;
 
 const NID: Nid = Nid::X9_62_PRIME256V1;
@@ -25,14 +25,12 @@ mod tests {
         hash::{Sha256, Sha3_256, Shake256},
         kem::MonadicKEM,
     };
-    use cosmian_crypto_core::{
-        traits::{
-            kem_combiner::KemCombiner,
-            kem_to_pke::GenericPKE,
-            tests::{test_cyclic_group, test_kem, test_nike, test_pke},
-        },
-        Aes256Gcm,
+    use cosmian_crypto_base::traits::{
+        kem_combiner::KemCombiner,
+        kem_to_pke::GenericPKE,
+        tests::{test_cyclic_group, test_kem, test_nike, test_pke},
     };
+    use cosmian_crypto_core::Aes256Gcm;
 
     #[test]
     fn test_p256() {

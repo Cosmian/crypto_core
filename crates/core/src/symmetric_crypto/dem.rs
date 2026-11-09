@@ -11,14 +11,12 @@ use aead::{
     Aead, AeadCore, AeadInPlace, KeyInit, Payload,
 };
 
-use crate::{CryptoCoreError, RandomFixedSizeCBytes, SecretCBytes};
+use crate::{CryptoCoreError, RandomFixedSizeCBytes, SymmetricKey};
 
 /// Defines a DEM which is instantiable from a key
 pub trait Instantiable<const KEY_LENGTH: usize>: Debug {
-    type Secret: SecretCBytes<KEY_LENGTH>;
-
     /// Instantiate the DEM
-    fn new(symmetric_key: &Self::Secret) -> Self;
+    fn new(symmetric_key: &SymmetricKey<KEY_LENGTH>) -> Self;
 }
 
 /// Defines a DEM based on a symmetric scheme as defined in section 9.1 of the

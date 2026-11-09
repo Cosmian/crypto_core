@@ -5,7 +5,7 @@ use zeroize::Zeroizing;
 
 use crate::{
     asymmetric_crypto::{PublicKey, RsaKeyLength, RsaKeyWrappingAlgorithm},
-    key_wrap, CryptoCoreError, RandomFixedSizeCBytes, SymmetricKey,
+    key_wrap, CryptoCoreError, SymmetricKey,
 };
 
 #[derive(Debug, PartialEq)]

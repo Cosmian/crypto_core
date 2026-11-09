@@ -1,9 +1,11 @@
 [workspace]
 members = [
+  "crates/base",
   "crates/core",
+  "crates/libcrux",
   "crates/openssl_provider",
   "crates/rust_nist_ec",
-  "crates/rust_curve25519"
+  "crates/rust_curve25519",
 ]
 resolver = "2"
 

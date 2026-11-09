@@ -1,16 +1,15 @@
 use crate::{kem::error::KemError, FFIMonad};
-use cosmian_crypto_core::{
+use cosmian_crypto_base::{
     bytes_ser_de::Serializable,
-    reexport::rand_core::CryptoRngCore,
-    traits::{CyclicGroup, Field, KDF, KEM, NIKE},
-    Sampling, SymmetricKey,
+    reexport::{rand_core::CryptoRngCore, zeroize::ZeroizeOnDrop},
+    traits::{CyclicGroup, Field, Sampling, KDF, KEM, NIKE},
+    SymmetricKey,
 };
 use std::{
     fmt::Debug,
     marker::PhantomData,
     ops::{Add, Div, Mul, Neg, Sub},
 };
-use zeroize::ZeroizeOnDrop;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct MonadicKEM<const KEY_LENGTH: usize, Group: CyclicGroup, Kdf: KDF<KEY_LENGTH>>
