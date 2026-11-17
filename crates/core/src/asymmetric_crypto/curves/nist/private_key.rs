@@ -72,13 +72,12 @@ impl<C: Curve, const LENGTH: usize> FixedSizeCBytes<LENGTH> for NistPrivateKey<C
     /// Deserialize the `PrivateKey` from a non zero scalar
     fn try_from_bytes(bytes: [u8; LENGTH]) -> Result<Self, CryptoCoreError> {
         let ga = GenericArray::from_slice(bytes.as_slice());
-        let secret_key = SecretKey::<C>::from_bytes(ga).map_err(|_| {
-            CryptoCoreError::InvalidBytesLength(
-                "EC Private Key".to_owned(),
-                bytes.len(),
-                Some(LENGTH),
-            )
-        })?;
+        let secret_key =
+            SecretKey::<C>::from_bytes(ga).map_err(|_| CryptoCoreError::InvalidBytesLength {
+                msg: "EC Private Key".to_owned(),
+                given: bytes.len(),
+                expected: Some(LENGTH),
+            })?;
         Ok(Self { bytes, secret_key })
     }
 }

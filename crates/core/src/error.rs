@@ -27,7 +27,11 @@ pub enum CryptoCoreError {
     EncryptionError,
     GenericDeserializationError(String),
     GenericSerializationError(String),
-    InvalidBytesLength(String, usize, Option<usize>),
+    InvalidBytesLength {
+        msg: String,
+        given: usize,
+        expected: Option<usize>,
+    },
     PlaintextTooBigError {
         plaintext_len: usize,
         max: u64,
@@ -95,13 +99,17 @@ impl Display for CryptoCoreError {
             Self::GenericSerializationError(err) => {
                 write!(f, "serialization error: {err}")
             }
-            Self::InvalidBytesLength(message, given, expected) => match expected {
+            Self::InvalidBytesLength {
+                msg,
+                given,
+                expected,
+            } => match expected {
                 Some(expected_length) => write!(
                     f,
-                    "{message}: invalid key length: got {given}, expected: {expected_length}",
+                    "{msg}: invalid key length: got {given}, expected: {expected_length}",
                 ),
                 None => {
-                    write!(f, "{message}: invalid key length: got {given}")
+                    write!(f, "{msg}: invalid key length: got {given}")
                 }
             },
             Self::PlaintextTooBigError { plaintext_len, max } => write!(

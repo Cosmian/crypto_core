@@ -3,8 +3,8 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 use crate::{
     bytes_ser_de::Serializable,
     reexport::{rand_core::CryptoRngCore, zeroize::ZeroizeOnDrop},
-    traits::{CyclicGroup, Field, One, Sampling},
-    Error, SymmetricKey,
+    traits::{CyclicGroup, Field, One, Sampling, Seedable},
+    Error, Secret, SymmetricKey,
 };
 
 pub mod cyclic_group_to_kem;
@@ -14,7 +14,7 @@ pub mod kem_to_pke;
 /// Non-Interactive Key Exchange.
 pub trait NIKE {
     type SecretKey: ZeroizeOnDrop;
-    type PublicKey: Serializable;
+    type PublicKey: Serializable + for<'z> From<&'z Self::SecretKey>;
 
     /// The shared secret is not always a symmetric key, as such it is not
     /// required to be uniformly-random over its domain and is not always
@@ -76,6 +76,27 @@ where
         pk: &Self::PublicKey,
     ) -> Result<Self::SharedSecret, Self::Error> {
         Ok(pk * sk)
+    }
+}
+
+pub trait SeedableNIKE<const SEED_LENGTH: usize>: NIKE {
+    const SEED_LENGTH: usize = SEED_LENGTH;
+
+    fn keygen_from_seed(
+        seed: &Secret<SEED_LENGTH>,
+    ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error>;
+}
+
+impl<const SEED_LENGTH: usize, T: NIKE> SeedableNIKE<SEED_LENGTH> for T
+where
+    T::SecretKey: Seedable<SEED_LENGTH>,
+{
+    fn keygen_from_seed(
+        seed: &Secret<SEED_LENGTH>,
+    ) -> Result<(Self::SecretKey, Self::PublicKey), Self::Error> {
+        let sk = T::SecretKey::from_seed(seed);
+        let pk = T::PublicKey::from(&sk);
+        Ok((sk, pk))
     }
 }
 
@@ -150,6 +171,29 @@ pub trait KEM<const KEY_LENGTH: usize> {
         dk: &Self::DecapsulationKey,
         enc: &Self::Encapsulation,
     ) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error>;
+}
+
+pub trait SeedableKEM<const SEED_LENGTH: usize, const KEY_LENGTH: usize>: KEM<KEY_LENGTH> {
+    const SEED_LENGTH: usize = SEED_LENGTH;
+
+    fn keygen_from_seed(
+        seed: &Secret<SEED_LENGTH>,
+    ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error>;
+}
+
+impl<const SEED_LENGTH: usize, const KEY_LENGTH: usize, T: KEM<KEY_LENGTH>>
+    SeedableKEM<SEED_LENGTH, KEY_LENGTH> for T
+where
+    T::DecapsulationKey: Seedable<SEED_LENGTH>,
+    T::EncapsulationKey: for<'z> From<&'z Self::DecapsulationKey>,
+{
+    fn keygen_from_seed(
+        seed: &Secret<SEED_LENGTH>,
+    ) -> Result<(Self::DecapsulationKey, Self::EncapsulationKey), Self::Error> {
+        let dk = Self::DecapsulationKey::from_seed(seed);
+        let ek = Self::EncapsulationKey::from(&dk);
+        Ok((dk, ek))
+    }
 }
 
 /// Public-Key Encryption.

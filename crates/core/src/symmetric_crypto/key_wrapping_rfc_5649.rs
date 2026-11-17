@@ -69,11 +69,11 @@ pub fn key_wrap(plain: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreError> {
                 cipher.encrypt_block(big_c);
             }
             _ => {
-                return Err(CryptoCoreError::InvalidBytesLength(
-                    "The kek size should be 16, 24 or 32".to_string(),
-                    kek.len(),
-                    None,
-                ));
+                return Err(CryptoCoreError::InvalidBytesLength {
+                    msg: "The kek size should be 16, 24 or 32".to_string(),
+                    given: kek.len(),
+                    expected: None,
+                });
             }
         };
 
@@ -92,22 +92,22 @@ pub fn key_unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreEr
     let n = ciphertext.len();
 
     if !n.is_multiple_of(8) || n < 16 {
-        return Err(CryptoCoreError::InvalidBytesLength(
-            "The ciphertext size should be >= 16 and a multiple of 8".to_string(),
-            n,
-            None,
-        ));
+        return Err(CryptoCoreError::InvalidBytesLength {
+            msg: "The ciphertext size should be >= 16 and a multiple of 8".to_string(),
+            given: n,
+            expected: None,
+        });
     }
 
     if n > 16 {
         let (iv, padded_plain) = _unwrap_64(ciphertext, kek)?;
 
         if !check_iv(iv, &padded_plain) {
-            return Err(CryptoCoreError::InvalidBytesLength(
-                "The ciphertext is invalid. Decrypted IV is not appropriate".to_string(),
-                padded_plain.len(),
-                None,
-            ));
+            return Err(CryptoCoreError::InvalidBytesLength {
+                msg: "The ciphertext is invalid. Decrypted IV is not appropriate".to_string(),
+                given: padded_plain.len(),
+                expected: None,
+            });
         }
 
         let unpadded_size = u32::from_le(iv as u32) as usize;
@@ -134,11 +134,11 @@ pub fn key_unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreEr
                 cipher.decrypt_block(padded_plain);
             }
             _ => {
-                return Err(CryptoCoreError::InvalidBytesLength(
-                    "The kek size should be 16, 24 or 32".to_string(),
-                    kek.len(),
-                    None,
-                ));
+                return Err(CryptoCoreError::InvalidBytesLength {
+                    msg: "The kek size should be 16, 24 or 32".to_string(),
+                    given: kek.len(),
+                    expected: None,
+                });
             }
         };
 
@@ -149,11 +149,11 @@ pub fn key_unwrap(ciphertext: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreEr
             )),
             &padded_plain[8..16],
         ) {
-            return Err(CryptoCoreError::InvalidBytesLength(
-                "The ciphertext is invalid. Decrypted IV is not appropriate".to_string(),
-                padded_plain.len(),
-                None,
-            ));
+            return Err(CryptoCoreError::InvalidBytesLength {
+                msg: "The ciphertext is invalid. Decrypted IV is not appropriate".to_string(),
+                given: padded_plain.len(),
+                expected: None,
+            });
         }
 
         let unpadded_size = u32::from_be_bytes(padded_plain[4..8].try_into().expect(
@@ -183,11 +183,11 @@ fn _wrap_64(plain: &[u8], kek: &[u8], iv: Option<u64>) -> Result<Vec<u8>, Crypto
     let n = plain.len();
 
     if !n.is_multiple_of(8) {
-        return Err(CryptoCoreError::InvalidBytesLength(
-            "The plaintext size should be a multiple of 8".to_string(),
-            n,
-            None,
-        ));
+        return Err(CryptoCoreError::InvalidBytesLength {
+            msg: "The plaintext size should be a multiple of 8".to_string(),
+            given: n,
+            expected: None,
+        });
     }
 
     // Number of 64-bit blocks
@@ -226,11 +226,11 @@ fn _wrap_64(plain: &[u8], kek: &[u8], iv: Option<u64>) -> Result<Vec<u8>, Crypto
                     cipher.encrypt_block(&mut big_b);
                 }
                 _ => {
-                    return Err(CryptoCoreError::InvalidBytesLength(
-                        "The kek size should be 16, 24 or 32".to_string(),
-                        kek.len(),
-                        None,
-                    ));
+                    return Err(CryptoCoreError::InvalidBytesLength {
+                        msg: "The kek size should be 16, 24 or 32".to_string(),
+                        given: kek.len(),
+                        expected: None,
+                    });
                 }
             };
 
@@ -266,11 +266,11 @@ pub fn key_unwrap_64(cipher: &[u8], kek: &[u8]) -> Result<Vec<u8>, CryptoCoreErr
     let (iv, plain) = _unwrap_64(cipher, kek)?;
 
     if iv != DEFAULT_IV {
-        return Err(CryptoCoreError::InvalidBytesLength(
-            "The ciphertext is invalid. Decrypted IV is not appropriate".to_string(),
-            DEFAULT_IV as usize,
-            None,
-        ));
+        return Err(CryptoCoreError::InvalidBytesLength {
+            msg: "The ciphertext is invalid. Decrypted IV is not appropriate".to_string(),
+            given: DEFAULT_IV as usize,
+            expected: None,
+        });
     }
 
     Ok(plain)
@@ -280,11 +280,11 @@ fn _unwrap_64(ciphertext: &[u8], kek: &[u8]) -> Result<(u64, Vec<u8>), CryptoCor
     let n = ciphertext.len();
 
     if !n.is_multiple_of(8) || n < 16 {
-        return Err(CryptoCoreError::InvalidBytesLength(
-            "The ciphertext size should be >= 16 and a multiple of 8".to_string(),
-            n,
-            None,
-        ));
+        return Err(CryptoCoreError::InvalidBytesLength {
+            msg: "The ciphertext size should be >= 16 and a multiple of 8".to_string(),
+            given: n,
+            expected: None,
+        });
     }
 
     // Number of 64-bit blocks minus 1
@@ -326,11 +326,11 @@ fn _unwrap_64(ciphertext: &[u8], kek: &[u8]) -> Result<(u64, Vec<u8>), CryptoCor
                     cipher.decrypt_block(&mut big_b);
                 }
                 _ => {
-                    return Err(CryptoCoreError::InvalidBytesLength(
-                        "The kek size should be 16, 24 or 32".to_string(),
-                        kek.len(),
-                        None,
-                    ));
+                    return Err(CryptoCoreError::InvalidBytesLength {
+                        msg: "The kek size should be 16, 24 or 32".to_string(),
+                        given: kek.len(),
+                        expected: None,
+                    });
                 }
             };
 

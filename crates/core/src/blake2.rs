@@ -46,7 +46,11 @@ macro_rules! blake2b {
                 $res.copy_from_slice(&h[..length]);
                 Ok(())
             } else {
-                Err($crate::CryptoCoreError::InvalidBytesLength("blake2b".to_string(), length, None))
+                Err($crate::CryptoCoreError::InvalidBytesLength{
+                    msg: "blake2b".to_string(),
+                    given : length,
+                    expected: None
+                })
             }
         }
     };
@@ -98,7 +102,11 @@ macro_rules! blake2s {
                 $res.copy_from_slice(&h[..length]);
                 Ok(())
             } else {
-                Err($crate::CryptoCoreError::InvalidBytesLength("blake2b".to_string(), length, None))
+                Err($crate::CryptoCoreError::InvalidBytesLength {
+                    msg: "blake2b".to_string(),
+                    given : length,
+                    expected : None
+                })
             }
         }
     };
