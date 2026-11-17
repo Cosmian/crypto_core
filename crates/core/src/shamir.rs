@@ -38,7 +38,7 @@ impl<const SIZE: usize> Serializable for ShamirShare<SIZE> {
     type Error = CryptoCoreError;
 
     fn length(&self) -> usize {
-        SIZE
+        self.index.length() + self.thres.length() + self.point.length()
     }
 
     fn write(&self, ser: &mut Serializer) -> Result<usize, Self::Error> {
@@ -215,6 +215,7 @@ mod tests {
     use std::{collections::BTreeMap, num::NonZeroUsize};
 
     use cosmian_crypto_base::{
+        bytes_ser_de::test_serialization,
         reexport::rand_core::SeedableRng,
         shuffle_in_place,
         traits::{Field, FixedSizeCBytes, Sampling},
@@ -259,6 +260,8 @@ mod tests {
         .unwrap();
 
         assert_eq!(COUNT, shares.len());
+
+        test_serialization(&shares[0]).unwrap();
 
         {
             // Reconstruction from all the shares is possible.

@@ -21,3 +21,6 @@ libcrux-ml-kem = "0.0.11"
 libcrux-sha2 = "0.0.9"
 libcrux-sha3 = "0.0.11"
 libcrux-traits = "0.0.9"
+
+[dev-dependencies]
+cosmian_crypto_base = { path = "../base", version = "3.1.0", features = ["test-utils"]}

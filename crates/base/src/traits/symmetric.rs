@@ -400,6 +400,7 @@ pub trait SHA3_512: HASH<64> {}
 pub trait Shake128: XOF {}
 pub trait Shake256: XOF {}
 
+#[cfg(feature = "test-utils")]
 pub fn test_sha256<Sha256: SHA256>() {
     // Source: https://www.dlitz.net/crypto/shad256-test-vectors/SHAd256_Test_Vectors.txt
 

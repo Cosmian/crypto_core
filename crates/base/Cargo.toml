@@ -17,6 +17,7 @@ path = "src/lib.rs"
 [features]
 default = ["macro"]
 macro = ["gensym"]
+test-utils = []
 
 [dependencies]
 gensym = { workspace = true, optional = true }
