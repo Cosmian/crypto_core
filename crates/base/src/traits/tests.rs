@@ -10,6 +10,7 @@ use rand_core::RngCore;
 use zeroize::Zeroizing;
 
 use crate::{
+    bytes_ser_de::test_serialization,
     reexport::rand_core::SeedableRng,
     traits::{
         AbelianGroup, CyclicGroup, Field, Group, Monoid, Ring, Sampling, Zero, HASH, KEM, NIKE,
@@ -174,14 +175,24 @@ where
     assert_eq!(session_key_1, session_key_2);
 }
 
-pub fn test_kem<const KEY_LENGTH: usize, Scheme: KEM<KEY_LENGTH>>() {
+pub fn test_kem<const KEY_LENGTH: usize, Scheme: KEM<KEY_LENGTH>>()
+where
+    Scheme::Encapsulation: Debug,
+    Scheme::EncapsulationKey: Debug,
+{
     let mut rng = CsRng::from_entropy();
 
     let (dk_1, ek_1) = Scheme::keygen(&mut rng).unwrap();
     let (dk_2, ek_2) = Scheme::keygen(&mut rng).unwrap();
 
+    test_serialization(&ek_1).unwrap();
+    test_serialization(&ek_2).unwrap();
+
     let (ss_1, enc_1) = Scheme::enc(&ek_1, &mut rng).unwrap();
     let (ss_2, enc_2) = Scheme::enc(&ek_2, &mut rng).unwrap();
+
+    test_serialization(&enc_1).unwrap();
+    test_serialization(&enc_2).unwrap();
 
     let ss_1_ = Scheme::dec(&dk_1, &enc_1).unwrap();
     let ss_2_ = Scheme::dec(&dk_2, &enc_2).unwrap();

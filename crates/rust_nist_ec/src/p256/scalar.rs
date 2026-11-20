@@ -1,4 +1,4 @@
-use cosmian_crypto_core::{
+use cosmian_crypto_base::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_commutative_ring, implement_monoid_arithmetic,
     reexport::{
@@ -6,7 +6,7 @@ use cosmian_crypto_core::{
         zeroize::{Zeroize, ZeroizeOnDrop},
     },
     traits::{AbelianGroup, Field, Group, Monoid, Ring, Sampling, Seedable},
-    CryptoCoreError, Secret,
+    Error, Secret,
 };
 use elliptic_curve::{ops::Reduce, PrimeField};
 use p256::Scalar;
@@ -14,8 +14,22 @@ use std::{hash::Hash, ops::Div};
 
 const SERIALIZED_SCALAR_LENGTH: usize = 32;
 
-#[derive(Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct P256Scalar(pub(crate) Scalar);
+
+impl Zeroize for P256Scalar {
+    fn zeroize(&mut self) {
+        self.0.zeroize()
+    }
+}
+
+impl Drop for P256Scalar {
+    fn drop(&mut self) {
+        self.zeroize()
+    }
+}
+
+impl ZeroizeOnDrop for P256Scalar {}
 
 impl Hash for P256Scalar {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -68,7 +82,7 @@ impl Ring for P256Scalar {
 implement_commutative_ring!(P256Scalar);
 
 impl Field for P256Scalar {
-    type InvError = CryptoCoreError;
+    type InvError = Error;
 
     fn invert(&self) -> Result<Self, Self::InvError> {
         self.0
@@ -76,15 +90,13 @@ impl Field for P256Scalar {
             .into_option()
             .map(P256Scalar)
             .ok_or_else(|| {
-                CryptoCoreError::EllipticCurveError(
-                    "monoid identity scalar has no inverse".to_string(),
-                )
+                Error::InversionError("monoid identity scalar has no inverse".to_string())
             })
     }
 }
 
 impl Div for P256Scalar {
-    type Output = Result<Self, CryptoCoreError>;
+    type Output = Result<Self, Error>;
 
     fn div(self, rhs: Self) -> Self::Output {
         <P256Scalar as Field>::invert(&rhs).map(|rhs| P256Scalar(self.0 * rhs.0))
@@ -92,7 +104,7 @@ impl Div for P256Scalar {
 }
 
 impl Div<&P256Scalar> for P256Scalar {
-    type Output = Result<Self, CryptoCoreError>;
+    type Output = Result<Self, Error>;
 
     fn div(self, rhs: &Self) -> Self::Output {
         <P256Scalar as Field>::invert(rhs).map(|rhs| P256Scalar(self.0 * rhs.0))
@@ -100,7 +112,7 @@ impl Div<&P256Scalar> for P256Scalar {
 }
 
 impl Div<&P256Scalar> for &P256Scalar {
-    type Output = Result<P256Scalar, CryptoCoreError>;
+    type Output = Result<P256Scalar, Error>;
 
     fn div(self, rhs: &P256Scalar) -> Self::Output {
         <P256Scalar as Field>::invert(rhs).map(|rhs| P256Scalar(self.0 * rhs.0))
@@ -108,7 +120,7 @@ impl Div<&P256Scalar> for &P256Scalar {
 }
 
 impl Serializable for P256Scalar {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         SERIALIZED_SCALAR_LENGTH
@@ -123,9 +135,7 @@ impl Serializable for P256Scalar {
         let scalar = Scalar::from_repr(bytes.into())
             .into_option()
             .ok_or_else(|| {
-                CryptoCoreError::GenericDeserializationError(
-                    "cannot deserialize scalar".to_string(),
-                )
+                Error::GenericDeserializationError("cannot deserialize scalar".to_string())
             })?;
         Ok(Self(scalar))
     }
@@ -134,7 +144,7 @@ impl Serializable for P256Scalar {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmian_crypto_core::{
+    use cosmian_crypto_base::{
         bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng,
         traits::tests::test_field, CsRng,
     };

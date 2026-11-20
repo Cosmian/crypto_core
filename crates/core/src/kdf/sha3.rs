@@ -1,21 +1,32 @@
-use crate::{traits::KDF, CryptoCoreError, SymmetricKey};
+use crate::{traits::KDF_InPlace, CryptoCoreError};
 pub use tiny_keccak::{Hasher, Shake};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Kdf256;
 
-impl<const KEY_LENGTH: usize> KDF<KEY_LENGTH> for Kdf256 {
+impl<const KEY_LENGTH: usize> KDF_InPlace<KEY_LENGTH> for Kdf256 {
     type Error = CryptoCoreError;
 
-    fn derive(seed: &[u8], info: Vec<&[u8]>) -> Result<SymmetricKey<KEY_LENGTH>, Self::Error> {
-        let mut key = SymmetricKey::default();
+    fn derive(
+        key: &mut [u8; KEY_LENGTH],
+        seed: &[u8],
+        info: Vec<&[u8]>,
+    ) -> Result<(), Self::Error> {
+        if seed.len() < KEY_LENGTH {
+            return Err(CryptoCoreError::InvalidBytesLength {
+                msg: "seed is too short, it cannot contain enough entropy to generate a secure key"
+                    .to_owned(),
+                given: seed.len(),
+                expected: Some(KEY_LENGTH),
+            });
+        }
         let mut hasher = Shake::v256();
         hasher.update(seed);
         for bytes in info {
             hasher.update(bytes);
         }
-        hasher.finalize(&mut *key);
-        Ok(key)
+        hasher.finalize(key);
+        Ok(())
     }
 }
 

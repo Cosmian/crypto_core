@@ -1,9 +1,9 @@
-use cosmian_crypto_core::traits::{HASH, XOF};
-use openssl::{
-    error::ErrorStack,
-    hash::{Hasher, MessageDigest},
+use crate::error::Error;
+use cosmian_crypto_base::{
+    reexport::zeroize::Zeroize,
+    traits::{HASH, XOF},
 };
-use zeroize::Zeroize;
+use openssl::hash::{Hasher, MessageDigest};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Sha256;
@@ -11,14 +11,14 @@ pub struct Sha256;
 impl HASH<32> for Sha256 {
     type State = Hasher;
 
-    type Error = ErrorStack;
+    type Error = Error;
 
     fn initialize() -> Result<Self::State, Self::Error> {
-        Hasher::new(MessageDigest::sha256())
+        Hasher::new(MessageDigest::sha256()).map_err(Error::from)
     }
 
     fn update(state: &mut Self::State, bytes: &[u8]) -> Result<(), Self::Error> {
-        state.update(bytes)
+        state.update(bytes).map_err(Error::from)
     }
 
     fn finalize(mut state: Self::State, buffer: &mut [u8; 32]) -> Result<(), Self::Error> {
@@ -36,14 +36,14 @@ pub struct Sha3_256;
 impl HASH<32> for Sha3_256 {
     type State = Hasher;
 
-    type Error = ErrorStack;
+    type Error = Error;
 
     fn initialize() -> Result<Self::State, Self::Error> {
-        Hasher::new(MessageDigest::sha3_256())
+        Hasher::new(MessageDigest::sha3_256()).map_err(Error::from)
     }
 
     fn update(state: &mut Self::State, bytes: &[u8]) -> Result<(), Self::Error> {
-        state.update(bytes)
+        state.update(bytes).map_err(Error::from)
     }
 
     fn finalize(mut state: Self::State, buffer: &mut [u8; 32]) -> Result<(), Self::Error> {
@@ -61,25 +61,25 @@ pub struct Shake256;
 impl XOF for Shake256 {
     type State = Hasher;
 
-    type Error = ErrorStack;
+    type Error = Error;
 
     fn initialize() -> Result<Self::State, Self::Error> {
-        Hasher::new(MessageDigest::shake_256())
+        Hasher::new(MessageDigest::shake_256()).map_err(Error::from)
     }
 
     fn update(state: &mut Self::State, bytes: &[u8]) -> Result<(), Self::Error> {
-        state.update(bytes)
+        state.update(bytes).map_err(Error::from)
     }
 
     fn finalize(mut state: Self::State, buffer: &mut [u8]) -> Result<(), Self::Error> {
-        state.finish_xof(buffer)
+        state.finish_xof(buffer).map_err(Error::from)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmian_crypto_core::traits::tests::{test_hash, test_xof};
+    use cosmian_crypto_base::traits::tests::{test_hash, test_xof};
 
     #[test]
     fn test_hash_algorithms() {

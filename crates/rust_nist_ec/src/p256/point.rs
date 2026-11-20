@@ -1,4 +1,4 @@
-use cosmian_crypto_core::{
+use cosmian_crypto_base::{
     bytes_ser_de::{Deserializer, Serializable, Serializer},
     implement_abelian_group, implement_monoid_arithmetic,
     reexport::{
@@ -6,7 +6,7 @@ use cosmian_crypto_core::{
         zeroize::{Zeroize, ZeroizeOnDrop},
     },
     traits::{AbelianGroup, Group, Monoid, One, Sampling},
-    CryptoCoreError,
+    Error,
 };
 use elliptic_curve::group::GroupEncoding;
 use p256::ProjectivePoint;
@@ -16,8 +16,22 @@ use crate::p256::P256Scalar;
 
 const SERIALIZED_POINT_LENGTH: usize = 33;
 
-#[derive(Clone, Debug, PartialEq, Eq, Zeroize, ZeroizeOnDrop)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct P256Point(ProjectivePoint);
+
+impl Zeroize for P256Point {
+    fn zeroize(&mut self) {
+        self.0.zeroize()
+    }
+}
+
+impl Drop for P256Point {
+    fn drop(&mut self) {
+        self.zeroize()
+    }
+}
+
+impl ZeroizeOnDrop for P256Point {}
 
 impl Hash for P256Point {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -54,7 +68,7 @@ impl Group for P256Point {
 implement_abelian_group!(P256Point);
 
 impl Serializable for P256Point {
-    type Error = CryptoCoreError;
+    type Error = Error;
 
     fn length(&self) -> usize {
         SERIALIZED_POINT_LENGTH
@@ -69,7 +83,7 @@ impl Serializable for P256Point {
         let point = ProjectivePoint::from_bytes(&bytes.into())
             .into_option()
             .ok_or_else(|| {
-                CryptoCoreError::GenericDeserializationError("cannot deserialize point".to_string())
+                Error::GenericDeserializationError("cannot deserialize point".to_string())
             })?;
         Ok(Self(point))
     }
@@ -132,7 +146,7 @@ impl From<&P256Scalar> for P256Point {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cosmian_crypto_core::{
+    use cosmian_crypto_base::{
         bytes_ser_de::test_serialization, reexport::rand_core::SeedableRng,
         traits::tests::test_group, CsRng,
     };
